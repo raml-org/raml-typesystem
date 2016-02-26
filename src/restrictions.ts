@@ -4,6 +4,8 @@ import ts=require("./typesystem")
 import _= require("underscore");
 import {AndRestriction} from "./typesystem";
 import {Constraint} from "./typesystem";
+import {AbstractType} from "./typesystem";
+import {Status} from "./typesystem";
 
 /**
  * this class is an abstract super type for every constraint that can select properties from objects
@@ -13,7 +15,7 @@ abstract class MatchesProperty extends ts.Constraint{
          return false;
      }
 
-    constructor(){super()}
+    constructor(private _type:ts.AbstractType){super()}
 
     check(i:any):ts.Status{
         throw new Error("Should be never called");
@@ -29,39 +31,95 @@ abstract class MatchesProperty extends ts.Constraint{
         }
         return ts.OK_STATUS;
     }
+
+    abstract propId():string
+
+
+    validateSelf(registry:ts.TypeRegistry):ts.Status {
+        if (this._type.isAnonymous()){
+            var st=this._type.validateType(registry);
+            if (!st.isOk()){
+                return new Status(Status.ERROR,0,"property "+this.propId()+" range type has error:"+st.getMessage())
+            }
+            return st;
+        }
+        if (this._type.isSubTypeOf(ts.UNKNOWN)||this._type.isSubTypeOf(ts.RECURRENT)){
+            return new Status(Status.ERROR,0,"property "+this.propId()+" refers to unknown type "+this._type.name())
+        }
+        if (this._type.isUnion()){
+           var ui= _.find(this._type.typeFamily(),x=>x.isSubTypeOf(ts.UNKNOWN));
+           if (ui){
+               return new Status(Status.ERROR,0,"property "+this.propId()+" refers to unknown type "+ui.name())
+           }
+        }
+        return ts.OK_STATUS;
+    }
 }
 /**
  * this is a constraint which checks that object has no unknown properties if at has not additional properties
  */
 export class KnownPropertyRestriction extends ts.Constraint{
 
-    constructor(){
-        super();
-    }
+
 
     facetName(){
-        return "onlyKnownProperties"
+        return "closed"
     }
 
     requiredType(){
         return ts.OBJECT;
     }
 
+    value(){
+        return true;
+    }
+
+    constructor(private _value: boolean){
+        super();
+    }
+
+    patchOwner(t:AbstractType){
+        this._owner=t;
+    }
+
     check(i:any):ts.Status{
-        var nm:{ [name:string]:boolean}={};
-        Object.getOwnPropertyNames(i).forEach(n=>nm[n]=true);
-        var mp:MatchesProperty[]=<MatchesProperty[]>this.owner().metaOfType(<any>MatchesProperty);
-        Object.getOwnPropertyNames(i).forEach(p=>{
-            mp.forEach(v=>{
-                if (v.matches(p)){
-                    delete nm[p];
+        if (this._value) {
+            if (typeof  i == 'object') {
+                var nm:{ [name:string]:boolean} = {};
+                Object.getOwnPropertyNames(i).forEach(n=>nm[n] = true);
+                var mp:MatchesProperty[] = <MatchesProperty[]>this.owner().metaOfType(<any>MatchesProperty);
+                Object.getOwnPropertyNames(i).forEach(p=> {
+                    mp.forEach(v=> {
+                        if (v.matches(p)) {
+                            delete nm[p];
+                        }
+                    });
+                })
+                if (Object.keys(nm).length > 0) {
+                    return ts.error("unmatched properties:" + Object.keys(nm).join(","));
                 }
-            });
-        })
-        if (Object.keys(nm).length>0){
-            return ts.error("unmatched properties:"+Object.keys(nm).join(","));
+            }
         }
         return ts.OK_STATUS;
+    }
+    composeWith(restriction:Constraint):Constraint{
+        if (!this._value){
+            return null;
+        }
+        if (restriction instanceof KnownPropertyRestriction) {
+            var  mm = <KnownPropertyRestriction> restriction;
+            if (_.isEqual(this.owner().propertySet(),mm.owner().propertySet())) {
+                return mm;
+            }
+        }
+        if (restriction instanceof HasProperty) {
+            var  ps = <HasProperty> restriction;
+            var name = ps.value();
+            var allowedPropertySet = this.owner().propertySet();
+            if (allowedPropertySet.indexOf(name)==-1) {
+                return this.nothing(ps);
+            }
+        }
     }
 }
 /**
@@ -76,7 +134,7 @@ export class HasProperty extends ts.Constraint{
         if (i.hasOwnProperty(this.name)){
             return ts.OK_STATUS;
         }
-        return ts.error("should have declareProperty: "+this.name);
+        return ts.error("object should have declared property: "+this.name);
     }
 
     requiredType(){
@@ -84,7 +142,11 @@ export class HasProperty extends ts.Constraint{
     }
 
     facetName(){
-        return "knownProperties"
+        return "hasProperty"
+    }
+
+    value(){
+        return this.name;
     }
 
     composeWith(r:Constraint):Constraint{
@@ -97,20 +159,14 @@ export class HasProperty extends ts.Constraint{
         return null;
     }
 }
-function intersect(t0:ts.AbstractType,t1:ts.AbstractType):ts.AbstractType{
-    return ts.intersect("X",[t0,t1]);
 
-}
-function release(t:ts.AbstractType){
-
-}
 /**
  * this constraint checks that property has a particular tyoe if exists
  */
 export class PropertyIs extends MatchesProperty{
 
     constructor(private name: string,private type:ts.AbstractType){
-        super();
+        super(type);
     }
     matches(s:string):boolean{
         return s===this.name;
@@ -126,9 +182,19 @@ export class PropertyIs extends MatchesProperty{
     requiredType(){
         return ts.OBJECT;
     }
+    propId(): string{
+        return this.name;
+    }
+
+    propertyName(){
+        return this.name;
+    }
 
     facetName(){
         return "propertyIs"
+    }
+    value(){
+        return this.type;
     }
 
     composeWith(t:ts.Constraint):ts.Constraint{
@@ -141,7 +207,7 @@ export class PropertyIs extends MatchesProperty{
                 if (pi.type.typeFamily().indexOf(this.type)!=-1){
                     return this;
                 }
-                    var intersectionType = intersect(this.type, pi.type);
+                    var intersectionType = this.intersect(this.type, pi.type);
                 try {
                     var is:ts.Status = intersectionType.checkConfluent();
                     if (!is.isOk()) {
@@ -150,7 +216,7 @@ export class PropertyIs extends MatchesProperty{
                     }
                     return new PropertyIs(this.name, intersectionType);
                 }finally {
-                    release(intersectionType);
+                    this.release(intersectionType);
                 }
             }
         }
@@ -163,7 +229,7 @@ export class PropertyIs extends MatchesProperty{
 export class MapPropertyIs extends MatchesProperty{
 
     constructor(private regexp: string,private type:ts.AbstractType){
-        super();
+        super(type);
     }
     matches(s:string):boolean{
        if (s.match(this.regexp)){
@@ -175,11 +241,20 @@ export class MapPropertyIs extends MatchesProperty{
     requiredType(){
         return ts.OBJECT;
     }
+     propId():string{
+         return '['+this.regexp+']'
+     }
 
     facetName(){
         return "mapPropertyIs"
     }
 
+    value(){
+        return this.type;
+    }
+    regexpValue(){
+        return this.regexp;
+    }
     composeWith(t:ts.Constraint):ts.Constraint{
         if (t instanceof MapPropertyIs){
             var pi:MapPropertyIs=t;
@@ -190,7 +265,7 @@ export class MapPropertyIs extends MatchesProperty{
                 if (pi.type.typeFamily().indexOf(this.type)!=-1){
                     return this;
                 }
-                var intersectionType = intersect(this.type, pi.type);
+                var intersectionType = this.intersect(this.type, pi.type);
                 try {
                     var is:ts.Status = intersectionType.checkConfluent();
                     if (!is.isOk()) {
@@ -199,7 +274,7 @@ export class MapPropertyIs extends MatchesProperty{
                     }
                     return new MapPropertyIs(this.regexp, intersectionType);
                 }finally {
-                    release(intersectionType);
+                    this.release(intersectionType);
                 }
             }
         }
@@ -207,14 +282,18 @@ export class MapPropertyIs extends MatchesProperty{
     }
 
     check(i:any):ts.Status{
-        Object.getOwnPropertyNames(i).forEach(n=>{
-            if (n.match(this.regexp)){
-                var stat=this.validateProp(i,n,this.type);
-                if (!stat.isOk()){
-                    return stat;
+        if (typeof i=='object') {
+            var rs:ts.Status=new ts.Status(ts.Status.OK,0,"");
+            Object.getOwnPropertyNames(i).forEach(n=> {
+                if (n.match(this.regexp)) {
+                    var stat = this.validateProp(i, n, this.type);
+                    if (!stat.isOk()) {
+                        rs.addSubStatus(stat);
+                    }
                 }
-            }
-        });
+            });
+            return rs;
+        }
         return ts.OK_STATUS;
     }
 }
@@ -224,20 +303,26 @@ export class MapPropertyIs extends MatchesProperty{
 export class AdditionalPropertyIs extends MatchesProperty{
 
     constructor(private type:ts.AbstractType){
-        super();
+        super(type);
     }
     matches(s:string):boolean{
-        return s===name;
+        return true;
     }
 
     requiredType(){
         return ts.OBJECT;
     }
+    propId():string{
+        return '[]'
+    }
+
 
     facetName(){
         return "additionalProperties"
     }
-
+    value(){
+        return this.type;
+    }
     match(n:string):boolean{
         var all:PropertyIs[]=<any>this.owner().metaOfType(<any>PropertyIs);
         var map:MapPropertyIs[]=<any>this.owner().metaOfType(<any>MapPropertyIs);
@@ -263,7 +348,7 @@ export class AdditionalPropertyIs extends MatchesProperty{
             if (pi.type.typeFamily().indexOf(this.type)!=-1){
                 return this;
             }
-            var intersectionType = intersect(this.type, pi.type);
+            var intersectionType = this.intersect(this.type, pi.type);
             try {
                 var is:ts.Status = intersectionType.checkConfluent();
                 if (!is.isOk()) {
@@ -272,7 +357,7 @@ export class AdditionalPropertyIs extends MatchesProperty{
                 }
                 return new AdditionalPropertyIs( intersectionType);
             }finally {
-                release(intersectionType);
+                this.release(intersectionType);
             }
 
         }
@@ -315,6 +400,13 @@ abstract class FacetRestriction<T> extends ts.Constraint{
         return ts.OK_STATUS;
     }
 
+}
+function is_int(value:any){
+    if((parseFloat(value) == parseInt(value)) && !isNaN(value)){
+        return true;
+    } else {
+        return false;
+    }
 }
 /**
  * abstract super type for every min max restriction
@@ -363,17 +455,24 @@ abstract class MinMaxRestriction extends FacetRestriction<Number>{
     }
 
     minValue(){
-        if (this._isInt&&!this._max){
+        if (this._isInt){
             return 0;
         }
-        return Number.MIN_VALUE;
+        return Number.NEGATIVE_INFINITY;
     }
     requiredType():ts.AbstractType{
         return this._requiredType;
     }
 
     checkValue():string{
-
+        if (typeof this._value !="number"){
+            return this.facetName()+" should be a number";
+        }
+        if (this.isIntConstraint()){
+            if (!is_int(this.value())){
+                return this.facetName()+" should be a integer";
+            }
+        }
         if (this.value()<this.minValue()){
             return this.facetName()+" should be at least "+this.minValue();
         }
@@ -631,6 +730,25 @@ export class ComponentShouldBeOfType extends FacetRestriction<ts.AbstractType>{
         }
         return rs;
     }
+    validateSelf(registry:ts.TypeRegistry):ts.Status {
+        if (this.type.isAnonymous()) {
+            var st = this.type.validateType(registry);
+            if (!st.isOk()) {
+                return new Status(Status.ERROR, 0,  "component type has error:" + st.getMessage())
+            }
+            return st;
+        }
+        if (this.type.isSubTypeOf(ts.UNKNOWN) || this.type.isSubTypeOf(ts.RECURRENT)) {
+            return new Status(Status.ERROR, 0, "component refers to unknown type " + this.type.name())
+        }
+        if (this.type.isUnion()) {
+            var ui = _.find(this.type.typeFamily(), x=>x.isSubTypeOf(ts.UNKNOWN));
+            if (ui) {
+                return new Status(Status.ERROR, 0, "component refers to unknown type " + ui.name())
+            }
+        }
+        return ts.OK_STATUS;
+    }
     composeWith(t:ts.Constraint):ts.Constraint{
         if (t instanceof ComponentShouldBeOfType){
             var pi:ComponentShouldBeOfType=t;
@@ -641,7 +759,7 @@ export class ComponentShouldBeOfType extends FacetRestriction<ts.AbstractType>{
                 if (pi.type.typeFamily().indexOf(this.type)!=-1){
                     return this;
                 }
-                var intersectionType = intersect(this.type, pi.type);
+                var intersectionType = this.intersect(this.type, pi.type);
                 try {
                     var is:ts.Status = intersectionType.checkConfluent();
                     if (!is.isOk()) {
@@ -650,7 +768,7 @@ export class ComponentShouldBeOfType extends FacetRestriction<ts.AbstractType>{
                     }
                     return new ComponentShouldBeOfType( intersectionType);
                 }finally {
-                    release(intersectionType);
+                    this.release(intersectionType);
                 }
 
         }
@@ -755,6 +873,10 @@ export class Enum extends FacetRestriction<string[]>{
         return this._value;
     }
     checkValue(){
+        if (!this.owner().isSubTypeOf(this.requiredType())){
+            return "enum facet can only be used with: "+this.requiredType().name();
+
+        }
         if (_.uniq(this._value).length<this._value.length){
             return "enum facet can only contain unique items";
         }

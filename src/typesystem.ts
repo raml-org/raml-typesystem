@@ -34,11 +34,24 @@ export class Status {
             this.message = st.message;
         }
     }
+
+    getSubStatuses():Status[]{
+        return this.subStatus;
+    }
+    getSeverity(){
+        return this.severity;
+    }
     getMessage() {
         return this.message;
     }
     getSource(){
         return this.source;
+    }
+    isWarning(){
+        return this.severity==Status.WARNING;
+    }
+    isError(){
+        return this.severity==Status.ERROR;
     }
     isOk(){
         return this.severity===Status.OK;
@@ -59,7 +72,7 @@ export function error(message:string){
     return new Status(Status.ERROR,0,message);
 }
 
-export abstract class TypeInformation{
+export abstract class TypeInformation {
 
     constructor(private _inheritable:boolean){}
 
@@ -77,6 +90,7 @@ export abstract class TypeInformation{
         return OK_STATUS;
     }
     abstract facetName():string
+    abstract value():any;
     abstract requiredType():AbstractType
 }
 var stack:RestrictionStackEntry=null;
@@ -88,6 +102,22 @@ export abstract class Constraint extends TypeInformation{
 
     abstract check(i:any):Status
 
+
+    private static intersections:{ [id:string]:AbstractType}={}
+
+    protected intersect(t0: AbstractType,t1:AbstractType):AbstractType{
+        var nm=t0.id()+""+t1.id();
+        if (Constraint.intersections.hasOwnProperty(nm)){
+            return Constraint.intersections[nm];
+        }
+        var is=intersect(nm,[t0,t1]);
+        Constraint.intersections[nm]=is;
+        return is;
+    }
+
+    protected release(t:AbstractType){
+        delete Constraint.intersections[t.name()];
+    }
 
     nothing(c:Constraint,message:string="Conflicting restrictions"):NothingRestrictionWithLocation{
         return new NothingRestrictionWithLocation(stack,message,c);
@@ -139,26 +169,35 @@ export abstract class Constraint extends TypeInformation{
 
 
 import restr=require("./restrictions")
+import metaInfo=require("./metainfo")
+import fr=require("./facetRegistry")
+
 import {KnownPropertyRestriction} from "./restrictions";
+import {FacetDeclaration} from "./metainfo";
+import {CustomFacet} from "./metainfo";
+import {PropertyIs} from "./restrictions";
 
 /**
  * Registry of the types
  */
-export class TypeRegistry{
-  private types:{[name:string]: AbstractType}={};
+export class TypeRegistry {
+  private _types:{[name:string]: AbstractType}={};
 
   private typeList:AbstractType[]=[]
 
 
 
   addType(t:AbstractType){
-     this.types[t.name()]=t;
+     if (t.isAnonymous()){
+         return;
+     }
+     this._types[t.name()]=t;
      this.typeList.push(t);
   }
 
   get(name: string ):AbstractType{
-      if (this.types.hasOwnProperty(name)){
-          return this.types[name];
+      if (this._types.hasOwnProperty(name)){
+          return this._types[name];
       }
       if (this._parent!=null){
           return this._parent.get(name);
@@ -170,7 +209,7 @@ export class TypeRegistry{
 
   }
 
-    allTypes(){
+    types():AbstractType[]{
         return this.typeList;
     }
 }
@@ -199,6 +238,7 @@ export class RestrictionsConflict extends Status{
         return new NothingRestrictionWithLocation(this._stack,this.message,this._conflicting);
     }
 }
+var globalId=0;
 
 export abstract class AbstractType{
 
@@ -207,6 +247,14 @@ export abstract class AbstractType{
     protected metaInfo: TypeInformation[]=[];
 
     _subTypes: AbstractType[]=[]
+
+    protected innerid=globalId++;
+
+
+    id():number{
+        return this.innerid;
+    }
+
 
     abstract kind():string;
 
@@ -224,8 +272,16 @@ export abstract class AbstractType{
 
     }
 
+    allFacets():TypeInformation[]{
+        return this.meta();
+    }
+
+    declaredFacets():TypeInformation[]{
+        return this.declaredMeta();
+    }
+
     isSubTypeOf(t:AbstractType):boolean{
-        return this===t|| this.allSuperTypes().indexOf(t)!=-1
+        return t===ANY||this===t|| this.allSuperTypes().indexOf(t)!=-1
     }
     isSuperTypeOf(t:AbstractType):boolean{
         return this===t|| this.allSubTypes().indexOf(t)!=-1
@@ -252,6 +308,105 @@ export abstract class AbstractType{
         return [];
     }
 
+    validateType(tr:TypeRegistry):Status{
+        var rs=new Status(Status.OK,0,"");
+        rs.addSubStatus(this.checkConfluent());
+        rs.addSubStatus(this.validateMeta(tr));
+        //if (this.isPolymorphic()||(this.isUnion())) {
+        //    rs.addSubStatus(this.canDoAc());
+        //}
+        this.validateHierarchy(rs);
+        this.superTypes().forEach(x=>{
+            if (x.isAnonymous()){
+                rs.addSubStatus(x.validateType(tr))
+            }
+        })
+        return rs;
+    }
+
+    private validateHierarchy(rs:Status) {
+
+        if (this.isSubTypeOf(RECURRENT)) {
+            rs.addSubStatus(new Status(Status.ERROR, 0, "recurrent type definition"))
+        }
+        if (this.isSubTypeOf(UNKNOWN)) {
+            rs.addSubStatus(new Status(Status.ERROR, 0, "inheriting from unknown type"))
+        }
+        if (this.isUnion()) {
+            var tf = this.typeFamily();
+            if (tf.some(x=>x.isSubTypeOf(RECURRENT))) {
+                rs.addSubStatus(new Status(Status.ERROR, 0, "recurrent type as an option of union type"))
+            }
+            if (tf.some(x=>x.isSubTypeOf(UNKNOWN))) {
+                rs.addSubStatus(new Status(Status.ERROR, 0, "unknown type as an option of union type"))
+            }
+        }
+    };
+
+    validateMeta(tr:TypeRegistry):Status{
+        var rs=new Status(Status.OK,0,"");
+        this.declaredMeta().forEach(x=>{
+            rs.addSubStatus(x.validateSelf(tr));
+        })
+
+        this.validateFacets(rs);
+        return rs;
+    }
+
+    private validateFacets(rs:Status) {
+        var fds:{ [name : string ]: FacetDeclaration} = {}
+        var super_facets:{ [name : string ]: FacetDeclaration} = {}
+        var rfds:{ [name : string ]: FacetDeclaration} = {}
+
+        this.meta().forEach(x=> {
+            if (x instanceof FacetDeclaration) {
+                var fd:FacetDeclaration = x;
+                fds[fd.facetName()] = fd;
+                if (!fd.isOptional()) {
+                    rfds[fd.facetName()] = fd;
+                }
+                if (fd.owner()!=this){
+                    super_facets[fd.facetName()]=fd;
+                }
+
+            }
+        })
+        this.declaredMeta().forEach(x=> {
+            if (x instanceof FacetDeclaration) {
+                var fd:FacetDeclaration = x;
+                if (fd.owner()==this){
+                    if (super_facets.hasOwnProperty(fd.facetName())){
+                        rs.addSubStatus(new Status(Status.ERROR, 0, "facet :" + fd.facetName()+" can not be overriden"))
+
+                    }
+                    var fp=fr.getInstance().facetPrototypeWithName(fd.facetName());
+                    if (fp&&fp.isApplicable(this)){
+                        rs.addSubStatus(new Status(Status.ERROR, 0, "built-in facet :" + fd.facetName()+" can not be overriden"))
+                    }
+                    if (fd.facetName().charAt(0)=='('){
+                        rs.addSubStatus(new Status(Status.ERROR, 0, "facet :" + fd.facetName()+" can not start from '('"))
+                    }
+                }
+            }
+        })
+
+        this.meta().forEach(x=> {
+            if (x instanceof CustomFacet) {
+                var cd:CustomFacet = x;
+                if (fds.hasOwnProperty(cd.facetName())) {
+                    var ft = fds[cd.facetName()].value();
+                    rs.addSubStatus(ft.validate((cd.value())));
+                    delete rfds[cd.facetName()];
+                }
+                else {
+                    rs.addSubStatus(new Status(Status.ERROR, 0, "specifying unknown facet:" + cd.facetName()))
+                }
+            }
+        })
+        if (Object.getOwnPropertyNames(rfds).length > 0) {
+            rs.addSubStatus(new Status(Status.ERROR, 0, "missing required facets:" + Object.keys(rfds).join(",")))
+        }
+    };
 
     public allSuperTypes():AbstractType[]{
         var rs:AbstractType[]=[];
@@ -290,7 +445,7 @@ export abstract class AbstractType{
      * @return true if type is an inplace type and has no name
      */
     isAnonymous():boolean{
-        return this.name===null||this.name.length==0;
+        return this._name===null||this._name.length===0;
     }
     /**
      *
@@ -307,7 +462,16 @@ export abstract class AbstractType{
     isArray():boolean{
         return this===<AbstractType>ARRAY||this.allSuperTypes().indexOf(ARRAY)!=-1;
     }
-
+    propertySet():string[]{
+        var rs:string[]=[]
+        this.meta().forEach(x=>{
+            if (x instanceof PropertyIs){
+                var p=<PropertyIs>x;
+                rs.push(p.propertyName());
+            }
+        });
+        return _.uniq(rs);
+    }
 
     checkConfluent():Status{
         if (this.computeConfluent){
@@ -387,19 +551,30 @@ export abstract class AbstractType{
      * @return true if type is an polymorphic type
      */
     isPolymorphic():boolean{
-        return this.metaInfo.some(x=>x instanceof Polymorphic)!=null;
+        return this.meta().some(x=>x instanceof Polymorphic);
     }
 
     /**
      * @return all restrictions associated with type
      */
     restrictions():Constraint[]{
+        if (this.isUnion()){
+            var rs:Constraint[]=[];
+            this.superTypes().forEach(x=>{
+                rs=rs.concat(x.restrictions());
+            });
+            rs=rs.concat(<Constraint[]>this.meta().filter(x=>x instanceof Constraint));
+            return rs;
+        }
         return <Constraint[]>this.meta().filter(x=>x instanceof Constraint);
     }
 
     isUnion():boolean{
         var rs=false;
-        this.superTypes().forEach(x=>rs=rs|| x.isUnion());
+        if (this.isBuiltin()){
+            return false;
+        }
+        this.allSuperTypes().forEach(x=>rs=rs|| x instanceof UnionType);
         return rs;
     }
 
@@ -441,7 +616,64 @@ export abstract class AbstractType{
      * make this type closed type (no unknown properties any more)
      */
     closeUnknownProperties(){
-        this.addMeta(new KnownPropertyRestriction())
+        this.addMeta(new KnownPropertyRestriction(true))
+    }
+
+    canDoAc():Status{
+        var tf:AbstractType[]= _.uniq(this.typeFamily());
+        var s=new Status(Status.OK,0,"");
+        for (var i=0;i<tf.length;i++){
+            for (var j=0;j<tf.length;j++){
+                if (i!=j){
+                    var t0=tf[i];
+                    var t1=tf[j];
+                    var ed=this.emptyIntersectionOrDiscriminator(t0,t1);
+                    s.addSubStatus(ed);
+                }
+            }
+        }
+        return s;
+    }
+
+    private emptyIntersectionOrDiscriminator(t0:AbstractType, t1:AbstractType):Status {
+        if (t1 === t0) {
+            return OK_STATUS;
+        }
+        if (t1.isScalar()&&t0.isScalar()){
+            return OK_STATUS;
+        }
+        var it = intersect("", [t0, t1]);
+        var innerCheckConfluent = it.checkConfluent();
+        if (innerCheckConfluent.isOk()) {
+            return this.checkDiscriminator(t0, t1);
+
+        }
+        return OK_STATUS;
+    }
+
+    checkDiscriminator(t1:AbstractType, t2:AbstractType):Status {
+        var found = new Status(Status.ERROR, 0, "can not discriminate types " + t1.name() + " and " + t2.name() + " without discriminator");
+        var oneMeta = t1.oneMeta(metaInfo.Discriminator);
+        var anotherMeta = t2.oneMeta(metaInfo.Discriminator);
+        if (oneMeta != null && anotherMeta != null && oneMeta.value() === (anotherMeta.value())) {
+
+            var d1 = t1.name();
+            var d2 = t2.name();
+            var dv1 = t1.oneMeta(metaInfo.DiscriminatorValue);
+            if (dv1 != null) {
+                d1 = dv1.value();
+            }
+            var dv2 = t2.oneMeta(metaInfo.DiscriminatorValue);
+            if (dv2 != null) {
+                d2 = dv2.value();
+            }
+            if (d1 !== d2) {
+                return OK_STATUS;
+            }
+            found = new Status(Status.ERROR, 0,
+                "types" + t1.name() + " and " + t2.name() + " have same discriminator value");
+        }
+        return found;
     }
 
     /**
@@ -453,7 +685,11 @@ export abstract class AbstractType{
         if (!this.isPolymorphic()&&!this.isUnion()){
             return this;
         }
-        var tf:AbstractType[]=this.typeFamily();
+
+        if (this.isBuiltin()){
+            return this;
+        }
+        var tf:AbstractType[]= _.uniq(this.typeFamily());
         if(tf.length==0){
             return NOTHING;
         }
@@ -485,7 +721,8 @@ export abstract class AbstractType{
         }
         var options:AbstractType[]=[];
         tf.forEach(x=>{
-            if (x.validateDirect(obj).isOk()){
+            var ds=x.validateDirect(obj);
+            if (ds.isOk()){
                 options.push(x);
             }
         })
@@ -559,6 +796,8 @@ export abstract class AbstractType{
         return <T>_.find(<any>this.meta(),x=>x instanceof clazz);
     }
 
+
+
     /**
      * return all instances of meta information of particular class
      * @param clazz
@@ -569,10 +808,14 @@ export abstract class AbstractType{
     }
 
 
+    declaredMeta():TypeInformation[]{
+        return this.metaInfo;
+    }
+
     descValue():any{
-        var dv=this.oneMeta(DiscriminatorValue);
+        var dv=this.oneMeta(metaInfo.DiscriminatorValue);
         if (dv){
-            return dv.value;
+            return dv.value();
         }
         return this.name();
     }
@@ -583,16 +826,16 @@ export abstract class AbstractType{
 
     public  typeFamily():AbstractType[] {
         if (this.isUnion()){
+            var res:AbstractType[]=[]
             this.allSuperTypes().forEach(x=>{
                 if (x instanceof UnionType){
                     var opts=x.allOptions();
-                    var rs:AbstractType[]=[];
                     for (var i=0;i<opts.length;i++){
-                        rs=rs.concat(opts[i].typeFamily());
+                        res=res.concat(opts[i].typeFamily());
                     }
-                    return _.unique(rs);
                 }
             })
+            return _.unique(res);
         }
         var rs:AbstractType[]=[];
         if (!this.isAbstractOrInternal()){
@@ -606,29 +849,7 @@ export abstract class AbstractType{
         return _.unique(rs);
     }
 }
-export class Discriminator extends TypeInformation{
 
-    constructor(public property: string){
-        super(true);
-    }
-
-    requiredType(){
-        return OBJECT;
-    }
-
-    facetName(){return "discriminator"}
-}
-
-export class DiscriminatorValue extends TypeInformation{
-    constructor(public value: string){
-        super(false);
-    }
-    facetName(){return "discriminatorValue"}
-
-    requiredType(){
-        return OBJECT;
-    }
-}
 abstract class Modifier extends TypeInformation{
 
     requiredType(){
@@ -639,12 +860,20 @@ export class Polymorphic extends Modifier{
 
     constructor(){super(true)}
     facetName(){
-        return "polymorhic";
+        return "polymorphic";
+    }
+
+    value(){
+        return true;
     }
 }
 export class Abstract extends Modifier{
 
     constructor(){super(false)}
+
+    value(){
+        return true;
+    }
 
     facetName(){
         return "abstract"
@@ -657,6 +886,10 @@ export class Internal extends Modifier{
     facetName(){
         return "abstract"
     }
+
+    value(){
+        return true;
+    }
 }
 
 class BuiltIn extends Modifier{
@@ -666,9 +899,12 @@ class BuiltIn extends Modifier{
     facetName(){
         return "builtIn"
     }
+    value(){
+        return true;
+    }
 }
 
-const BUILT_IN=new BuiltIn();
+var BUILT_IN=new BuiltIn();
 
 
 export class RootType extends AbstractType{
@@ -691,8 +927,18 @@ export class InheritedType extends AbstractType{
     }
     meta():TypeInformation[]{
         var rs=super.meta();
+        var hasKp=false;
         this.superTypes().forEach(x=>{
             x.meta().forEach(m=>{
+                if (m instanceof KnownPropertyRestriction){
+                    if (hasKp){
+                        return;
+                    }
+                    var kp=new KnownPropertyRestriction(true);
+                    kp.patchOwner(this);
+                    rs.push(kp);
+                    return;
+                }
                 if (m.isInheritable()){
                     rs.push(m);
                 }
@@ -731,6 +977,9 @@ export abstract class DerivedType extends AbstractType{
         });
         return _.unique(rs);
     }
+    options():AbstractType[]{
+        return this._options;
+    }
 
 }
 export class UnionType extends DerivedType{
@@ -739,6 +988,9 @@ export class UnionType extends DerivedType{
         return "union"
     }
 
+    validate(i:any):Status{
+        return this.validateDirect(i);
+    }
 
     public typeFamily():AbstractType[] {
         var res:AbstractType[]=[];
@@ -746,6 +998,19 @@ export class UnionType extends DerivedType{
             res=res.concat(x.typeFamily());
         });
         return res;
+    }
+
+
+    validateDirect(i:any):Status {
+        var st=new Status(Status.OK,0,"");
+        for (var j=0;j<this.options().length;j++){
+            var s=this.options()[j].validateDirect(i);
+            if (s.isOk()){
+                return s;
+            }
+            st.addSubStatus(s);
+        }
+        return st;
     }
 
     isUnion(){
@@ -811,8 +1076,8 @@ function select(obj:any,t0:AbstractType,t1:AbstractType):AbstractType{
             return t1;
         }
     }
-    var d0=t0.oneMeta(Discriminator);
-    var d1=t1.oneMeta(Discriminator);
+    var d0=t0.oneMeta(metaInfo.Discriminator);
+    var d1=t1.oneMeta(metaInfo.Discriminator);
     if (d0&&d1){
         if (d0.property===d1.property){
             var v0=t0.descValue();
@@ -848,6 +1113,9 @@ export class NothingRestriction extends Constraint{
         return "nothing";
     }
 
+    value(){
+        return "!!!"
+    }
 }
 export class RestrictionStackEntry{
 
@@ -890,6 +1158,10 @@ export class TypeOfRestriction extends Constraint{
             return OK_STATUS;
         }
         return error("should be "+this.val);
+    }
+
+    value(){
+        return this.val;
     }
 
 
@@ -937,6 +1209,10 @@ export class IntegerRestriction extends Constraint{
     facetName(){
         return "should be integer"
     }
+
+    value(){
+        return true;
+    }
 }
 
 export class OrRestriction extends Constraint{
@@ -952,7 +1228,9 @@ export class OrRestriction extends Constraint{
         }
         return error("all options failed");
     }
-
+    value(){
+        return this.val.map(x=>x.value());
+    }
     requiredType(){
         return ANY;
     }
@@ -965,7 +1243,9 @@ export class AndRestriction extends Constraint{
     constructor(private val: Constraint[]){
         super();
     }
-
+    value(){
+        return this.val.map(x=>x.value());
+    }
     options(){
         return this.val;
     }
@@ -994,6 +1274,8 @@ export class AndRestriction extends Constraint{
 export const ANY=new RootType("any");
 export const SCALAR=ANY.inherit("scalar");
 export const OBJECT=ANY.inherit("object");
+//export const POLYMORPHIC=OBJECT.inherit("polymorphic");
+
 export const ARRAY=ANY.inherit("array");
 export const NUMBER=SCALAR.inherit("number");
 export const INTEGER=NUMBER.inherit("integer");
@@ -1002,9 +1284,12 @@ export const STRING=SCALAR.inherit("string");
 export const DATE=SCALAR.inherit("date");
 export const FILE=SCALAR.inherit("file");
 export const NOTHING=new RootType("nothing");
+export const UNKNOWN=NOTHING.inherit("unknown");
+export const RECURRENT=NOTHING.inherit("unknown");
+
 
 ///
-
+//POLYMORPHIC.addMeta(new Polymorphic())
 ANY.addMeta(BUILT_IN);
 SCALAR.addMeta(BUILT_IN);
 OBJECT.addMeta(BUILT_IN);
@@ -1015,6 +1300,9 @@ BOOLEAN.addMeta(BUILT_IN);
 STRING.addMeta(BUILT_IN);
 DATE.addMeta(BUILT_IN);
 FILE.addMeta(BUILT_IN);
+//POLYMORPHIC.addMeta(BUILT_IN);
+UNKNOWN.addMeta(BUILT_IN);
+UNKNOWN.lock();
 
 ///lets register all types in registry
 
@@ -1028,6 +1316,7 @@ registry.addType(BOOLEAN);
 registry.addType(STRING);
 registry.addType(DATE);
 registry.addType(FILE);
+//registry.addType(POLYMORPHIC);
 
 NOTHING.addMeta(new NothingRestriction());
 NUMBER.addMeta(new TypeOfRestriction("number"));
@@ -1039,4 +1328,4 @@ INTEGER.addMeta(new IntegerRestriction());
 DATE.addMeta(new TypeOfRestriction("string"));
 FILE.addMeta(new TypeOfRestriction("string"));
 SCALAR.addMeta(new OrRestriction([new TypeOfRestriction("string"), new TypeOfRestriction("boolean"), new TypeOfRestriction("number")]));
-registry.allTypes().forEach(x=>x.lock())
+registry.types().forEach(x=>x.lock())

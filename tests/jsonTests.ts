@@ -1,0 +1,771 @@
+import ps= require("../src/parse")
+import ts = require("../src/typesystem")
+import chai = require("chai");
+import assert = chai.assert;
+
+describe("Simple validation testing",function() {
+    it("built in types exist", function () {
+        var tp=ps.parseJSON("Person",{
+            type: "string[]"
+        })
+        assert.isTrue(tp.isSubTypeOf(ts.ARRAY));
+    });
+    it("min length", function () {
+        var tp=ps.parseJSON("Person",{
+            type: "string",
+            minLength: 4
+        })
+        assert.isTrue(!tp.validate("123").isOk());
+        assert.isTrue(tp.validate("1234").isOk());
+    });
+    it("max length", function () {
+        var tp=ps.parseJSON("Person",{
+            type: "string",
+            maxLength: 4
+        })
+        assert.isTrue(!tp.validate("12345").isOk());
+        assert.isTrue(tp.validate("1234").isOk());
+    });
+    it("min items", function () {
+        var tp=ps.parseJSON("Person",{
+            type: "string[]",
+            minItems: 1
+        })
+        assert.isTrue(!tp.validate([]).isOk());
+        assert.isTrue(tp.validate(["1234"]).isOk());
+    });
+    it("max items", function () {
+        var tp=ps.parseJSON("Person",{
+            type: "string[]",
+            maxItems: 0
+        })
+        assert.isTrue(tp.validate([]).isOk());
+        assert.isTrue(!tp.validate(["1234"]).isOk());
+    });
+    it("min properties", function () {
+        var tp=ps.parseJSON("Person",{
+            type: "object",
+            minProperties: 1
+        })
+        assert.isTrue(!tp.validate({}).isOk());
+        assert.isTrue(tp.validate({d:2,e:3}).isOk());
+    });
+    it("max properties", function () {
+        var tp=ps.parseJSON("Person",{
+            type: "object",
+            maxProperties: 1
+        })
+        assert.isTrue(tp.validate({}).isOk());
+        assert.isTrue(tp.validate({d:2}).isOk());
+    });
+    it("min properties", function () {
+        var tp=ps.parseJSON("Person",{
+            type: "object",
+            minProperties: 1
+        })
+        assert.isTrue(!tp.validate({}).isOk());
+        assert.isTrue(tp.validate({d:2,e:3}).isOk());
+    });
+    it("minimum", function () {
+        var tp=ps.parseJSON("Person",{
+            type: "number",
+            minimum: 1
+        })
+        assert.isTrue(tp.validate(1).isOk());
+        assert.isTrue(!tp.validate(0).isOk());
+    });
+    it("maximum", function () {
+        var tp=ps.parseJSON("Person",{
+            type: "number",
+            maximum: 2
+        })
+        assert.isTrue(tp.validate(1).isOk());
+        assert.isTrue(!tp.validate(3).isOk());
+    });
+    it("pattern", function () {
+        var tp=ps.parseJSON("Person",{
+            type: "string",
+            pattern: "^.$"
+        })
+        assert.isTrue(tp.validate("d").isOk());
+        assert.isTrue(!tp.validate("dd").isOk());
+    });
+    it("enum", function () {
+        var tp=ps.parseJSON("Person",{
+            type: "string",
+            enum: ["a","b"]
+        })
+        assert.isTrue(tp.validate("a").isOk());
+        assert.isTrue(!tp.validate("dd").isOk());
+    });
+    it("hasProperty", function () {
+        var tp=ps.parseJSON("Person",{
+            type: "object",
+            properties:{
+                a: "any"
+            }
+        })
+        assert.isTrue(!tp.validate("a").isOk());
+        assert.isTrue(tp.validate({a:"dd"}).isOk());
+    });
+    it("known properties", function () {
+        var tp=ps.parseJSON("Person",{
+            type: "object",
+            properties:{
+                a: "any"
+            }
+        })
+        assert.isTrue(!tp.validate("a").isOk());
+        assert.isTrue(!tp.validate({a2:"dd"}).isOk());
+    });
+    it("additional properties", function () {
+        var tp=ps.parseJSON("Person",{
+            type: "object",
+            properties:{
+                a: "any",
+                "[]": "any"
+            }
+        })
+        var st=tp.validate({a: 3,a2:"dd"});
+        assert.isTrue(st.isOk());
+    });
+    it("property should be of type", function () {
+        var tp=ps.parseJSON("Person",{
+            type: "object",
+            properties:{
+                a: "string",
+                "[]": "any"
+            }
+        })
+        var st=tp.validate({a: 3,a2:"dd"});
+        assert.isTrue(!st.isOk());
+        var st=tp.validate({a: "3",a2:"dd"});
+        assert.isTrue(st.isOk());
+    });
+    it("additional property should be of type", function () {
+        var tp=ps.parseJSON("Person",{
+            type: "object",
+            properties:{
+                a: "string",
+                "[]": "string"
+            }
+        })
+        var st=tp.validate({a: "3",a2:4});
+        assert.isTrue(!st.isOk());
+        var st=tp.validate({a: "3",a2:"dd"});
+        assert.isTrue(st.isOk());
+    });
+    it("pattern property should be of type", function () {
+        var tp=ps.parseJSON("Person",{
+            type: "object",
+            properties:{
+                a: "string",
+                "[..]": "string"
+            }
+        })
+        var st=tp.validate({a: "3",a2:4});
+        assert.isTrue(!st.isOk());
+        var st=tp.validate({a: "3",a2:"dd"});
+        assert.isTrue(st.isOk());
+    });
+    it("pattern property has higher priotity", function () {
+        var tp=ps.parseJSON("Person",{
+            type: "object",
+            properties:{
+                "[]": "number",
+                "[..]": "string"
+            }
+        })
+        var st=tp.validate({a: "3",a2:4});
+        assert.isTrue(!st.isOk());
+        var st=tp.validate({a: 3,a2:"dd"});
+        assert.isTrue(st.isOk());
+    });
+    it("unique items", function () {
+        var tp=ps.parseJSON("Person",{
+            type: "number[]",
+            uniqueItems: true
+        })
+        var st=tp.validate([2,2]);
+        assert.isTrue(!st.isOk());
+        var st=tp.validate([2,3]);
+        assert.isTrue(st.isOk());
+    });
+    it ("inplace definition",function(){
+        var tp=ps.parseJSON("Person",{
+            type: "object",
+            properties:{
+                a: {
+                    type:"string",
+                    minLength: 3,
+                    maxLength: 5
+                },
+
+            }
+        })
+        assert.isTrue(tp.validate({a:"dddd"}).isOk());
+        assert.isTrue(!tp.validate({a:"dd"}).isOk());
+        assert.isTrue(!tp.validate({a:"ddddddd"}).isOk());
+    })
+})
+describe("Type to JSON tests",function() {
+    it("serialized simple type is same as original", function () {
+        var st={
+            type: "string[]"
+        };
+        var tp=ps.parseJSON("Person",st);
+        assert.deepEqual(st,ps.storeAsJSON(tp));
+    });
+    it("basic facets", function () {
+        var st={
+            type: "string[]",
+            minItems: 2
+        };
+        var tp=ps.parseJSON("Person",st);
+        assert.deepEqual(st,ps.storeAsJSON(tp));
+    });
+    it("annotations", function () {
+        var st={
+            type: "string[]",
+            "(minItems)": 2
+        };
+        var tp=ps.parseJSON("Person",st);
+        assert.deepEqual(st,ps.storeAsJSON(tp));
+    });
+    it("basic facets+wrong type", function () {
+        var st={
+            type: "string[]",
+            "minItems": "2"
+        };
+        var tp=ps.parseJSON("Person",st);
+        assert.deepEqual(st,ps.storeAsJSON(tp));
+    });
+    it("facet declarations", function () {
+        var st={
+            type: "string[]",
+            "facets": {
+                long: "string"
+            }
+        };
+        var tp=ps.parseJSON("Person",st);
+        assert.deepEqual(st,ps.storeAsJSON(tp));
+    });
+    it("facet declarations 2", function () {
+        var st={
+            type: "string[]",
+            "facets": {
+                "long?": "string"
+            }
+        };
+        var tp=ps.parseJSON("Person",st);
+        assert.deepEqual(st,ps.storeAsJSON(tp));
+    });
+    it("facet declarations 3", function () {
+        var st={
+            type: "string[]",
+            "facets": {
+                "long?": {
+                    type: "string | boolean",
+                    "(xx)": true
+                }
+            }
+        };
+        var tp=ps.parseJSON("Person",st);
+        assert.deepEqual(st,ps.storeAsJSON(tp));
+    });
+    it("facet declarations 3", function () {
+        var st={
+            type: "string[]",
+            "facets": {
+                "long?": {
+                    type: "string | boolean",
+                    "xml":
+                    {
+                        wrapped: true,
+                        name: "hello"
+                    }
+                }
+            }
+        };
+        var tp=ps.parseJSON("Person",st);
+        assert.deepEqual(st,ps.storeAsJSON(tp));
+    });
+    it("properties", function () {
+        var st={
+            type: "object",
+            "properties": {
+                "long?": {
+                    type: "string | boolean",
+                    "xml":
+                    {
+                        wrapped: true,
+                        name: "hello"
+                    }
+                }
+            }
+        };
+        var tp=ps.parseJSON("Person",st);
+        assert.deepEqual(st,ps.storeAsJSON(tp));
+    });
+    it("properties2", function () {
+        var st={
+            type: "object",
+            "properties": {
+                "long": "string",
+                "[]": "scalar"
+            }
+        };
+        var tp=ps.parseJSON("Person",st);
+        assert.deepEqual(st,ps.storeAsJSON(tp));
+    });
+
+    it("properties3", function () {
+        var st={
+            type: "object",
+            "properties": {
+                "long": "string",
+                "[xx]": "scalar"
+            }
+        };
+        var tp=ps.parseJSON("Person",st);
+        assert.deepEqual(st,ps.storeAsJSON(tp));
+    });
+    it("simple", function () {
+        var st="string";
+        var tp=ps.parseJSON("Person",st);
+        assert.deepEqual(st,ps.storeAsJSON(tp));
+    });
+    it("simple 2", function () {
+        var st="string[]";
+        var tp=ps.parseJSON("Person",st);
+        assert.deepEqual(st,ps.storeAsJSON(tp));
+    });
+})
+describe("Type collection parse and store",function(){
+    it ("simple collection",function(){
+        var st={
+            types:{
+                Person:
+                {
+                    type: "object",
+                    properties: {
+                        name: "string"
+                    }
+                },
+                General:
+                {
+                    type: "Person",
+                    properties:{
+                        rank: "string"
+                    }
+                }
+            }
+        };
+        var col=ps.parseJSONTypeCollection(st);
+        var general=col.getType("General");
+        assert.isTrue(general.validate({name: "P", rank:"Officer"}).isOk());
+    });
+    it ("simple collection 1",function(){
+        var st={
+            types:{
+                Person:
+                {
+                    type: "object",
+                    properties: {
+                        name: "string"
+                    }
+                },
+                General:
+                {
+                    type: "Person",
+                    properties:{
+                        rank: "string",
+                        team: "Person[]"
+                    }
+                }
+            }
+        };
+        var col=ps.parseJSONTypeCollection(st);
+        var general=col.getType("General");
+        assert.isTrue(general.validate({name: "P", rank:"Officer",team:[{ name:"P2"}]}).isOk());
+    });
+    it ("simple collection 2",function(){
+        var st={
+            types:{
+                Person:
+                {
+                    type: "object",
+                    closed: true,
+                    properties: {
+                        name: "string"
+                    }
+                },
+                General:
+                {
+                    type: "Person",
+                    closed: true,
+                    properties:{
+                        rank: "string",
+                        team: "Person[]"
+                    }
+                }
+            }
+        };
+        var col=ps.parseJSONTypeCollection(st);
+        var general=col.getType("General");
+        assert.isTrue(!general.validate({name: "P", rank:"Officer",team:[{ name:"P2",q:2}]}).isOk());
+    });
+    it ("simple collection 3",function(){
+        var st={
+            types:{
+                Person:
+                {
+                    type: "object",
+                    properties: {
+                        name: "string"
+                    }
+                },
+                General:
+                {
+                    type: "Person",
+                    properties:{
+                        rank: "string",
+                        team: "General[]"
+                    }
+                }
+            }
+        };
+        var col=ps.parseJSONTypeCollection(st);
+        var general=col.getType("General");
+        assert.isTrue(!general.validate({name: "P", rank:"Officer",team:[{ name:"P2",q:2}]}).isOk());
+    });
+    it ("simple collection 4",function(){
+        var st={
+            types:{
+                Person:
+                {
+                    type: "object",
+                    properties: {
+                        name: "string"
+                    }
+                },
+                General:
+                {
+                    type: "Person",
+                    properties:{
+                        rank: "string",
+                        team: "General[]"
+                    }
+                }
+            }
+        };
+        var col=ps.parseJSONTypeCollection(st);
+        var general=col.getType("General");
+        var instanceStatus=general.validate({name: "P", rank:"Officer",team:[{ name:"P2",rank:"Officer",team:[]}]});
+        assert.isTrue(instanceStatus.isOk());
+    });
+    it ("simple collection 5",function(){
+        var st={
+            types:{
+                Person:
+                {
+                    type: "object",
+                    properties: {
+                        name: "string"
+                    }
+                },
+                General:
+                {
+                    type: "Person",
+                    properties:{
+                        rank: "string",
+                        team: "Person[]"
+                    }
+                }
+            }
+        };
+        var col=ps.parseJSONTypeCollection(st);
+        var general=col.getType("Person");
+        var instanceStatus=general.validate({name: "P", rank:"Officer",team:[{ name:"P2",rank:"Officer",team:[]}]});
+        assert.isTrue(instanceStatus.isOk());
+    });
+    it ("simple collection 51",function(){
+        var st={
+            types:{
+                Person:
+                {
+                    type: "object",
+                    closed: true,
+                    properties: {
+                        name: "string"
+                    }
+                },
+                General:
+                {
+                    type: "Person",
+                    properties:{
+                        rank: "string",
+                        team: "Person[]"
+                    }
+                }
+            }
+        };
+        var col=ps.parseJSONTypeCollection(st);
+        var general=col.getType("Person");
+        var instanceStatus=general.validate({name: "P", rank:"Officer",team:[{ name:"P2",rank:"Officer",team:[],q:2}]});
+        assert.isTrue(!instanceStatus.isOk());
+    });
+    it ("simple collection 6",function(){
+        var st={
+            types:{
+                Person:
+                {
+                    type: "object",
+                    closed: true,
+                    properties: {
+                        name: "string"
+                    }
+                },
+                General:
+                {
+                    type: "Person",
+                    properties:{
+                        rank: "string",
+                        team: "Person[]"
+                    }
+                }
+            }
+        };
+        var col=ps.parseJSONTypeCollection(st);
+        var general=col.getType("General");
+        var instanceStatus=general.validate({name: "P", rank:"Officer",team:[{ name:"P2",rank:"Officer",team:[],q:2}]});
+        assert.isTrue(!instanceStatus.isOk());
+    });
+    it ("simple collection 7",function(){
+        var st={
+            types:{
+                Person:
+                {
+                    type: "object",
+                    closed: true,
+                    properties: {
+                        name: "string"
+                    }
+                },
+                General:
+                {
+                    type: "Person",
+                    closed: true,
+                    properties:{
+                        rank: "string",
+                        team: "(Person| General)[]"
+                    }
+                }
+            }
+        };
+        var col=ps.parseJSONTypeCollection(st);
+        var general=col.getType("General");
+        var instanceStatus=general.validate({name: "P", rank:"Officer",team:[{ name:"P2",rank:"Officer",team:[],q:2}]});
+        assert.isTrue(!instanceStatus.isOk());
+    });
+    it ("simple collection 8",function(){
+        var st={
+            types:{
+                Person:
+                {
+                    type: "object",
+                    properties: {
+                        name: "string"
+                    }
+                },
+                General:
+                {
+                    type: "Person",
+                    properties:{
+                        rank: "string",
+                        team: "(Person| General)[]"
+                    }
+                }
+            }
+        };
+        var col=ps.parseJSONTypeCollection(st);
+        var general=col.getType("General");
+        var instanceStatus=general.validate({name: "P", rank:"Officer",team:[{ name:"P2",rank:"Officer",team:[]}]});
+        assert.isTrue(instanceStatus.isOk());
+    });
+    it ("simple collection 9",function(){
+        var st={
+            types:{
+                Person:
+                {
+                    type: "object",
+                    closed: true,
+                    properties: {
+                        name: "string"
+                    }
+                },
+                General:
+                {
+                    type: "Person",
+                    properties:{
+                        rank: "string",
+                        team: "(Person| General)[]"
+                    }
+                }
+            }
+        };
+        var col=ps.parseJSONTypeCollection(st);
+        var general=col.getType("General");
+        var instanceStatus=general.validate({name: "P", rank:"Officer",team:[{ name:"P2",rank:"Officer"}]});
+        assert.isTrue(!instanceStatus.isOk());
+    });
+    it ("simple collection 91",function(){
+        var st={
+            types:{
+                Person:
+                {
+                    type: "General",
+                    properties: {
+                        name: "string"
+                    }
+                },
+                General:
+                {
+                    type: "Person",
+                    properties:{
+                        rank: "string",
+                        team: "(Person| General)[]"
+                    }
+                }
+            }
+        };
+        var col=ps.parseJSONTypeCollection(st);
+        var general=col.getType("General");
+        var instanceStatus=general.validate({name: "P", rank:"Officer",team:[{ name:"P2",rank:"Officer"}]});
+        assert.isTrue(!instanceStatus.isOk());
+    });
+    it ("simple collection 10",function(){
+        var st={
+            types:{
+                Person:
+                {
+                    type: "Person",
+                    properties: {
+                        name: "string"
+                    }
+                },
+                General:
+                {
+                    type: "Person | General"
+                }
+            }
+        };
+        var col=ps.parseJSONTypeCollection(st);
+        var general=col.getType("General");
+        var instanceStatus=general.validate({name: "P", rank:"Officer",team:[{ name:"P2",rank:"Officer"}]});
+        assert.isTrue(!instanceStatus.isOk());
+    });
+    it ("store type collecion",function(){
+        var st={
+            types:{
+                Person:
+                {
+                    type: "Person",
+                    properties: {
+                        name: "string"
+                    }
+                },
+                General:
+                {
+                    type: "Person | General"
+                }
+            }
+        };
+        var col=ps.parseJSONTypeCollection(st);
+        var q=ps.storeAsJSON(col);
+        assert.deepEqual(q,st);
+    });
+    it ("store type collection 2",function(){
+        var st={
+            types:{
+                Person:
+                {
+                    type: "Person",
+                    properties: {
+                        name: "string"
+                    }
+                },
+                General:
+                {
+                    properties: {
+                        title: "string"
+                    },
+                    type: "Person | General"
+                }
+            }
+        };
+        var col=ps.parseJSONTypeCollection(st);
+        var q=ps.storeAsJSON(col);
+        assert.deepEqual(q,st);
+    });
+    it ("store type collection 3",function(){
+        var st={
+            annotationTypes:
+            {
+                owner: "Person"
+            },
+            types:{
+                Person:
+                {
+                    type: "object",
+                    properties: {
+                        name: "string"
+                    }
+                },
+                General:
+                {
+                    properties: {
+                        title: "string"
+                    },
+                    type: "Person | General"
+                }
+            }
+        };
+        var col=ps.parseJSONTypeCollection(st);
+        var q=ps.storeAsJSON(col);
+        assert.deepEqual(q,st);
+    });
+    it ("store type collection 4",function(){
+        var st={
+            annotationTypes:
+            {
+                owner: "Person"
+            },
+            types:{
+                Person:
+                {
+                    type: "object",
+                    properties: {
+                        name: "string"
+                    },
+                    examples:{
+                        a: {
+                            content:{
+                                name: "A1"
+                            }
+                        },
+                        b: {
+                            content:{
+                                name: "A1"
+                            }
+                        }
+                    }
+                }
+            }
+        };
+        var col=ps.parseJSONTypeCollection(st);
+        var q=ps.storeAsJSON(col);
+        assert.deepEqual(q,st);
+    });
+
+});

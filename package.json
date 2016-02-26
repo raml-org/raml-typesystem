@@ -1,13 +1,19 @@
 {
-  "name": "raml-typesystem-ts-test",
-  "version": "0.0.1",
+  "name": "raml-typesystem",
+  "version": "0.0.2",
   "private": false,
+  "main": "src/index.js",
   "scripts": {
-    "prepublish": "typings install"
+    "test-cov": " ./node_modules/.bin/istanbul cover _mocha tests/*Tests.js",
+    "typings-for-idea": "node ./tools/createDeclarations",
+    "build-browser": "./node_modules/.bin/webpack --entry ./src/browser.js  --output-path ./browser --output-filename bundle.js --verbose --profile --display-modules "
   },
   "dependencies": {
-    "underscore": "^1.8.3"
+    "underscore": "^1.8.3",
+    "xml2js": "^0.4.16"
   },
+  "typings":"./src/index.d.ts"
+  ,
   "devDependencies": {
     "chai": "^2.2.0",
     "chai-as-promised": "^5.2.0",
@@ -22,6 +28,7 @@
     "gulp-sourcemaps": "^1.5.2",
     "gulp-typedoc": "^1.2.1",
     "gulp-typescript": "2.7.3",
+    "istanbul": "^0.4.2",
     "json-loader": "^0.5.1",
     "mocha": "^2.2.1",
     "typedoc": "^0.3.12",

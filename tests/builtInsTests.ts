@@ -4,7 +4,11 @@
 import chai = require("chai");
 import ts=require("../src/typesystem")
 import rs=require("../src/restrictions")
+import ms=require("../src/metainfo")
+
 import facetRegistry=require("../src/facetRegistry")
+import typeExpressions=require("../src/typeExpressions")
+
 import assert = chai.assert;
 import {NothingRestriction} from "../src/typesystem";
 import {MaxProperties} from "../src/restrictions";
@@ -118,7 +122,7 @@ describe("Simple instanceof tests",function() {
         var st=person.validateDirect({ name: 2});
         assert.isTrue(!st.isOk());
     });
-    it("properties are closed", function () {
+    it("properties can be closed", function () {
         var person= ts.deriveObjectType("Person");
         person.declareProperty("name",ts.STRING,false);
         person.declareProperty("age",ts.NUMBER,true);
@@ -509,13 +513,13 @@ describe("Type family",function(){
 });
 describe("Facet Registry",function() {
     it ("All facets",function (){
-        assert.equal(facetRegistry.allPrototypes().length,26);
+        assert.equal(facetRegistry.getInstance().allPrototypes().length,27);
     });
     it ("All object facets",function (){
-        assert.equal(facetRegistry.applyableTo(ts.OBJECT).length,16);
+        assert.equal(facetRegistry.getInstance().applyableTo(ts.OBJECT).length,17);
     });
     it ("All meta",function (){
-        assert.equal(facetRegistry.allMeta().length,9);
+        assert.equal(facetRegistry.getInstance().allMeta().length,10);
     });
 })
 describe("Automatic classification",function(){
@@ -609,7 +613,7 @@ describe("Automatic classification",function(){
     it("ac 11", function(){
         var p0=ts.deriveObjectType("Person");
         p0.addMeta(new ts.Polymorphic());
-        p0.addMeta(new ts.Discriminator("kind"))
+        p0.addMeta(new ms.Discriminator("kind"))
         p0.declareProperty("x",ts.STRING,false);
         p0.declareProperty("kind",ts.STRING,false);
         var p1=ts.derive("Person2",[p0]);
@@ -620,8 +624,8 @@ describe("Automatic classification",function(){
     it("ac 12", function(){
         var p0=ts.deriveObjectType("Person");
         p0.addMeta(new ts.Polymorphic());
-        p0.addMeta(new ts.Discriminator("kind"))
-        p0.addMeta(new ts.DiscriminatorValue("Person2"))
+        p0.addMeta(new ms.Discriminator("kind"))
+        p0.addMeta(new ms.DiscriminatorValue("Person2"))
         p0.declareProperty("x",ts.STRING,false);
         p0.declareProperty("kind",ts.STRING,false);
         var p1=ts.derive("Person2",[p0]);
@@ -632,12 +636,12 @@ describe("Automatic classification",function(){
     it("ac 13", function(){
         var p0=ts.deriveObjectType("Person");
         p0.addMeta(new ts.Polymorphic());
-        p0.addMeta(new ts.Discriminator("kind"))
-        p0.addMeta(new ts.DiscriminatorValue("Person2"))
+        p0.addMeta(new ms.Discriminator("kind"))
+        p0.addMeta(new ms.DiscriminatorValue("Person2"))
         p0.declareProperty("x",ts.STRING,false);
         p0.declareProperty("kind",ts.STRING,false);
         var p1=ts.derive("Person2",[p0]);
-        p1.addMeta(new ts.DiscriminatorValue("Person"))
+        p1.addMeta(new ms.DiscriminatorValue("Person"))
         p1.declareProperty("y",ts.STRING,false);
         var tr=p0.ac({x: "d",y:"b",kind:"Person"});
         assert.equal(tr,p1);
@@ -649,7 +653,7 @@ describe("Automatic classification",function(){
         p0.declareProperty("x",ts.STRING,false);
         p0.declareProperty("kind",ts.STRING,false);
         var p1=ts.derive("Person2",[p0]);
-        p1.addMeta(new ts.DiscriminatorValue("Person"))
+        p1.addMeta(new ms.DiscriminatorValue("Person"))
         p1.declareProperty("y",ts.STRING,false);
         var tr=p0.ac({x: "d",y:"b",kind:"Person"});
         assert.equal(tr,p1);
@@ -661,9 +665,9 @@ describe("Automatic classification",function(){
         p0.declareProperty("x",ts.STRING,false);
         p0.declareProperty("kind",ts.STRING,false);
         var p1=ts.derive("Person2",[p0]);
-        p1.addMeta(new ts.DiscriminatorValue("Person"))
+        p1.addMeta(new ms.DiscriminatorValue("Person"))
         var p1=ts.derive("Person3",[p0]);
-        p1.addMeta(new ts.DiscriminatorValue("Person"))
+        p1.addMeta(new ms.DiscriminatorValue("Person"))
         p1.declareProperty("y",ts.STRING,false);
         var tr=p0.ac({x: "d",y:"b",kind:"Person"});
         assert.equal(tr,ts.NOTHING);
@@ -671,15 +675,60 @@ describe("Automatic classification",function(){
     it("ac 16", function(){
         var p0=ts.deriveObjectType("Person");
         p0.addMeta(new ts.Polymorphic());
-        p0.addMeta(new ts.Discriminator("kind"))
+        p0.addMeta(new ms.Discriminator("kind"))
         p0.addMeta(new ts.Abstract())
         p0.declareProperty("x",ts.STRING,false);
         p0.declareProperty("kind",ts.STRING,false);
         var p1=ts.derive("Person2",[p0]);
-        p1.addMeta(new ts.DiscriminatorValue("Person"))
+        p1.addMeta(new ms.DiscriminatorValue("Person"))
         var p2=ts.derive("Person3",[p0]);
         p2.declareProperty("y",ts.STRING,false);
         var tr=p0.ac({x: "d",y:"b",kind:"Person"});
         assert.equal(tr,p1);
     });
 });
+describe("TypeExpressions",function() {
+    it ("Literal is parsed correctly",function (){
+        assert.equal(typeExpressions.parseToType("object",ts.builtInRegistry()),ts.OBJECT);
+    });
+    it ("basic array type is parsed",function (){
+        assert.isTrue(typeExpressions.parseToType("object[]",ts.builtInRegistry()).isSubTypeOf(ts.ARRAY));
+    });
+    it ("basic union type is parsed",function (){
+        assert.isTrue(typeExpressions.parseToType("number | string",ts.builtInRegistry()) instanceof ts.UnionType);
+    });
+    it ("union type in parens is parsed",function (){
+        assert.isTrue(typeExpressions.parseToType("(number | string)",ts.builtInRegistry()) instanceof ts.UnionType);
+    });
+    it ("union type in parens + [] is parsed",function (){
+        assert.isTrue(typeExpressions.parseToType("(number | string)[]",ts.builtInRegistry()).isSubTypeOf(ts.ARRAY));
+    });
+    it ("incorrect expression",function (){
+        assert.isTrue(typeExpressions.parseToType("ddd",ts.builtInRegistry()).isSubTypeOf(ts.UNKNOWN));
+    });
+    it ("incorrect expression2",function (){
+        assert.isTrue(typeExpressions.parseToType("((ddd",ts.builtInRegistry()).isSubTypeOf(ts.UNKNOWN));
+    });
+
+    it ("Literal is stored correctly",function (){
+        assert.equal(typeExpressions.storeToString(typeExpressions.parseToType("object",ts.builtInRegistry())),"object");
+    });
+    it ("basic array type is stored",function (){
+        assert.equal(typeExpressions.storeToString(typeExpressions.parseToType("object[]",ts.builtInRegistry())),"object[]");
+    });
+    it ("basic union type is parsed",function (){
+        assert.equal(typeExpressions.storeToString(typeExpressions.parseToType("number | string",ts.builtInRegistry())),"number | string");
+    });
+    it ("union type in parens is parsed",function (){
+        assert.equal(typeExpressions.storeToString(typeExpressions.parseToType("(number | string)",ts.builtInRegistry())),"number | string");
+    });
+    it ("union type in parens + [] is stored correctly",function (){
+        assert.equal(typeExpressions.storeToString(typeExpressions.parseToType("(number | string)[]",ts.builtInRegistry())),"(number | string)[]");
+    });
+    it ("incorrect expression stored",function (){
+        assert.equal(typeExpressions.storeToString(typeExpressions.parseToType("ddd[]",ts.builtInRegistry())),"ddd[]");
+    });
+    it ("incorrect expression2 stored",function (){
+        assert.equal(typeExpressions.storeToString(typeExpressions.parseToType("((ddd",ts.builtInRegistry())),"((ddd");
+    });
+})
