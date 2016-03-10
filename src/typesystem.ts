@@ -1,6 +1,6 @@
 /// <reference path="../typings/main.d.ts" />
 import _=require("underscore")
-
+import su=require("./schemaUtil")
 export class Status {
 
     public static CODE_CONFLICTING_TYPE_KIND = 4;
@@ -34,6 +34,15 @@ export class Status {
             this.message = st.message;
         }
     }
+    getErrors():Status[]{
+        if (this.isError()){
+            if (this.subStatus.length>0){
+                return this.subStatus.filter(x=>x.isError());
+            }
+            return [this];
+        }
+        return [];
+    }
 
     getSubStatuses():Status[]{
         return this.subStatus;
@@ -66,6 +75,7 @@ export class Status {
         return this.message;
     }
 }
+
 export const OK_STATUS=new Status(Status.OK,Status.OK,"");
 
 export function error(message:string){
@@ -176,7 +186,9 @@ import {KnownPropertyRestriction} from "./restrictions";
 import {FacetDeclaration} from "./metainfo";
 import {CustomFacet} from "./metainfo";
 import {PropertyIs} from "./restrictions";
+import {ComponentShouldBeOfType} from "./restrictions";
 
+export var autoCloseFlag=false;
 /**
  * Registry of the types
  */
@@ -185,7 +197,9 @@ export class TypeRegistry {
 
   private typeList:AbstractType[]=[]
 
-
+  put(alias:string, t:AbstractType){
+      this._types[alias]=t;
+  }
 
   addType(t:AbstractType){
      if (t.isAnonymous()){
@@ -250,6 +264,14 @@ export abstract class AbstractType{
 
     protected innerid=globalId++;
 
+    protected extras:{ [name:string]:any}={};
+
+    getExtra(name:string):any{
+        return this.extras[name];
+    }
+    putExtra(name:string,v:any){
+        this.extras[name]=v;
+    }
 
     id():number{
         return this.innerid;
@@ -310,25 +332,73 @@ export abstract class AbstractType{
 
     validateType(tr:TypeRegistry):Status{
         var rs=new Status(Status.OK,0,"");
-        rs.addSubStatus(this.checkConfluent());
-        rs.addSubStatus(this.validateMeta(tr));
+        this.validateHierarchy(rs);
+        if (rs.isOk()) {
+            rs.addSubStatus(this.checkConfluent());
+        }
+        this.validateMeta(tr).getErrors().forEach(x=>rs.addSubStatus(x));
         //if (this.isPolymorphic()||(this.isUnion())) {
         //    rs.addSubStatus(this.canDoAc());
         //}
-        this.validateHierarchy(rs);
+
         this.superTypes().forEach(x=>{
             if (x.isAnonymous()){
                 rs.addSubStatus(x.validateType(tr))
             }
         })
+        if (this.isObject()){
+            var required:{ [name:string]:boolean}={};
+            this.restrictions().forEach(x=>{
+                if (x.owner()!=this){
+                    if (x instanceof restr.HasProperty){
+                        required[x.value()]=true;
+                    }
+                }
+            });
+            this.declaredMeta().forEach(x=>{
+                if (x instanceof restr.HasProperty){
+                    delete required[x.value()];
+                }
+            })
+            this.declaredMeta().forEach(x=>{
+                if (x instanceof restr.PropertyIs){
+                    var pr:restr.PropertyIs=x;
+                    if (required.hasOwnProperty(pr.propertyName())){
+                        rs.addSubStatus(new Status(Status.ERROR,0,"Can not override required property:"+pr.propertyName()+" to be optional"));
+                    }
+                }
+            })
+        }
+        if (this.isExternal()){
+            var allS=this.allSuperTypes();
+            var mma:ExternalType[]=<ExternalType[]>allS.filter(x=>x instanceof ExternalType);
+            if (this instanceof ExternalType){
+                mma.push(<ExternalType><any>this);
+            }
+            mma.forEach(x=>{
+
+                if (x.isJSON()) {
+                    try {
+                        su.getJSONSchema(x.schema());
+                    } catch (e){
+                        rs.addSubStatus(new Status(Status.ERROR,0, e.message));
+                    }
+                }
+            });
+
+        }
         return rs;
     }
 
-    private validateHierarchy(rs:Status) {
+    public validateHierarchy(rs:Status) {
+        if (this.getExtra("topLevel")&&builtInRegistry().get(this.name())){
+            rs.addSubStatus(new Status(Status.ERROR, 0, "redefining builtin type:"+this.name()))
 
+        }
         if (this.isSubTypeOf(RECURRENT)) {
             rs.addSubStatus(new Status(Status.ERROR, 0, "recurrent type definition"))
         }
+
         if (this.isSubTypeOf(UNKNOWN)) {
             rs.addSubStatus(new Status(Status.ERROR, 0, "inheriting from unknown type"))
         }
@@ -341,12 +411,29 @@ export abstract class AbstractType{
                 rs.addSubStatus(new Status(Status.ERROR, 0, "unknown type as an option of union type"))
             }
         }
+        if (this.isArray()) {
+            var fs=this.familyWithArray();
+           if ((fs.indexOf(this)!=-1)||fs.some(x=>x===UNKNOWN||x===RECURRENT)){
+               rs.addSubStatus(new Status(Status.ERROR, 0, "recurrent array type definition"))
+           }
+        }
     };
+
+    private familyWithArray(){
+        var ts=this.allSuperTypes();
+        var mn=this.oneMeta(ComponentShouldBeOfType);
+        if (mn){
+            var at:AbstractType=mn.value();
+            ts=ts.concat(at.familyWithArray());
+        }
+        return ts;
+    }
 
     validateMeta(tr:TypeRegistry):Status{
         var rs=new Status(Status.OK,0,"");
         this.declaredMeta().forEach(x=>{
-            rs.addSubStatus(x.validateSelf(tr));
+            x.validateSelf(tr).getErrors().forEach(y=>rs.addSubStatus(y))
+
         })
 
         this.validateFacets(rs);
@@ -361,9 +448,12 @@ export abstract class AbstractType{
         this.meta().forEach(x=> {
             if (x instanceof FacetDeclaration) {
                 var fd:FacetDeclaration = x;
+
                 fds[fd.facetName()] = fd;
                 if (!fd.isOptional()) {
-                    rfds[fd.facetName()] = fd;
+                    if (fd.owner()!==this) {
+                        rfds[fd.facetName()] = fd;
+                    }
                 }
                 if (fd.owner()!=this){
                     super_facets[fd.facetName()]=fd;
@@ -445,7 +535,7 @@ export abstract class AbstractType{
      * @return true if type is an inplace type and has no name
      */
     isAnonymous():boolean{
-        return this._name===null||this._name.length===0;
+        return (!this._name)||this._name.length===0;
     }
     /**
      *
@@ -505,6 +595,14 @@ export abstract class AbstractType{
         return this==<AbstractType>OBJECT||this.allSuperTypes().indexOf(OBJECT)!=-1;
     }
 
+    /**
+     *
+     * @return true if type is object or inherited from object
+     */
+    isExternal():boolean{
+        return this==<AbstractType>EXTERNAL||this.allSuperTypes().indexOf(EXTERNAL)!=-1;
+    }
+
 
     /**
      *
@@ -540,6 +638,22 @@ export abstract class AbstractType{
 
     /**
      *
+     * @return true if type is scalar or inherited from scalar
+     */
+    isUnknown():boolean{
+        return this==<AbstractType>UNKNOWN||this.allSuperTypes().indexOf(UNKNOWN)!=-1;
+    }
+
+    /**
+     *
+     * @return true if type is scalar or inherited from scalar
+     */
+    isRecurrent():boolean{
+        return this==<AbstractType>RECURRENT||this.allSuperTypes().indexOf(RECURRENT)!=-1;
+    }
+
+    /**
+     *
      * @return true if type is an built-in type
      */
     isBuiltin():boolean{
@@ -569,6 +683,10 @@ export abstract class AbstractType{
         return <Constraint[]>this.meta().filter(x=>x instanceof Constraint);
     }
 
+    customFacets():TypeInformation[]{
+        return this.declaredMeta().filter(x=>x instanceof metaInfo.CustomFacet)
+    }
+
     isUnion():boolean{
         var rs=false;
         if (this.isBuiltin()){
@@ -587,13 +705,29 @@ export abstract class AbstractType{
     /**
      * validates object against this type without performing AC
      */
-    validateDirect(i:any):Status{
+    validateDirect(i:any,autoClose:boolean=false):Status{
         var result=new Status(Status.OK,0,"");
         this.restrictions().forEach(x=>result.addSubStatus(x.check(i)));
+        if ((autoClose||autoCloseFlag)&&this.isObject()&&(!this.oneMeta(KnownPropertyRestriction))){
+            var cp=new KnownPropertyRestriction(true);
+            cp.patchOwner(this);
+            cp.check(i).getErrors().forEach(x=>{
+                result.addSubStatus(new Status(Status.ERROR,0,"Object freshness warning:"+ x.getMessage()));
+            });
+        }
         return  result;
     }
-    validate(i:any):Status{
-        return this.ac(i).validateDirect(i);
+    validate(i:any,autoClose:boolean=false):Status{
+        var g=autoCloseFlag;
+        if (autoClose){
+            autoCloseFlag=true;
+        }
+        try {
+            return this.validateDirect(i, autoClose||g);
+        } finally {
+            autoCloseFlag=g;
+        }
+
     }
 
 
@@ -721,7 +855,7 @@ export abstract class AbstractType{
         }
         var options:AbstractType[]=[];
         tf.forEach(x=>{
-            var ds=x.validateDirect(obj);
+            var ds=x.validateDirect(obj,true);
             if (ds.isOk()){
                 options.push(x);
             }
@@ -1001,10 +1135,10 @@ export class UnionType extends DerivedType{
     }
 
 
-    validateDirect(i:any):Status {
+    validateDirect(i:any,autoClose:boolean=false):Status {
         var st=new Status(Status.OK,0,"");
         for (var j=0;j<this.options().length;j++){
-            var s=this.options()[j].validateDirect(i);
+            var s=this.options()[j].validateDirect(i,autoClose);
             if (s.isOk()){
                 return s;
             }
@@ -1150,14 +1284,19 @@ export class TypeOfRestriction extends Constraint{
         super();
     }
     check(i:any):Status {
-        var to=typeof i;
-        if (Array.isArray(i)){
-            to="array";
-        }
-        if (to===this.val){
-            return OK_STATUS;
-        }
-        return error("should be "+this.val);
+
+            var to = typeof i;
+            if (i===null||i===undefined){
+                to="null";
+            }
+            if (Array.isArray(i)) {
+                to = "array";
+            }
+            if (to === this.val) {
+                return OK_STATUS;
+            }
+            return error("should be " + this.val);
+
     }
 
     value(){
@@ -1221,12 +1360,15 @@ export class OrRestriction extends Constraint{
         super();
     }
     check(i:any):Status {
+        var cs=new Status(Status.OK,0,"");
         for (var j=0;j<this.val.length;j++){
-            if (this.val[j].check(i).isOk()){
+            var m=this.val[j].check(i);
+            if (m.isOk()){
                 return OK_STATUS;
             }
+            cs.addSubStatus(m);
         }
-        return error("all options failed");
+        return cs;
     }
     value(){
         return this.val.map(x=>x.value());
@@ -1277,6 +1419,7 @@ export const OBJECT=ANY.inherit("object");
 //export const POLYMORPHIC=OBJECT.inherit("polymorphic");
 
 export const ARRAY=ANY.inherit("array");
+export const EXTERNAL=ANY.inherit("external");
 export const NUMBER=SCALAR.inherit("number");
 export const INTEGER=NUMBER.inherit("integer");
 export const BOOLEAN=SCALAR.inherit("boolean");
@@ -1285,7 +1428,7 @@ export const DATE=SCALAR.inherit("date");
 export const FILE=SCALAR.inherit("file");
 export const NOTHING=new RootType("nothing");
 export const UNKNOWN=NOTHING.inherit("unknown");
-export const RECURRENT=NOTHING.inherit("unknown");
+export const RECURRENT=NOTHING.inherit("recurrent");
 
 
 ///
@@ -1303,6 +1446,9 @@ FILE.addMeta(BUILT_IN);
 //POLYMORPHIC.addMeta(BUILT_IN);
 UNKNOWN.addMeta(BUILT_IN);
 UNKNOWN.lock();
+RECURRENT.addMeta(BUILT_IN);
+RECURRENT.lock();
+EXTERNAL.lock();
 
 ///lets register all types in registry
 
@@ -1329,3 +1475,25 @@ DATE.addMeta(new TypeOfRestriction("string"));
 FILE.addMeta(new TypeOfRestriction("string"));
 SCALAR.addMeta(new OrRestriction([new TypeOfRestriction("string"), new TypeOfRestriction("boolean"), new TypeOfRestriction("number")]));
 registry.types().forEach(x=>x.lock())
+
+
+export class ExternalType extends InheritedType{
+
+    constructor( name: string,private _content:string,private json:boolean){
+        super(name);
+        this.addMeta(new restr.MatchToSchema(_content));
+        this.addSuper(EXTERNAL);
+    }
+
+    kind():string{
+        return "external";
+    }
+    isJSON(){
+        return this.json;
+    }
+
+    schema(){
+        return this._content;
+    }
+
+}

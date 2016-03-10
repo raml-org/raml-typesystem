@@ -11,6 +11,7 @@ import {HasProperty} from "./restrictions";
 import {AdditionalPropertyIs} from "./restrictions";
 import {MapPropertyIs} from "./restrictions";
 import {TypeRegistry} from "./typesystem";
+import {ComponentShouldBeOfType} from "./restrictions";
 enum NodeKind{
     SCALAR,
     ARRAY,
@@ -32,7 +33,7 @@ export interface ParseNode {
 
 class JSObjectNode implements ParseNode{
 
-    constructor(private _key:string,private obj:any){
+    constructor(private _key:string,private obj:any,private inArr:boolean=false){
     }
 
     value(){
@@ -40,9 +41,20 @@ class JSObjectNode implements ParseNode{
     }
 
     key(){
+        if (!this._key){
+            if (this.kind()===NodeKind.MAP&&this.inArr){
+                var l=Object.keys(this.obj);
+                if (l.length===1){
+                    return l[0];
+                }
+            }
+        }
         return this._key;
     }
     childWithKey(k:string):ParseNode{
+        if (this.obj==null){
+            return null;
+        }
         if (this.obj.hasOwnProperty(k)){
             return new JSObjectNode(k,this.obj[k]);
         }
@@ -51,14 +63,17 @@ class JSObjectNode implements ParseNode{
 
     children():JSObjectNode[]{
         if (Array.isArray(this.obj)){
-            return (<any[]>this.obj).map(x=>new JSObjectNode(null,x));
+            return (<any[]>this.obj).map(x=>new JSObjectNode(null,x,true));
         }
-        else if (typeof this.obj=="object"){
+        else if (this.obj&&typeof this.obj=="object"){
             return Object.keys(this.obj).map(x=>new JSObjectNode(x,this.obj[x]));
         }
         return []
     }
     kind():NodeKind{
+        if (!this.obj){
+            return NodeKind.SCALAR;
+        }
         if (Array.isArray(this.obj)){
             return NodeKind.ARRAY;
         }
@@ -103,10 +118,19 @@ export class PropertyBean{
 export class TypeCollection {
     private _types:AbstractType[]=[];
     private _typeMap:{[name:string]:AbstractType}={};
-
+    private uses:{ [name: string]: TypeCollection }={}
 
     private _annotationTypes:AbstractType[]=[];
     private _annotationTypeMap:{[name:string]:AbstractType}={};
+
+
+    library(n:string){
+        return this.uses[n];
+    }
+
+    addLibrary(n:string,t: TypeCollection){
+        this.uses[n]=t;
+    }
 
 
     add(t:AbstractType){
@@ -143,6 +167,18 @@ export class TypeCollection {
     getAnnotationTypeRegistry():TypeRegistry{
         var r=new TypeRegistry(ts.builtInRegistry());
         this.annotationTypes().forEach(x=>r.addType(x));
+        Object.keys(this.uses).forEach(x=>{
+            this.uses[x].annotationTypes().forEach(y=>r.put(x+"."+ y.name(),y));
+        })
+        return r;
+    }
+    getTypeRegistry():TypeRegistry{
+        var r=new TypeRegistry(ts.builtInRegistry());
+        this.types().forEach(x=>r.addType(x));
+
+        Object.keys(this.uses).forEach(x=>{
+            this.uses[x].types().forEach(y=>r.put(x+"."+ y.name(),y));
+        })
         return r;
     }
 }
@@ -150,16 +186,22 @@ export class TypeCollection {
 export class AccumulatingRegistry extends ts.TypeRegistry{
 
 
-    constructor(private toParse:ParseNode,ts:ts.TypeRegistry){
+    constructor(private toParse:ParseNode,private schemas:ParseNode,ts:ts.TypeRegistry,private _c:TypeCollection){
         super(ts)
     }
+
+
     parsing:{ [name:string]:boolean}={};
 
     get(name: string ):ts.AbstractType{
         var result=super.get(name);
+
         if (!result){
 
-            var chld=this.toParse.childWithKey(name)
+            var chld=this.toParse?this.toParse.childWithKey(name):null;
+            if (!chld){
+                chld=this.schemas?this.schemas.childWithKey(name):null;
+            }
             if (chld){
                 if (this.parsing[name]){
                     return ts.derive(name,[ts.RECURRENT]);
@@ -173,6 +215,20 @@ export class AccumulatingRegistry extends ts.TypeRegistry{
                 }
                 return tp;
             }
+            else{
+                var dt=name.indexOf('.');
+                if (dt!=-1){
+                    var ln=name.substring(0,dt);
+                    var tn=name.substr(dt+1);
+                    var lib=this._c.library(ln);
+                    if (lib){
+                        var t=lib.getType(tn);
+                        if (t){
+                            return t;
+                        }
+                    }
+                }
+            }
         }
         return result;
     }
@@ -182,22 +238,89 @@ export function parseTypes(n:any,tr:ts.TypeRegistry=ts.builtInRegistry()):TypeCo
     return parseTypeCollection(new JSObjectNode(null,n),tr);
 }
 
+class WrapArrayNode implements ParseNode{
+    constructor(private n:ParseNode){
+
+
+    }
+    key():string{
+        return null
+    }
+
+    value():any{
+        return null;
+    }
+    childWithKey(k:string):ParseNode{
+        var r=this.children();
+        for (var i=0;i< r.length;i++){
+            if (r[i].key()==k){
+                return r[i];
+            }
+        }
+        return null;
+    }
+
+    children():ParseNode[]{
+        return this.n.children().map(x=>{
+            var c=x.children();
+            if (c.length==1){
+                return c[0];
+            }
+            return x;
+        });
+    }
+
+
+    kind():NodeKind{
+        return NodeKind.MAP;
+    }
+}
+
+function  transformToArray(n:ParseNode):ParseNode{
+    return new WrapArrayNode(n);
+}
+
 export function parseTypeCollection(n:ParseNode,tr:ts.TypeRegistry):TypeCollection{
     var result=new TypeCollection();
-    var tpes=n.childWithKey("types");
-    var reg=tr;
-    if (tpes!=null){
-        var ar=new AccumulatingRegistry(tpes,tr)
-        tpes.children().forEach(x=>{
-            ar.get(x.key());
-        });
-        ar.types().forEach(x=>result.add(x));
-        reg=ar;
+    var uses=n.childWithKey("uses");
+    if (uses&&uses.kind()===NodeKind.ARRAY){
+        uses=transformToArray(uses);
     }
-    var tpes=n.childWithKey("annotationTypes");
-    if (tpes!=null){
+    if (uses&&uses.kind()===NodeKind.MAP){
+        uses.children().forEach(c=>{
+            result.addLibrary(c.key(),parseTypeCollection(c,tr));
+        })
+    }3
+
+    var tpes=n.childWithKey("types");
+    if (tpes&&tpes.kind()===NodeKind.ARRAY){
+        tpes=transformToArray(tpes);
+    }
+
+    var schemas=n.childWithKey("schemas");
+    if (schemas&&schemas.kind()===NodeKind.ARRAY){
+        schemas=transformToArray(schemas);
+    }
+    var reg=new AccumulatingRegistry(tpes,schemas,tr,result);
+    if (tpes&&tpes.kind()!==NodeKind.SCALAR){
         tpes.children().forEach(x=>{
-           result.addAnnotationType(parse(x.key(),x,reg))
+            reg.get(x.key());
+        });
+    }
+    if (schemas&&schemas.kind()!==NodeKind.SCALAR){
+        schemas.children().forEach(x=>{
+
+            reg.get(x.key());
+        });
+    }
+    reg.types().forEach(x=>result.add(x));
+    var tpes=n.childWithKey("annotationTypes");
+    if (tpes&&tpes.kind()===NodeKind.ARRAY){
+        tpes=transformToArray(tpes);
+    }
+    if (tpes!=null&&tpes.kind()===NodeKind.MAP){
+        tpes.children().forEach(x=>{
+           result.addAnnotationType(parse(x.key(),x,reg,false,true))
         });
     }
     return result;
@@ -210,7 +333,7 @@ export function parsePropertyBean(n:ParseNode,tr:ts.TypeRegistry):PropertyBean{
         name=name.substr(0,name.length-1);
         result.optional=true;
     }
-    if (name==='[]'){
+    if (name==='[]'||name.length==0){
         result.additonal=true;
 
     }
@@ -458,16 +581,30 @@ function typeToSignature(t:ts.AbstractType):string{
  * @param r
  * @returns {any}
  */
-export function parse(name: string,n:ParseNode,r:ts.TypeRegistry=ts.builtInRegistry()):ts.AbstractType{
+export function parse(name: string,n:ParseNode,r:ts.TypeRegistry=ts.builtInRegistry(),defaultsToAny:boolean=false,annotation:boolean=false):ts.AbstractType{
     //Build super types.
     if (n.kind()==NodeKind.SCALAR){
-        var sp=typeExpressions.parseToType(""+n.value(),r);
+        var sp= n.value()?typeExpressions.parseToType(""+n.value(),r):ts.STRING;
         if (name==null){
             return sp;
         }
         var res=ts.derive(name,[sp]);
         if (r instanceof AccumulatingRegistry){
             r.addType(res);
+
+            res.putExtra("topLevel",true);
+        }
+        return res;
+    }
+    if (n.kind()==NodeKind.ARRAY){
+        var supers:ts.AbstractType[]=[];
+        n.children().forEach(x=>{
+            supers.push(typeExpressions.parseToType(""+x.value(),r))
+        })
+        var res=ts.derive(name,supers);
+        if (r instanceof AccumulatingRegistry){
+            r.addType(res);
+            res.putExtra("topLevel",true);
         }
         return res;
     }
@@ -477,11 +614,21 @@ export function parse(name: string,n:ParseNode,r:ts.TypeRegistry=ts.builtInRegis
         tp=n.childWithKey("schema");
     }
     if (!tp){
-        if (n.childWithKey("properties")){
-            superTypes=[ts.OBJECT];
+        if (defaultsToAny){
+            if (n.childWithKey("properties")) {
+                superTypes = [ts.OBJECT];
+                }
+            else {
+                superTypes = [ts.ANY];
+            }
         }
-        else{
-            superTypes=[ts.STRING];
+        else {
+            if (n.childWithKey("properties")) {
+                superTypes = [ts.OBJECT];
+            }
+            else {
+                superTypes = [ts.STRING];
+            }
         }
     }
     else{
@@ -493,15 +640,33 @@ export function parse(name: string,n:ParseNode,r:ts.TypeRegistry=ts.builtInRegis
         }
     }
     var result=ts.derive(name,superTypes);
+
+
+    var actualResult=result;
+    var repeat= n.childWithKey("repeat");
+    if (repeat&&repeat.value()==true){
+        actualResult=ts.derive(name,[ts.ARRAY]);
+        actualResult.addMeta(new ComponentShouldBeOfType(result));
+    }
     if (r instanceof AccumulatingRegistry){
-        r.addType(result);
+        r.addType(actualResult);
+        actualResult.putExtra("topLevel",true);
     }
     n.children().forEach(x=>{
         var key = x.key();
+        if (!key){
+            return;
+        }
         if (key==="type"){
             return;
         }
-        if (key=="properties"){
+        if (key==="repeat"){
+            return;
+        }
+        if (key==="schema"){
+            return;
+        }
+        if (key=="properties"||key=="additionalProperties"||key=="patternProperties"){
             if (result.isSubTypeOf(ts.OBJECT)){
                 return;
             }
@@ -518,7 +683,12 @@ export function parse(name: string,n:ParseNode,r:ts.TypeRegistry=ts.builtInRegis
             result.addMeta(vl);
         }
         else{
-            result.addMeta(new meta.CustomFacet(key, x.value()));
+            if (annotation&&key==="allowedTargets"){
+                result.addMeta(new meta.AllowedTargets(x.value()));
+            }
+            else {
+                result.addMeta(new meta.CustomFacet(key, x.value()));
+            }
         }
     });
     if (result.isSubTypeOf(ts.OBJECT)) {
@@ -532,7 +702,20 @@ export function parse(name: string,n:ParseNode,r:ts.TypeRegistry=ts.builtInRegis
                 });
             }
         }
-
+        var ap= n.childWithKey("additionalProperties");
+        if (ap){
+            var pb=parsePropertyBean(ap,r);
+            result.addMeta(new AdditionalPropertyIs(pb.type));
+        }
+        var props=n.childWithKey("patternProperties");
+        if (props) {
+            if (props.kind() == NodeKind.MAP) {
+                props.children().forEach(x=> {
+                    var pb=parsePropertyBean(x, r);
+                    result.declareMapProperty(pb.id,pb.type);
+                });
+            }
+        }
     }
     var props=n.childWithKey("facets");
     if (props){
@@ -551,5 +734,5 @@ export function parse(name: string,n:ParseNode,r:ts.TypeRegistry=ts.builtInRegis
     if (n.kind()!=NodeKind.SCALAR){
         result.addMeta(new meta.NotScalar());
     }
-    return result;
+    return actualResult;
 }

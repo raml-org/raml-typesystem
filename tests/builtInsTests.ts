@@ -732,3 +732,9 @@ describe("TypeExpressions",function() {
         assert.equal(typeExpressions.storeToString(typeExpressions.parseToType("((ddd",ts.builtInRegistry())),"((ddd");
     });
 })
+describe("Extras",function() {
+
+    it ("has property accept null",function (){
+        assert.isTrue(new rs.HasProperty("a").check(null).isOk());
+    });
+})

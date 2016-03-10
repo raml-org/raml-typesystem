@@ -1,6 +1,7 @@
 import typeExpression=require("./typeExpressionParser")
 import ts=require("./typesystem")
 import {ComponentShouldBeOfType} from "./restrictions";
+import {AdditionalPropertyIs} from "./restrictions";
 export interface BaseNode{
     type:string
 }
@@ -21,8 +22,26 @@ export interface Literal extends BaseNode{
 
 export function parseToType(val:string,t:ts.TypeRegistry):ts.AbstractType{
     try {
+
+        var q=val.trim();
+        var json=q.charAt(0)=='{';
+        if (json || q.charAt(0)=='<'){
+            return new ts.ExternalType("",q,json);
+        }
+        var mapShortCutIndex=val.indexOf("{}");
+        var isMap:boolean=false;
+        if (mapShortCutIndex!=-1){
+            isMap=true;
+            val=val.substr(0,val.length-2);
+        }
         var node:BaseNode = typeExpression.parse(val);
-        return parseNode(node, t);
+        var result= parseNode(node, t);
+        if (isMap){
+            var tp=ts.derive("",[ts.OBJECT]);
+            tp.addMeta(new AdditionalPropertyIs(result));
+            return tp;
+        }
+        return result;
     } catch (e){
         return ts.derive(val,[ts.UNKNOWN]);
     }

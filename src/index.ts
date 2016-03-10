@@ -6,8 +6,8 @@ import {Annotation} from "./metainfo";
 import {CustomFacet} from "./metainfo";
 import {FacetDeclaration} from "./metainfo";
 import {Status} from "./typesystem";
-
-
+import nm=require("./nominals")
+import nt=require("./nominal-types")
 export interface IStatus {
 
 
@@ -38,6 +38,10 @@ export interface IStatus {
      * return an object which raised this status
      */
     getSource():any
+
+    getErrors():IStatus[];
+
+
 }
 /**
  * this is a common super interface for restrictions and meta data
@@ -110,6 +114,9 @@ export interface IParsedTypeCollection {
      * lists annotation types defined in this collection
      */
     annotationTypes():IParsedType[]
+
+    getTypeRegistry():ITypeRegistry;
+    getAnnotationTypeRegistry():ITypeRegistry;
 }
 export  interface ITypeRegistry {
 
@@ -162,7 +169,7 @@ export interface IParsedType {
      * validates a potential instance of type and returns a status describing the results of validation
      * @param i
      */
-    validate(i:any): IStatus
+    validate(i:any,autoClose?:boolean): IStatus
 
     validateType(reg:ITypeRegistry):IStatus
 
@@ -179,6 +186,52 @@ export interface IParsedType {
      * returns  meta information and restrictions associated with the type only declared facets are included
      */
     declaredFacets():ITypeFacet[]
+
+    /**
+     * returns array of custom facets directly declared on this type
+     */
+    customFacets():ITypeFacet[]
+
+    /**
+     * returns array of custom facets directly declared on this type
+     */
+    restrictions():ITypeFacet[]
+
+    /**
+     * returns true if this type inherits from object type
+     */
+    isObject():boolean
+    /**
+     * returns true if this type inherits from string type
+     */
+    isString():boolean
+    /**
+     * returns true if this type inherits from number type
+     */
+    isNumber():boolean
+    /**
+     * returns true if this type inherits from array type
+     */
+    isArray():boolean
+    /**
+     * returns true if this type inherits from scalar type
+     */
+    isScalar():boolean
+
+    /**
+     * returns true if this type is a union type
+     */
+    isUnion():boolean
+
+    /**
+     * returns true if this type inhetits from an unknown type
+     */
+    isUnknown(): boolean;
+
+    /**
+     * returns true if this type has recurrent definition;
+     */
+    isRecurrent():boolean;
 }
 
 
@@ -360,7 +413,7 @@ export interface ITypeCollection {
  * @param data
  * @returns {TypeCollection}
  */
-function loadTypeCollection(data:ITypeCollection):IParsedTypeCollection {
+export function loadTypeCollection(data:ITypeCollection):IParsedTypeCollection {
     return tc.parseJSONTypeCollection(data, ts.builtInRegistry());
 }
 /**
@@ -385,6 +438,16 @@ export function parse(data:IType| ITypeCollection):IParsedType|IParsedTypeCollec
     }
 }
 
+/**
+ * parses a type  from a JSON structure, uses second argument to resolve types
+ * @param data
+ * @returns {any}
+ */
+export function parseType(data:IType, collection:IParsedTypeCollection):IParsedType {
+
+   return tc.parseJSON(null, data,collection?<ts.TypeRegistry>collection.getTypeRegistry():ts.builtInRegistry());
+
+}
 /**
  * kind of the node
  */
@@ -433,7 +496,14 @@ export interface IParseNode {
 export function parseFromAST(data:IParseNode):IParsedTypeCollection {
      return tc.parseTypeCollection(<any>data, ts.builtInRegistry());
 }
-
+/**
+ * parses type collection definition from a JSON structure
+ * @param data
+ * @returns {any}
+ */
+export function parseTypeFromAST(name:string,data:IParseNode,collection:IParsedTypeCollection,defaultsToAny:boolean=false,annotation:boolean=false):IParsedType {
+    return tc.parse(name,<any>data,collection? <ts.TypeRegistry>collection.getTypeRegistry():ts.builtInRegistry(),defaultsToAny,annotation);
+}
 /**
  * dumps type or type collection to JSON
  * @param ts
@@ -449,8 +519,10 @@ export function dump(ts:IParsedType|IParsedTypeCollection):ITypeCollection|IType
  * @param t - type definition
  * @returns {IStatus}
  */
-export function validate(i:any, t:IParsedType):IStatus {
-    return t.validate(i);
+export function validate(i:any, t:IParsedType,autoClose:boolean=false):IStatus {
+    ts.autoCloseFlag=autoClose;
+    return t.validate(i,autoClose);
+    ts.autoCloseFlag=false;
 }
 
 /***
@@ -636,3 +708,6 @@ export class TypeConstructor {
     }
 }
 
+//export function nominal(t:ts.AbstractType):nt.AbstractType{
+//    return nm.toNominal(t);
+//}

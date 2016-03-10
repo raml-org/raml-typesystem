@@ -1431,6 +1431,24 @@ describe("Type hierarchy related",function(){
             assert.isTrue(!st.isOk());
 
     })
+    it("type recursion arras",function(){
+
+        var tp = ps.parseJSONTypeCollection({
+
+            types: {
+                MyNumber: "MyNumber3[]",
+
+                MyNumber3:{
+                    type: "MyNumber[]",
+
+
+                }
+            }
+        })
+        var st= tp.getType("MyNumber").validateType(tp.getAnnotationTypeRegistry());
+        assert.isTrue(!st.isOk());
+
+    })
     it("type recursion 2",function(){
 
         var tp = ps.parseJSONTypeCollection({
@@ -1447,6 +1465,7 @@ describe("Type hierarchy related",function(){
         assert.isTrue(!st.isOk());
 
     })
+
     it("type recursion 3",function(){
 
         var tp = ps.parseJSONTypeCollection({
@@ -1548,4 +1567,137 @@ describe("Type validation basics",function() {
         var st= tp.getType("MyNumber").validateType(tp.getAnnotationTypeRegistry());
         assert.isTrue(!st.isOk());
     })
+    it("array types validation", function () {
+        var tp = ps.parseJSONTypeCollection({
+
+            types: {
+                MyNumber: {
+                    type: "string2[]",
+
+                }
+            }
+        })
+        var st= tp.getType("MyNumber").validateType(tp.getAnnotationTypeRegistry());
+        assert.isTrue(!st.isOk());
+        var tp = ps.parseJSONTypeCollection({
+
+            types: {
+                MyNumber: {
+                    type: "string[]",
+
+                }
+            }
+        })
+        var st= tp.getType("MyNumber").validateType(tp.getAnnotationTypeRegistry());
+        assert.isTrue(st.isOk());
+    })
+    it("schemas", function () {
+        var tp = ps.parseJSONTypeCollection({
+
+            schemas: {
+                MyNumber: {
+                    type: "string[]",
+
+                }
+            }
+        })
+        var st= tp.getType("MyNumber").validateType(tp.getAnnotationTypeRegistry());
+        assert.isTrue(st.isOk());
+    })
+    it("schemas 1", function () {
+        var tp = ps.parseJSONTypeCollection({
+
+            schemas: [
+                {
+                    MyNumber: {
+                        type: "string[]",
+
+                    }
+                }
+                ]
+        })
+        var st= tp.getType("MyNumber").validateType(tp.getAnnotationTypeRegistry());
+        assert.isTrue(st.isOk());
+    })
+    it("schemas 2", function () {
+        var tp = ps.parseJSONTypeCollection({
+
+            schemas: [
+                {
+                    MyNumber: null
+                }
+            ]
+        })
+        var st= tp.getType("MyNumber").validateType(tp.getAnnotationTypeRegistry());
+        assert.isTrue(st.isOk());
+    })
+    it("schemas 3", function () {
+        var tp = ps.parseJSONTypeCollection({
+
+            schemas:
+                {
+                    Z: null,
+                    MyNumber: "Z"
+                }
+
+        })
+        var st= tp.getType("MyNumber").validateType(tp.getAnnotationTypeRegistry());
+        assert.isTrue(st.isOk());
+    })
+    it("schemas 4", function () {
+        var tp = ps.parseJSONTypeCollection({
+
+            schemas:
+            [
+                {Z: null},
+                {MyNumber: "Z"}
+            ]
+
+        })
+        var st= tp.getType("MyNumber").validateType(tp.getAnnotationTypeRegistry());
+        assert.isTrue(st.isOk());
+    })
+    it("validate optionals", function () {
+        var tp = ps.parseJSONTypeCollection({
+
+            schemas:{
+                Hello:{
+                    type: "object",
+                    properties:{
+                        "zz?" :"number"
+                    }
+                },
+                LLLL:
+                {
+                    type: "Hello[]"
+
+                }
+            }
+
+        })
+        var st= tp.getType("LLLL").validate([{}]);
+        assert.isTrue(st.isOk());
+    })
+    it("validate optionals2", function () {
+        var tp = ps.parseJSONTypeCollection({
+
+            schemas:{
+                Hello:{
+                    type: "object",
+                    properties:{
+                        "zz" :"number"
+                    }
+                },
+                LLLL:
+                {
+                    type: "Hello[]"
+
+                }
+            }
+
+        })
+        var st= tp.getType("LLLL").validate([{}]);
+        assert.isTrue(!st.isOk());
+    })
+
 })

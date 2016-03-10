@@ -1,6 +1,6 @@
 /// <reference path="../typings/main.d.ts" />
 import ts=require("./typesystem")
-
+import su=require("./schemaUtil")
 import _= require("underscore");
 import {AndRestriction} from "./typesystem";
 import {Constraint} from "./typesystem";
@@ -55,6 +55,58 @@ abstract class MatchesProperty extends ts.Constraint{
         return ts.OK_STATUS;
     }
 }
+
+export class MatchToSchema extends  ts.Constraint{
+
+    constructor(private _value:string){
+        super();
+    }
+    value(){
+        return this._value;
+    }
+    check(i:any):ts.Status{
+        var so:su.Schema=null;
+        var strVal=this.value();
+        if (strVal.charAt(0)=="{"){
+            try {
+                so = su.getJSONSchema(strVal);
+            } catch (e){
+                return new ts.Status(ts.Status.ERROR,0,"Incorrect schema :"+ e.message);
+            }
+        }
+        if (strVal.charAt(0)=="<"){
+            try {
+                so = su.getXMLSchema(strVal);
+            } catch (e){
+                return ts.OK_STATUS;
+            }
+        }
+        if(so){
+            try {
+                so.validateObject(i);
+            }catch(e){
+                if (e.message=="Cannot assign to read only property '__$validated' of object"){
+                    return ts.OK_STATUS;
+                }
+                if (e.message=="Object.keys called on non-object"){
+                    return ts.OK_STATUS;
+                }
+                return new ts.Status(ts.Status.ERROR,0,"Example does not conform to schema:"+e.message);
+            }
+            //validate using classical schema;
+        }
+        return ts.OK_STATUS;
+    }
+
+
+    facetName(){
+        return "schema";
+    }
+
+    requiredType(){
+        return ts.EXTERNAL;
+    }
+}
 /**
  * this is a constraint which checks that object has no unknown properties if at has not additional properties
  */
@@ -84,7 +136,7 @@ export class KnownPropertyRestriction extends ts.Constraint{
 
     check(i:any):ts.Status{
         if (this._value) {
-            if (typeof  i == 'object') {
+            if (i&&typeof  i == 'object') {
                 var nm:{ [name:string]:boolean} = {};
                 Object.getOwnPropertyNames(i).forEach(n=>nm[n] = true);
                 var mp:MatchesProperty[] = <MatchesProperty[]>this.owner().metaOfType(<any>MatchesProperty);
@@ -95,7 +147,7 @@ export class KnownPropertyRestriction extends ts.Constraint{
                         }
                     });
                 })
-                if (Object.keys(nm).length > 0) {
+                if (Object.keys(nm).length > 0&&mp.length>0) {
                     return ts.error("unmatched properties:" + Object.keys(nm).join(","));
                 }
             }
@@ -131,10 +183,13 @@ export class HasProperty extends ts.Constraint{
         super();
     }
     check(i:any):ts.Status{
-        if (i.hasOwnProperty(this.name)){
-            return ts.OK_STATUS;
+        if (i&&typeof i=='object') {
+            if (i.hasOwnProperty(this.name)) {
+                return ts.OK_STATUS;
+            }
+            return ts.error("object should have declared property: " + this.name);
         }
-        return ts.error("object should have declared property: "+this.name);
+        return ts.OK_STATUS;
     }
 
     requiredType(){
@@ -173,9 +228,11 @@ export class PropertyIs extends MatchesProperty{
     }
 
     check(i:any):ts.Status{
-        if (i.hasOwnProperty(this.name)){
-            var st=this.validateProp(i,this.name,this.type);
-            return st;
+        if (i && typeof i==="object") {
+            if (i.hasOwnProperty(this.name)) {
+                var st = this.validateProp(i, this.name, this.type);
+                return st;
+            }
         }
         return ts.OK_STATUS;
     }
@@ -255,6 +312,22 @@ export class MapPropertyIs extends MatchesProperty{
     regexpValue(){
         return this.regexp;
     }
+    validateSelf(t:ts.TypeRegistry):ts.Status{
+        var m=this.checkValue();
+        if (m){
+            return new Status(Status.ERROR,0,m);
+        }
+        return super.validateSelf(t);
+    }
+    checkValue(){
+        try{
+            new RegExp(this.regexp);
+        }
+        catch (e){
+            return e.message;
+        }
+        return null;
+    }
     composeWith(t:ts.Constraint):ts.Constraint{
         if (t instanceof MapPropertyIs){
             var pi:MapPropertyIs=t;
@@ -282,17 +355,19 @@ export class MapPropertyIs extends MatchesProperty{
     }
 
     check(i:any):ts.Status{
-        if (typeof i=='object') {
-            var rs:ts.Status=new ts.Status(ts.Status.OK,0,"");
-            Object.getOwnPropertyNames(i).forEach(n=> {
-                if (n.match(this.regexp)) {
-                    var stat = this.validateProp(i, n, this.type);
-                    if (!stat.isOk()) {
-                        rs.addSubStatus(stat);
+        if (i) {
+            if (typeof i == 'object') {
+                var rs:ts.Status = new ts.Status(ts.Status.OK, 0, "");
+                Object.getOwnPropertyNames(i).forEach(n=> {
+                    if (n.match(this.regexp)) {
+                        var stat = this.validateProp(i, n, this.type);
+                        if (!stat.isOk()) {
+                            rs.addSubStatus(stat);
+                        }
                     }
-                }
-            });
-            return rs;
+                });
+                return rs;
+            }
         }
         return ts.OK_STATUS;
     }
@@ -366,14 +441,16 @@ export class AdditionalPropertyIs extends MatchesProperty{
     check(i:any):ts.Status{
         var t=this.type;
         var res=new ts.Status(ts.Status.OK,0,"");
-        Object.getOwnPropertyNames(i).forEach(n=>{
-            if (!this.match(n)){
-                var stat=this.validateProp(i,n,t);
-                if (!stat.isOk()){
-                    res.addSubStatus(stat);
+        if (i&&typeof i==="object") {
+            Object.getOwnPropertyNames(i).forEach(n=> {
+                if (!this.match(n)) {
+                    var stat = this.validateProp(i, n, t);
+                    if (!stat.isOk()) {
+                        res.addSubStatus(stat);
+                    }
                 }
-            }
-        });
+            });
+        }
         return res;
     }
 }
@@ -845,13 +922,21 @@ export class Enum extends FacetRestriction<string[]>{
 
     constructor(private _value:string[]){
         super();
+        if (!Array.isArray(_value)){
+            this._value=[<string><any>_value];
+        }
+
     }
     facetName(){return "enum"}
     requiredType(){return ts.SCALAR}
 
+
+    checkStatus:boolean
     check(i:any):ts.Status{
-        if (!_.find(this._value,x=>""+i===x)){
-            return ts.error(this.toString());
+        if (!this.checkStatus) {
+            if (!this.value().some(x=>x == i)) {
+                return ts.error(this.toString());
+            }
         }
         return ts.OK_STATUS
     }
@@ -880,6 +965,19 @@ export class Enum extends FacetRestriction<string[]>{
         if (_.uniq(this._value).length<this._value.length){
             return "enum facet can only contain unique items";
         }
+        var result:string=null;
+        this.checkStatus=true;
+        try {
+            this._value.forEach(x=> {
+                var res = this.owner().validate(x);
+                if (!res.isOk()) {
+                    result = "all enum values should be valid instances of declaring type"
+                }
+            })
+        }finally {
+            this.checkStatus=false;
+        }
+        return result;
     }
     toString(){
         return "value should be one of:" + this._value;

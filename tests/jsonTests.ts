@@ -767,5 +767,277 @@ describe("Type collection parse and store",function(){
         var q=ps.storeAsJSON(col);
         assert.deepEqual(q,st);
     });
+    it ("parse type collection issue0",function(){
+        var st={
+            annotationTypes:
+            {
+                owner: "Person"
+            },
+            types:{
+                t1:"object",
+                t2:"object",
+                t3:["t1","t2"]
+            }
+        };
+        var col=ps.parseJSONTypeCollection(st);
+        var q=ps.storeAsJSON(col);
+        assert.deepEqual(q,st);
+    });
+    it ("parse type collection issue1",function(){
+        var st={
+            annotationTypes:
+            {
+                owner: "Person"
+            },
+            types:{
+                t1:{
+                    type:"object",
+                    additionalProperties: "number"
+                }
+            }
+        };
+        var col=ps.parseJSONTypeCollection(st);
+        var q=ps.storeAsJSON(col);
+        //assert.deepEqual(q,st);
+    });
+    it ("parse type collection issue2",function(){
+        var st={
+            annotationTypes:
+            {
+                owner: "Person"
+            },
+            types:{
+                t1:{
+                    type:"object",
+                    patternProperties: { x:"number"}
+                }
+            }
+        };
+        var col=ps.parseJSONTypeCollection(st);
+        var q=ps.storeAsJSON(col);
+        //assert.deepEqual(q,st);
+    });
+    it ("parse type collection issue3",function(){
+        var st={
+            annotationTypes:
+            {
+                owner: "Person"
+            },
+            types:{
+                t1:{
+                    type:"object2",
+                    patternProperties: { x:"number"}
+                }
+            }
+        };
+        var col=ps.parseJSONTypeCollection(st);
+        var q=ps.storeAsJSON(col);
+        //assert.deepEqual(q,st);
+    });
+    it ("parse uses ",function(){
+        var st={
+            annotationTypes:
+            {
+                owner: "Person"
+            },
+            uses:{
+              D:{
+                  types:{
+                      Hello:{
+                          type: "object"
+                      }
+                  }
+              }
+            },
+            types:{
+                t1:{
+                    type:"D.Hello",
 
+                }
+            }
+        };
+        var col=ps.parseJSONTypeCollection(st);
+        var t1= col.getType("t1");
+        assert.isTrue(t1.isObject());
+        //assert.deepEqual(q,st);
+    });
+    it ("parse uses iplace",function(){
+        var st={
+            annotationTypes:
+            {
+                owner: "Person"
+            },
+            uses:{
+                D:{
+                    types:{
+                        Hello:{
+                            type: "object"
+                        }
+                    }
+                }
+            },
+            types:{
+                t1:"D.Hello"
+            }
+        };
+        var col=ps.parseJSONTypeCollection(st);
+        var t1= col.getType("t1");
+        assert.isTrue(t1.isObject());
+        //assert.deepEqual(q,st);
+    });
+    it ("parse uses 2",function(){
+        var st={
+
+            uses:{
+                D:{
+                    types:{
+                        Hello:{
+                            type: "object"
+                        }
+                    }
+                }
+            },
+            annotationTypes:{
+                t1:{
+                    type:"D.Hello",
+
+                }
+            }
+        };
+        var col=ps.parseJSONTypeCollection(st);
+        var t1= col.getAnnotationType("t1");
+        assert.isTrue(t1.isObject());
+    });
+    it ("inplace types",function(){
+        var st={
+
+
+            annotationTypes:{
+                t1:{
+                    type:"object",
+                    properties: {
+                        name: {
+                            type: "string",
+                            minLength: 5
+                        }
+                    }
+
+                }
+            }
+        };
+        var col=ps.parseJSONTypeCollection(st);
+        var q=ps.storeAsJSON(col);
+        assert.deepEqual(q,st);
+    });
+    it ("map types",function(){
+        var st={
+
+
+            types:{
+                t1:{
+                    type:"object",
+                    properties: {
+                        numberMap: "number{}"
+                    }
+
+                }
+            }
+        };
+        var col=ps.parseJSONTypeCollection(st);
+        var t=col.getType("t1");
+        assert.isTrue(t.validateType(ts.builtInRegistry()).isOk());
+        assert.isTrue(t.validate({ "numberMap":{a:2}}).isOk());
+        assert.isTrue(!t.validate({ "numberMap":{a:"ss"}}).isOk());
+    });
+    it ("repeat option",function(){
+        var st={
+
+
+            types:{
+                t1:{
+                    type:"number",
+                    repeat:true
+
+                }
+            }
+        };
+        var col=ps.parseJSONTypeCollection(st);
+        var t=col.getType("t1");
+       var val= t.validateType(ts.builtInRegistry()).isOk();
+        assert.isTrue(val);
+        assert.isTrue(!t.validate({ "numberMap":{a:2}}).isOk());
+        assert.isTrue(t.validate([2]).isOk());
+        assert.isTrue(!t.validate(["a2"]).isOk());
+    });
+    it ("external type",function(){
+        var st={
+
+
+            types:{
+                t1:{
+                    type:"{ type: object2 }",
+
+                }
+            }
+        };
+        var col=ps.parseJSONTypeCollection(st);
+        var t=col.getType("t1");
+        var val= t.validateType(ts.builtInRegistry()).isOk();
+        assert.isTrue(!val);
+
+    });
+    it ("enum validation",function(){
+        var st={
+
+
+            types:{
+                t1:{
+                    type:"number",
+                    enum:["a"]
+
+                }
+            }
+        };
+        var col=ps.parseJSONTypeCollection(st);
+        var t=col.getType("t1");
+        var val= t.validateType(ts.builtInRegistry()).isOk();
+        assert.isTrue(!val);
+
+    });
+    it ("enum validation 2",function(){
+        var st={
+
+
+            types:{
+                t1:{
+                    type:"number",
+                    enum:[0,1,2]
+
+                }
+            }
+        };
+        var col=ps.parseJSONTypeCollection(st);
+        var t=col.getType("t1");
+        var val= t.validateType(ts.builtInRegistry()).isOk();
+        assert.isTrue(val);
+
+    });
+    it ("enum validation 3",function(){
+        var st={
+
+
+            types:{
+                t1:{
+                    type:"number",
+                    enum:[0,1,2,"a"]
+
+                }
+            }
+        };
+        var col=ps.parseJSONTypeCollection(st);
+        var t=col.getType("t1");
+        var val= t.validateType(ts.builtInRegistry()).isOk();
+        assert.isTrue(!val);
+
+    });
 });

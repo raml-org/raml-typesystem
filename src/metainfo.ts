@@ -40,6 +40,13 @@ export class DisplayName extends MetaInfo{
         super("displayName",value)
     }
 }
+export class Usage extends MetaInfo{
+
+
+    constructor(value:string){
+        super("usage",value)
+    }
+}
 export class Annotation extends MetaInfo{
 
     constructor(name: string,value:any){
@@ -51,7 +58,13 @@ export class Annotation extends MetaInfo{
         if (!tp){
             return new Status(Status.ERROR,0,"using unknown annotation type:"+this.facetName());
         }
-        var valOwner=tp.validateDirect(this.value());
+        var q=this.value();
+        if (!q){
+            if (tp.isString()){
+                q="";
+            }
+        }
+        var valOwner=tp.validateDirect(q,true);
         if (!valOwner.isOk()){
             return new Status(Status.ERROR,0,"invalid annotation value"+valOwner.getMessage());
         }
@@ -106,10 +119,34 @@ export class Example extends MetaInfo{
     }
 
     validateSelf(registry:ts.TypeRegistry):ts.Status {
-        var valOwner=this.owner().validateDirect(parseExampleIfNeeded(this.value(),this.owner()));
+        var valOwner=this.owner().validateDirect(parseExampleIfNeeded(this.value(),this.owner()),true);
         if (!valOwner.isOk()){
-            return new Status(Status.ERROR,0,"using invalid `example`:"+valOwner.getMessage());
+            var c= new Status(Status.ERROR,0,"using invalid `example`:"+valOwner.getMessage());
+            valOwner.getErrors().forEach(x=>c.addSubStatus(x));
+            return c;
         }
+        return ts.OK_STATUS;
+    }
+}
+export class Required extends MetaInfo{
+    constructor(value:any){
+        super("required",value)
+    }
+
+    validateSelf(registry:ts.TypeRegistry):ts.Status {
+        if (typeof this.value()!=="boolean"){
+            return new Status(Status.ERROR,0,"value of required facet should be boolean");
+        }
+        return ts.OK_STATUS;
+    }
+}
+export class AllowedTargets extends MetaInfo{
+    constructor(value:any){
+        super("allowedTargets",value)
+    }
+
+    validateSelf(registry:ts.TypeRegistry):ts.Status {
+
         return ts.OK_STATUS;
     }
 }
@@ -126,7 +163,7 @@ export class Examples extends MetaInfo{
             Object.keys(v).forEach(x=>{
                 if (typeof v[x]=='object') {
                     var example = parseExampleIfNeeded(v[x].content, this.owner());
-                    rs.addSubStatus(this.owner().validateDirect(example));
+                    rs.addSubStatus(this.owner().validateDirect(example,true));
                     Object.keys(v[x]).forEach(key=>{
                         if (key.charAt(0)=='('&&key.charAt(key.length-1)==')'){
                             var a=new Annotation(key.substring(1,key.length-1),v[x][key]);
@@ -157,7 +194,7 @@ export class Default extends MetaInfo{
     }
 
     validateSelf(registry:ts.TypeRegistry):ts.Status {
-        var valOwner=this.owner().validateDirect(this.value());
+        var valOwner=this.owner().validateDirect(this.value(),true);
         if (!valOwner.isOk()){
             return new Status(Status.ERROR,0,"using invalid `defaultValue`:"+valOwner.getMessage());
         }

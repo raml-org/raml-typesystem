@@ -2,7 +2,7 @@ var gulp = require('gulp');
 var typedoc = require("gulp-typedoc");
 gulp.task("typedoc", function() {
     return gulp
-        .src(["src/main.ts"])
+        .src(["src/index.ts"])
         .pipe(typedoc({
             module: "commonjs",
             target: "es5",
