@@ -187,6 +187,8 @@ import {FacetDeclaration} from "./metainfo";
 import {CustomFacet} from "./metainfo";
 import {PropertyIs} from "./restrictions";
 import {ComponentShouldBeOfType} from "./restrictions";
+import exO=require("./exampleBuilder")
+import {NotScalar} from "./metainfo";
 
 export var autoCloseFlag=false;
 /**
@@ -542,7 +544,10 @@ export abstract class AbstractType{
      * @return true if type has no associated meta information of restrictions
      */
     isEmpty():boolean{
-        return this.metaInfo.length===0;
+        if (this.metaInfo.length>1){
+            return false;
+        }
+        return this.metaInfo.filter(x=>!(x instanceof NotScalar)).length==0;
     }
 
     /**
@@ -630,6 +635,14 @@ export abstract class AbstractType{
 
     /**
      *
+     * @return true if type is number or inherited from number
+     */
+    isFile():boolean{
+        return this==<AbstractType>FILE||this.allSuperTypes().indexOf(FILE)!=-1;
+    }
+
+    /**
+     *
      * @return true if type is scalar or inherited from scalar
      */
     isScalar():boolean{
@@ -659,7 +672,9 @@ export abstract class AbstractType{
     isBuiltin():boolean{
         return this.metaInfo.indexOf(BUILT_IN)!=-1;
     }
-
+    exampleObject():any{
+        return exO.example(this);
+    }
     /**
      *
      * @return true if type is an polymorphic type

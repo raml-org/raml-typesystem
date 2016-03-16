@@ -127,6 +127,10 @@ export class Example extends MetaInfo{
         }
         return ts.OK_STATUS;
     }
+
+    example():any{
+        return parseExampleIfNeeded(this.value(),this.owner());
+    }
 }
 export class Required extends MetaInfo{
     constructor(value:any){
@@ -154,6 +158,18 @@ export class AllowedTargets extends MetaInfo{
 export class Examples extends MetaInfo{
     constructor(value:any){
         super("examples",value)
+    }
+
+    examples():any[]{
+        var v=this.value();
+        var result:any[]=[];
+        Object.keys(v).forEach(x=>{
+            if (typeof v[x]=='object') {
+                var example = parseExampleIfNeeded(v[x].content, this.owner());
+                result.push(example);
+            }
+        });
+        return result;
     }
 
     validateSelf(registry:ts.TypeRegistry):ts.Status {

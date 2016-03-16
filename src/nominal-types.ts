@@ -1,6 +1,5 @@
 
 import _=require("underscore")
-
 export interface INamedEntity{
     nameId():string;
     description():string;
@@ -133,6 +132,8 @@ export interface ITypeDefinition extends INamedEntity {
      * did not includes properties fixed to fixed facet use facet for them
      */
     allProperties(visited?:any): IProperty[];
+
+    allFacets(visited?:any):IProperty[];
 
     /**
      * Whether this type is value type. Does not perform a search in super types.
@@ -487,15 +488,40 @@ export class Annotation extends Described implements IAnnotation{
         return this.type;
     }
 }
+export class Empty{
+
+}
 export interface IAnnotationType extends  ITypeDefinition{
     parameters(): ITypeDefinition[]
     allowedTargets():any
-    allowRepeat(): boolean
 }
+class EmptyUniverse implements  IUniverse{
+
+    type(name:string):ITypeDefinition {
+        return null;
+    }
+
+    version():string {
+        return "Empty";
+    }
+
+    types():ITypeDefinition[] {
+        return [];
+    }
+
+    matched():{ [name:string]:NamedId} {
+        return {};
+    }
+}
+var emptyUniverse:IUniverse =new EmptyUniverse();
+
+var ebuilder=require("./exampleBuilder")
 export class AbstractType extends Described implements ITypeDefinition{
 
 
     _key: NamedId;
+
+
 
 
     _isCustom:boolean
@@ -517,6 +543,11 @@ export class AbstractType extends Described implements ITypeDefinition{
     }
     private _props:IProperty[];
     protected _allFacets:IProperty[]
+    protected _facets: IProperty[]=[];
+
+    addFacet(q:IProperty){
+        this._facets.push(q);
+    }
 
     allFacets(ps:{[name:string]:ITypeDefinition}={}):IProperty[]{
         if (this._allFacets){
@@ -534,7 +565,8 @@ export class AbstractType extends Described implements ITypeDefinition{
                 }
             })
         }
-        this.properties().forEach(x=>n[x.nameId()]=x);
+        this._facets.forEach(x=>n[x.nameId()]=x);
+        //this.properties().forEach(x=>n[x.nameId()]=x);
         this._allFacets=Object.keys(n).map(x=>n[x]);
         return this._allFacets;
     }
@@ -732,11 +764,14 @@ export class AbstractType extends Described implements ITypeDefinition{
         return this._nameAtRuntime;
     }
 
-    constructor(_name:string,public _universe:IUniverse=null,private _path:string=""){
+    constructor(_name:string,public _universe:IUniverse=emptyUniverse ,private _path:string=""){
         super(_name)
     }
 
     universe():IUniverse{
+        if (!this._universe){
+            return new EmptyUniverse();
+        }
         return this._universe;
     }
 
@@ -900,7 +935,7 @@ export class AbstractType extends Described implements ITypeDefinition{
      * Returned example should be tested for being empty and being expandable.
      */
     examples() : IExpandableExample[] {
-        return [new ExpandableExampleStub()];
+        return ebuilder.exampleFromNominal(this);
     }
 
     /**
@@ -909,7 +944,7 @@ export class AbstractType extends Described implements ITypeDefinition{
      * properties or facets, or having user-defined name as opposed to a synthetic user-defined type.
      */
     isGenuineUserDefinedType() : boolean {
-        return false;
+        return this.nameId()&&this.nameId().length>0;
     }
 
     /**
@@ -918,7 +953,12 @@ export class AbstractType extends Described implements ITypeDefinition{
      * properties or facets, or having user-defined name as opposed to a synthetic user-defined type.
      */
     genuineUserDefinedType() : ITypeDefinition {
-        return null;
+        if (this.getAdapter(Empty)){
+            if (this.superTypes().length==1){
+                return this.superTypes()[0];
+            }
+        }
+        return this;
     }
 
     customProperties():IProperty[]{
@@ -1322,42 +1362,3 @@ export class ExternalType extends StructuredType implements IExternalType{
     }
 }
 
-export class ExpandableExampleStub implements IExpandableExample {
-
-
-    isEmpty() : boolean {
-        return true;
-    }
-
-    isJSONString() : boolean {
-        return false;
-    }
-
-    isXMLString() : boolean {
-        return false;
-    }
-
-    isYAML() : boolean {
-        return false;
-    }
-
-    asString() : string {
-        return "";
-    }
-
-    asJSON() : any {
-        return null;
-    }
-
-    original() : any {
-        return null;
-    }
-
-    expandAsString() : string {
-        return null;
-    }
-
-    expandAsJSON() : any {
-        return null;
-    }
-}

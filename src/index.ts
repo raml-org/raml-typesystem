@@ -182,6 +182,8 @@ export interface IParsedType {
      */
     allFacets():ITypeFacet[]
 
+
+    exampleObject(): any
     /**
      * returns  meta information and restrictions associated with the type only declared facets are included
      */
@@ -227,6 +229,11 @@ export interface IParsedType {
      * returns true if this type inhetits from an unknown type
      */
     isUnknown(): boolean;
+
+    /**
+     * return true if this type inherits from a file type
+     */
+    isFile():boolean;
 
     /**
      * returns true if this type has recurrent definition;
@@ -707,7 +714,13 @@ export class TypeConstructor {
         return this.target;
     }
 }
+interface StringToBuiltIn{
+    (name:string):nt.ITypeDefinition
+}
+export function setPropertyConstructor(c:any){
+    nm.setPropertyConstructor(c);
+}
+export function toNominal(t:IParsedType,bt:StringToBuiltIn):nt.ITypeDefinition{
+    return nm.toNominal(<ts.AbstractType>t,bt);
+}
 
-//export function nominal(t:ts.AbstractType):nt.AbstractType{
-//    return nm.toNominal(t);
-//}
