@@ -714,13 +714,11 @@ export class TypeConstructor {
         return this.target;
     }
 }
-interface StringToBuiltIn{
-    (name:string):nt.ITypeDefinition
-}
+
 export function setPropertyConstructor(c:any){
     nm.setPropertyConstructor(c);
 }
-export function toNominal(t:IParsedType,bt:StringToBuiltIn):nt.ITypeDefinition{
-    return nm.toNominal(<ts.AbstractType>t,bt);
+export function toNominal(t:IParsedType,bt: (name:string)=>nt.ITypeDefinition) :nt.ITypeDefinition{
+     return nm.toNominal(<ts.AbstractType>t,bt);
 }
 
