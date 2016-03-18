@@ -51,7 +51,7 @@ export class FacetPrototype{
     }
 }
 
-class Registry {
+export class Registry {
 
     constraints:FacetPrototype[] = [
         new FacetPrototype(()=>new MinProperties(1), (x)=>new MinProperties(x)),//X

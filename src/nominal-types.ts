@@ -28,7 +28,7 @@ export interface IAnnotation extends INamedEntity,ITyped{
 
 }
 
-interface IPrintDetailsSettings {
+export interface IPrintDetailsSettings {
     hideProperties?: boolean
     hideSuperTypeProperties? : boolean
     printStandardSuperclasses? : boolean

@@ -8,7 +8,7 @@ import {DisplayName} from "./metainfo";
 
 const NOMINAL="nominal"
 
-interface StringToBuiltIn{
+export  interface StringToBuiltIn{
 
     (name:string):nt.ITypeDefinition
 }

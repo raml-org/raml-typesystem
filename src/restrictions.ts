@@ -10,7 +10,7 @@ import {Status} from "./typesystem";
 /**
  * this class is an abstract super type for every constraint that can select properties from objects
  */
-abstract class MatchesProperty extends ts.Constraint{
+export abstract class MatchesProperty extends ts.Constraint{
      matches(s:string):boolean{
          return false;
      }
@@ -457,7 +457,7 @@ export class AdditionalPropertyIs extends MatchesProperty{
 /**
  * common super type for a simple restrictions
  */
-abstract class FacetRestriction<T> extends ts.Constraint{
+export abstract class FacetRestriction<T> extends ts.Constraint{
 
     abstract facetName():string
     abstract requiredType():ts.AbstractType;
@@ -488,7 +488,7 @@ function is_int(value:any){
 /**
  * abstract super type for every min max restriction
  */
-abstract class MinMaxRestriction extends FacetRestriction<Number>{
+export abstract class MinMaxRestriction extends FacetRestriction<Number>{
 
     constructor(private _facetName:string,private _value:number,private _max:boolean,private _opposite:string,
                 private _requiredType:ts.AbstractType,private _isInt:boolean){
@@ -1001,7 +1001,7 @@ export function optimize(r:ts.Constraint[]){
         }
     })
     var transformed=true;
-    l0:while (transformed){
+    while (transformed){
         transformed=false;
         for (var i=0;i<optimized.length;i++){
             for (var j=0;j<optimized.length;j++){

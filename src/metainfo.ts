@@ -193,7 +193,6 @@ export class Examples extends MetaInfo{
         else{
             return new Status(Status.ERROR,0,"examples should be a map");
         }
-        return ts.OK_STATUS;
     }
 }
 

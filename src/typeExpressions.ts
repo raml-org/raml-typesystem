@@ -76,7 +76,6 @@ function parseNode(node:BaseNode,t:ts.TypeRegistry):ts.AbstractType
         var a=lit.arr;
         return wrapArray(a, result);
     }
-    return null;
 }
 
 

@@ -528,8 +528,11 @@ export function dump(ts:IParsedType|IParsedTypeCollection):ITypeCollection|IType
  */
 export function validate(i:any, t:IParsedType,autoClose:boolean=false):IStatus {
     ts.autoCloseFlag=autoClose;
-    return t.validate(i,autoClose);
-    ts.autoCloseFlag=false;
+    try {
+        return t.validate(i, autoClose);
+    }finally {
+        ts.autoCloseFlag = false;
+    }
 }
 
 /***

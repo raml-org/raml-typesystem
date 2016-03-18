@@ -999,7 +999,7 @@ export abstract class AbstractType{
     }
 }
 
-abstract class Modifier extends TypeInformation{
+export abstract class Modifier extends TypeInformation{
 
     requiredType(){
         return ANY;

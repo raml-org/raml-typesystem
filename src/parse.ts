@@ -12,7 +12,7 @@ import {AdditionalPropertyIs} from "./restrictions";
 import {MapPropertyIs} from "./restrictions";
 import {TypeRegistry} from "./typesystem";
 import {ComponentShouldBeOfType} from "./restrictions";
-enum NodeKind{
+export enum NodeKind{
     SCALAR,
     ARRAY,
     MAP

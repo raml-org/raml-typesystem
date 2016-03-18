@@ -6,6 +6,7 @@
   "scripts": {
     "test-cov": " ./node_modules/.bin/istanbul cover _mocha tests/*Tests.js",
     "typings-for-idea": "node ./tools/createDeclarations",
+    "build": " ./node_modules/typescript/bin/tsc ",
     "build-browser": "./node_modules/.bin/webpack --entry ./src/browser.js  --output-path ./browser --output-filename bundle.js --verbose --profile --display-modules "
   },
   "dependencies": {
@@ -25,6 +26,7 @@
     "json-loader": "^0.5.1",
     "mocha": "^2.2.1",
     "typedoc": "^0.3.12",
+    "typescript": "1.8.0",
     "typings": "^0.5.1",
     "webpack": "^1.3.7"
   }
