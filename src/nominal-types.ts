@@ -14,6 +14,8 @@ export type IAnnotationType=ti.IAnnotationType;
 export type INamedEntity=ti.INamedEntity;
 import _=require("underscore")
 
+
+declare function require(s:string):any;
 export interface Injector{
     inject(a:Adaptable):void;
 }

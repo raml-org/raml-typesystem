@@ -513,13 +513,13 @@ describe("Type family",function(){
 });
 describe("Facet Registry",function() {
     it ("All facets",function (){
-        assert.equal(facetRegistry.getInstance().allPrototypes().length,27);
+        assert.equal(facetRegistry.getInstance().allPrototypes().length,29);
     });
     it ("All object facets",function (){
-        assert.equal(facetRegistry.getInstance().applyableTo(ts.OBJECT).length,17);
+        assert.equal(facetRegistry.getInstance().applyableTo(ts.OBJECT).length,19);
     });
     it ("All meta",function (){
-        assert.equal(facetRegistry.getInstance().allMeta().length,10);
+        assert.equal(facetRegistry.getInstance().allMeta().length,12);
     });
 })
 describe("Automatic classification",function(){
@@ -608,11 +608,10 @@ describe("Automatic classification",function(){
         var p1=ts.derive("Person2",[p0]);
         p1.declareProperty("y",ts.STRING,false);
         var tr=p0.ac({x: "d",y:"b"});
-        assert.equal(tr,ts.NOTHING);
+        assert.equal(tr,p1);
     });
     it("ac 11", function(){
         var p0=ts.deriveObjectType("Person");
-        p0.addMeta(new ts.Polymorphic());
         p0.addMeta(new ms.Discriminator("kind"))
         p0.declareProperty("x",ts.STRING,false);
         p0.declareProperty("kind",ts.STRING,false);
@@ -623,7 +622,6 @@ describe("Automatic classification",function(){
     });
     it("ac 12", function(){
         var p0=ts.deriveObjectType("Person");
-        p0.addMeta(new ts.Polymorphic());
         p0.addMeta(new ms.Discriminator("kind"))
         p0.addMeta(new ms.DiscriminatorValue("Person2"))
         p0.declareProperty("x",ts.STRING,false);
@@ -631,7 +629,7 @@ describe("Automatic classification",function(){
         var p1=ts.derive("Person2",[p0]);
         p1.declareProperty("y",ts.STRING,false);
         var tr=p0.ac({x: "d",y:"b",kind:"Person"});
-        assert.equal(tr,ts.NOTHING);
+        assert.equal(tr,p0);
     });
     it("ac 13", function(){
         var p0=ts.deriveObjectType("Person");
@@ -660,7 +658,6 @@ describe("Automatic classification",function(){
     });
     it("ac 15", function(){
         var p0=ts.deriveObjectType("Person");
-        p0.addMeta(new ts.Polymorphic());
         p0.addMeta(new ts.Abstract())
         p0.declareProperty("x",ts.STRING,false);
         p0.declareProperty("kind",ts.STRING,false);
@@ -670,11 +667,10 @@ describe("Automatic classification",function(){
         p1.addMeta(new ms.DiscriminatorValue("Person"))
         p1.declareProperty("y",ts.STRING,false);
         var tr=p0.ac({x: "d",y:"b",kind:"Person"});
-        assert.equal(tr,ts.NOTHING);
+        assert.equal(tr,p0);
     });
     it("ac 16", function(){
         var p0=ts.deriveObjectType("Person");
-        p0.addMeta(new ts.Polymorphic());
         p0.addMeta(new ms.Discriminator("kind"))
         p0.addMeta(new ts.Abstract())
         p0.declareProperty("x",ts.STRING,false);
@@ -684,7 +680,7 @@ describe("Automatic classification",function(){
         var p2=ts.derive("Person3",[p0]);
         p2.declareProperty("y",ts.STRING,false);
         var tr=p0.ac({x: "d",y:"b",kind:"Person"});
-        assert.equal(tr,p1);
+        assert.equal(tr,p0);
     });
 });
 describe("TypeExpressions",function() {

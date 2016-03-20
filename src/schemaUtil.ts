@@ -1,4 +1,5 @@
 /// <reference path="../typings/main.d.ts" />
+declare function require(s:string):any;
 
 var lru=  require("lrucache");
 var ZSchema=require("z-schema")
