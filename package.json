@@ -1,6 +1,6 @@
 {
   "name": "raml-typesystem",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "private": false,
   "main": "src/index.js",
   "scripts": {
@@ -15,6 +15,24 @@
     "underscore": "^1.8.3",
     "xml2js": "^0.4.16",
     "z-schema": "^3.16.1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mulesoft-labs/typesystem-ts.git"
+  },
+  "keywords": [
+    "raml",
+    "typesystem"
+  ],
+  "author": {
+    "name": "Pavel Petrochenko",
+    "email": "petrochenko.pavel.a@gmail.com",
+    "url": "ru.linkedin.com/in/petrochenkopavel"
+  },
+  "homepage": "https://github.com/mulesoft-labs/typesystem-ts",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/mulesoft-labs/typesystem-ts/issues"
   },
   "typings": "./src/index.d.ts",
   "devDependencies": {
