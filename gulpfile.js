@@ -4,7 +4,6 @@ var typedoc = require("gulp-typedoc");
 var childProcess = require('child_process');
 var connect = require('gulp-connect');
 var compass = require('gulp-compass');
-var rimraf = require('rimraf');
 var mocha = require('gulp-mocha');
 var join = require('path').join;
 var webpack = require('webpack');
@@ -30,7 +29,7 @@ gulp.task("typedoc", function() {
             hideGenerator: true,
             excludeExternals: true,
             mode: "file",
-            readme:"readme.txt"
+            readme:"readmeTypeDoc.txt"
         }))
         ;
 });
