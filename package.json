@@ -1,12 +1,12 @@
 {
   "name": "raml-typesystem",
-  "version": "0.0.9",
+  "version": "0.0.12",
   "private": false,
-  "main": "src/index.js",
+  "main": "dist/src/index.js",
   "scripts": {
     "test-cov": " ./node_modules/.bin/istanbul cover _mocha tests/*Tests.js",
     "typings-for-idea": "node ./tools/createDeclarations",
-    "build": " ./node_modules/typescript/bin/tsc ",
+    "build": "rm -rf dist/ && ./node_modules/typescript/bin/tsc ",
     "build-browser": "./node_modules/.bin/webpack --entry ./src/browser.js  --output-path ./browser --output-filename bundle.js --verbose --profile --display-modules "
   },
   "dependencies": {
@@ -24,6 +24,11 @@
     "raml",
     "typesystem"
   ],
+  "files": [
+    "dist/",
+    "typings/",
+    "typings.json"
+  ],
   "author": {
     "name": "Pavel Petrochenko",
     "email": "petrochenko.pavel.a@gmail.com",
@@ -34,7 +39,7 @@
   "bugs": {
     "url": "https://github.com/mulesoft-labs/typesystem-ts/issues"
   },
-  "typings": "./src/index.d.ts",
+  "typings": "./dist/src/index.d.ts",
   "devDependencies": {
     "chai": "^2.2.0",
     "chai-as-promised": "^5.2.0",
