@@ -13,16 +13,18 @@ export type IPrintDetailsSettings=ti.IPrintDetailsSettings;
 export type IAnnotationType=ti.IAnnotationType;
 export type INamedEntity=ti.INamedEntity;
 import _=require("underscore")
-
+declare var global:any;
+global["extraInjectors"]=[];
 
 declare function require(s:string):any;
 export interface Injector{
     inject(a:Adaptable):void;
 }
-var extraInjections:Injector[]=[];
+//var extraInjections:Injector[]=[];
 
 export function registerInjector(i:Injector){
-    extraInjections.push(i);
+  //  extraInjections.push(i);
+    global["extraInjectors"].push(i);
 }
 
 export class Adaptable{
@@ -33,7 +35,7 @@ export class Adaptable{
     }
 
     constructor(){
-        extraInjections.forEach(x=>x.inject(this))
+        (<Injector[]>global["extraInjectors"]).forEach(x=>x.inject(this))
 
     }
 

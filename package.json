@@ -1,6 +1,6 @@
 {
   "name": "raml-typesystem",
-  "version": "0.0.12",
+  "version": "0.0.13",
   "private": false,
   "main": "dist/src/index.js",
   "scripts": {
