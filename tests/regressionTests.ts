@@ -56,4 +56,29 @@ describe("Simple validation testing",function() {
         });
         assert.isTrue(f);
     });
+    it("Type error message #4", function () {
+        var tp = ps.parseJSONTypeCollection({
+
+            types:{
+                XX:{
+                    type:"object",
+                    properties:{
+                        c:"string",
+                    },
+                    example:{
+
+                    }
+                }
+            }
+        });
+        var t=tp.getType("XX");
+        var st=t.validateType(ts.builtInRegistry());
+        var f=false;
+        st.getErrors().forEach(x=>{
+            if (x.getMessage().indexOf("Required property:")!=-1){
+                f=true;
+            }
+        });
+        assert.isTrue(f);
+    });
 });

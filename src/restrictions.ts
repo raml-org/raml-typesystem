@@ -189,7 +189,7 @@ export class HasProperty extends ts.Constraint{
             if (i.hasOwnProperty(this.name)) {
                 return ts.OK_STATUS;
             }
-            return ts.error("object should have declared property: " + this.name,this);
+            return ts.error("Required property: " + this.name+" is missed",this);
         }
         return ts.OK_STATUS;
     }
