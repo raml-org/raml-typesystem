@@ -21,10 +21,11 @@ export class Status {
 
     protected subStatus:Status[] = [];
 
-    public constructor(severity:number, code:number, message:string) {
+    public constructor(severity:number, code:number, message:string,source:any) {
         this.severity = severity;
         this.code = code;
         this.message = message;
+        this.source=source;
     }
 
     addSubStatus(st:Status) {
@@ -76,10 +77,10 @@ export class Status {
     }
 }
 
-export const OK_STATUS=new Status(Status.OK,Status.OK,"");
+export const OK_STATUS=new Status(Status.OK,Status.OK,"",null);
 
-export function error(message:string){
-    return new Status(Status.ERROR,0,message);
+export function error(message:string,source:any){
+    return new Status(Status.ERROR,0,message,source);
 }
 
 export abstract class TypeInformation {
@@ -231,8 +232,8 @@ export class TypeRegistry {
 }
 
 export class RestrictionsConflict extends Status{
-    constructor(protected _conflicting:Constraint,protected _stack:RestrictionStackEntry){
-        super(Status.ERROR,0,"Restrictions conflict");
+    constructor(protected _conflicting:Constraint,protected _stack:RestrictionStackEntry,source:any){
+        super(Status.ERROR,0,"Restrictions conflict",source);
     }
     getConflictDescription():string{
         var rs="";
@@ -333,7 +334,7 @@ export abstract class AbstractType{
     }
 
     validateType(tr:TypeRegistry):Status{
-        var rs=new Status(Status.OK,0,"");
+        var rs=new Status(Status.OK,0,"",this);
         this.validateHierarchy(rs);
         if (rs.isOk()) {
             rs.addSubStatus(this.checkConfluent());
@@ -366,7 +367,7 @@ export abstract class AbstractType{
                 if (x instanceof restr.PropertyIs){
                     var pr:restr.PropertyIs=x;
                     if (required.hasOwnProperty(pr.propertyName())){
-                        rs.addSubStatus(new Status(Status.ERROR,0,"Can not override required property:"+pr.propertyName()+" to be optional"));
+                        rs.addSubStatus(new Status(Status.ERROR,0,"Can not override required property:"+pr.propertyName()+" to be optional",this));
                     }
                 }
             })
@@ -383,7 +384,7 @@ export abstract class AbstractType{
                     try {
                         su.getJSONSchema(x.schema());
                     } catch (e){
-                        rs.addSubStatus(new Status(Status.ERROR,0, e.message));
+                        rs.addSubStatus(new Status(Status.ERROR,0, e.message,this));
                     }
                 }
             });
@@ -394,29 +395,29 @@ export abstract class AbstractType{
 
     public validateHierarchy(rs:Status) {
         if (this.getExtra("topLevel")&&builtInRegistry().get(this.name())){
-            rs.addSubStatus(new Status(Status.ERROR, 0, "redefining builtin type:"+this.name()))
+            rs.addSubStatus(new Status(Status.ERROR, 0, "redefining builtin type:"+this.name(),this))
 
         }
         if (this.isSubTypeOf(RECURRENT)) {
-            rs.addSubStatus(new Status(Status.ERROR, 0, "recurrent type definition"))
+            rs.addSubStatus(new Status(Status.ERROR, 0, "recurrent type definition",this))
         }
 
         if (this.isSubTypeOf(UNKNOWN)) {
-            rs.addSubStatus(new Status(Status.ERROR, 0, "inheriting from unknown type"))
+            rs.addSubStatus(new Status(Status.ERROR, 0, "inheriting from unknown type",this))
         }
         if (this.isUnion()) {
             var tf = this.typeFamily();
             if (tf.some(x=>x.isSubTypeOf(RECURRENT))) {
-                rs.addSubStatus(new Status(Status.ERROR, 0, "recurrent type as an option of union type"))
+                rs.addSubStatus(new Status(Status.ERROR, 0, "recurrent type as an option of union type",this))
             }
             if (tf.some(x=>x.isSubTypeOf(UNKNOWN))) {
-                rs.addSubStatus(new Status(Status.ERROR, 0, "unknown type as an option of union type"))
+                rs.addSubStatus(new Status(Status.ERROR, 0, "unknown type as an option of union type",this))
             }
         }
         if (this.isArray()) {
             var fs=this.familyWithArray();
            if ((fs.indexOf(this)!=-1)||fs.some(x=>x===UNKNOWN||x===RECURRENT)){
-               rs.addSubStatus(new Status(Status.ERROR, 0, "recurrent array type definition"))
+               rs.addSubStatus(new Status(Status.ERROR, 0, "recurrent array type definition",this))
            }
         }
     };
@@ -432,7 +433,7 @@ export abstract class AbstractType{
     }
 
     validateMeta(tr:TypeRegistry):Status{
-        var rs=new Status(Status.OK,0,"");
+        var rs=new Status(Status.OK,0,"",this);
         this.declaredMeta().forEach(x=>{
             x.validateSelf(tr).getErrors().forEach(y=>rs.addSubStatus(y))
 
@@ -468,15 +469,15 @@ export abstract class AbstractType{
                 var fd:FacetDeclaration = x;
                 if (fd.owner()==this){
                     if (super_facets.hasOwnProperty(fd.facetName())){
-                        rs.addSubStatus(new Status(Status.ERROR, 0, "facet :" + fd.facetName()+" can not be overriden"))
+                        rs.addSubStatus(new Status(Status.ERROR, 0, "facet :" + fd.facetName()+" can not be overriden",this))
 
                     }
                     var fp=fr.getInstance().facetPrototypeWithName(fd.facetName());
                     if (fp&&fp.isApplicable(this)){
-                        rs.addSubStatus(new Status(Status.ERROR, 0, "built-in facet :" + fd.facetName()+" can not be overriden"))
+                        rs.addSubStatus(new Status(Status.ERROR, 0, "built-in facet :" + fd.facetName()+" can not be overriden",this))
                     }
                     if (fd.facetName().charAt(0)=='('){
-                        rs.addSubStatus(new Status(Status.ERROR, 0, "facet :" + fd.facetName()+" can not start from '('"))
+                        rs.addSubStatus(new Status(Status.ERROR, 0, "facet :" + fd.facetName()+" can not start from '('",this))
                     }
                 }
             }
@@ -491,12 +492,12 @@ export abstract class AbstractType{
                     delete rfds[cd.facetName()];
                 }
                 else {
-                    rs.addSubStatus(new Status(Status.ERROR, 0, "specifying unknown facet:" + cd.facetName()))
+                    rs.addSubStatus(new Status(Status.ERROR, 0, "specifying unknown facet:" + cd.facetName(),this))
                 }
             }
         })
         if (Object.getOwnPropertyNames(rfds).length > 0) {
-            rs.addSubStatus(new Status(Status.ERROR, 0, "missing required facets:" + Object.keys(rfds).join(",")))
+            rs.addSubStatus(new Status(Status.ERROR, 0, "missing required facets:" + Object.keys(rfds).join(","),this))
         }
     };
 
@@ -584,7 +585,7 @@ export abstract class AbstractType{
                     lstack=nswl.getStack();
                     another=nswl.another();
                 }
-                var status=new RestrictionsConflict(another,lstack);
+                var status=new RestrictionsConflict(another,lstack,this);
                 return status;
             }
             return OK_STATUS;
@@ -721,13 +722,13 @@ export abstract class AbstractType{
      * validates object against this type without performing AC
      */
     validateDirect(i:any,autoClose:boolean=false):Status{
-        var result=new Status(Status.OK,0,"");
+        var result=new Status(Status.OK,0,"",this);
         this.restrictions().forEach(x=>result.addSubStatus(x.check(i)));
         if ((autoClose||autoCloseFlag)&&this.isObject()&&(!this.oneMeta(KnownPropertyRestriction))){
             var cp=new KnownPropertyRestriction(true);
             cp.patchOwner(this);
             cp.check(i).getErrors().forEach(x=>{
-                result.addSubStatus(new Status(Status.ERROR,0,"Object freshness warning:"+ x.getMessage()));
+                result.addSubStatus(new Status(Status.ERROR,0,x.getMessage(),this));
             });
         }
         return  result;
@@ -770,7 +771,7 @@ export abstract class AbstractType{
 
     canDoAc():Status{
         var tf:AbstractType[]= _.uniq(this.typeFamily());
-        var s=new Status(Status.OK,0,"");
+        var s=new Status(Status.OK,0,"",this);
         for (var i=0;i<tf.length;i++){
             for (var j=0;j<tf.length;j++){
                 if (i!=j){
@@ -801,7 +802,7 @@ export abstract class AbstractType{
     }
 
     checkDiscriminator(t1:AbstractType, t2:AbstractType):Status {
-        var found = new Status(Status.ERROR, 0, "can not discriminate types " + t1.name() + " and " + t2.name() + " without discriminator");
+        var found = new Status(Status.ERROR, 0, "can not discriminate types " + t1.name() + " and " + t2.name() + " without discriminator",this);
         var oneMeta = t1.oneMeta(metaInfo.Discriminator);
         var anotherMeta = t2.oneMeta(metaInfo.Discriminator);
         if (oneMeta != null && anotherMeta != null && oneMeta.value() === (anotherMeta.value())) {
@@ -820,7 +821,7 @@ export abstract class AbstractType{
                 return OK_STATUS;
             }
             found = new Status(Status.ERROR, 0,
-                "types" + t1.name() + " and " + t2.name() + " have same discriminator value");
+                "types" + t1.name() + " and " + t2.name() + " have same discriminator value",this);
         }
         return found;
     }
@@ -1151,7 +1152,7 @@ export class UnionType extends DerivedType{
 
 
     validateDirect(i:any,autoClose:boolean=false):Status {
-        var st=new Status(Status.OK,0,"");
+        var st=new Status(Status.OK,0,"",this);
         for (var j=0;j<this.options().length;j++){
             var s=this.options()[j].validateDirect(i,autoClose);
             if (s.isOk()){
@@ -1250,7 +1251,7 @@ export class NothingRestriction extends Constraint{
         if (i===null||i===undefined){
             return OK_STATUS;
         }
-        return error("nothing ");
+        return error("nothing ",this);
     }
 
 
@@ -1310,7 +1311,7 @@ export class TypeOfRestriction extends Constraint{
             if (to === this.val) {
                 return OK_STATUS;
             }
-            return error("should be " + this.val);
+            return error("should be " + this.val,this);
 
     }
 
@@ -1354,7 +1355,7 @@ export class IntegerRestriction extends Constraint{
         if (is_int(i)){
             return OK_STATUS;
         }
-        return error("should be integer");
+        return error("should be integer",this);
     }
 
     requiredType(){
@@ -1375,7 +1376,7 @@ export class OrRestriction extends Constraint{
         super();
     }
     check(i:any):Status {
-        var cs=new Status(Status.OK,0,"");
+        var cs=new Status(Status.OK,0,"",this);
         for (var j=0;j<this.val.length;j++){
             var m=this.val[j].check(i);
             if (m.isOk()){

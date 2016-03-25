@@ -56,7 +56,7 @@ export class Annotation extends MetaInfo{
     validateSelf(registry:ts.TypeRegistry):ts.Status {
         var tp=registry.get(this.facetName());
         if (!tp){
-            return new Status(Status.ERROR,0,"using unknown annotation type:"+this.facetName());
+            return new Status(Status.ERROR,0,"using unknown annotation type:"+this.facetName(),this);
         }
         var q=this.value();
         if (!q){
@@ -66,7 +66,9 @@ export class Annotation extends MetaInfo{
         }
         var valOwner=tp.validateDirect(q,true);
         if (!valOwner.isOk()){
-            return new Status(Status.ERROR,0,"invalid annotation value"+valOwner.getMessage());
+            var res=new Status(Status.OK,0,"invalid annotation value"+valOwner.getMessage(),this);
+            res.addSubStatus(valOwner);
+            return res;
         }
         return ts.OK_STATUS;
     }
@@ -121,7 +123,7 @@ export class Example extends MetaInfo{
     validateSelf(registry:ts.TypeRegistry):ts.Status {
         var valOwner=this.owner().validateDirect(parseExampleIfNeeded(this.value(),this.owner()),true);
         if (!valOwner.isOk()){
-            var c= new Status(Status.ERROR,0,"using invalid `example`:"+valOwner.getMessage());
+            var c= new Status(Status.ERROR,0,"using invalid `example`:"+valOwner.getMessage(),this);
             valOwner.getErrors().forEach(x=>c.addSubStatus(x));
             return c;
         }
@@ -139,7 +141,7 @@ export class Required extends MetaInfo{
 
     validateSelf(registry:ts.TypeRegistry):ts.Status {
         if (typeof this.value()!=="boolean"){
-            return new Status(Status.ERROR,0,"value of required facet should be boolean");
+            return new Status(Status.ERROR,0,"value of required facet should be boolean",this);
         }
         return ts.OK_STATUS;
     }
@@ -174,7 +176,7 @@ export class Examples extends MetaInfo{
 
     validateSelf(registry:ts.TypeRegistry):ts.Status {
         if (typeof this.value()==='object'){
-            var rs=new Status(Status.OK,0,"");
+            var rs=new Status(Status.OK,0,"",this);
             var v=this.value();
             Object.keys(v).forEach(x=>{
                 if (typeof v[x]=='object') {
@@ -191,7 +193,7 @@ export class Examples extends MetaInfo{
             return rs;
         }
         else{
-            return new Status(Status.ERROR,0,"examples should be a map");
+            return new Status(Status.ERROR,0,"examples should be a map",this);
         }
     }
 }
@@ -211,7 +213,7 @@ export class Default extends MetaInfo{
     validateSelf(registry:ts.TypeRegistry):ts.Status {
         var valOwner=this.owner().validateDirect(this.value(),true);
         if (!valOwner.isOk()){
-            return new Status(Status.ERROR,0,"using invalid `defaultValue`:"+valOwner.getMessage());
+            return new Status(Status.ERROR,0,"using invalid `defaultValue`:"+valOwner.getMessage(),this);
         }
         return ts.OK_STATUS;
     }
@@ -234,14 +236,14 @@ export class Discriminator extends ts.TypeInformation{
 
     validateSelf(registry:ts.TypeRegistry):ts.Status {
         if (!this.owner().isSubTypeOf(ts.OBJECT)){
-            return new Status(Status.ERROR,0,"you only can use `discriminator` with object types")
+            return new Status(Status.ERROR,0,"you only can use `discriminator` with object types",this)
         }
         var prop=_.find(this.owner().meta(),x=>x instanceof PropertyIs&& (<PropertyIs>x).propertyName()==this.value());
         if (!prop){
-            return new Status(Status.ERROR,0,"Using unknown property: "+this.value()+" as discriminator");
+            return new Status(Status.ERROR,0,"Using unknown property: "+this.value()+" as discriminator",this);
         }
         if (!prop.value().isScalar()){
-            return new Status(Status.ERROR,0,"It is only allowed to use scalar properties as discriminators");
+            return new Status(Status.ERROR,0,"It is only allowed to use scalar properties as discriminators",this);
         }
         return ts.OK_STATUS;
     }
@@ -255,17 +257,17 @@ export class DiscriminatorValue extends ts.TypeInformation{
 
     validateSelf(registry:ts.TypeRegistry):ts.Status {
         if (!this.owner().isSubTypeOf(ts.OBJECT)){
-            return new Status(Status.ERROR,0,"you only can use `discriminator` with object types")
+            return new Status(Status.ERROR,0,"you only can use `discriminator` with object types",this)
         }
         var ds=this.owner().oneMeta(Discriminator);
         if (!ds){
-            return new Status(Status.ERROR,0,"you can not use `discriminatorValue` without declaring `discriminator`")
+            return new Status(Status.ERROR,0,"you can not use `discriminatorValue` without declaring `discriminator`",this)
         }
         var prop=_.find(this.owner().meta(),x=>x instanceof PropertyIs&& (<PropertyIs>x).propertyName()==ds.value());
         if (prop){
             var sm=prop.value().validate(this.value());
             if (!sm.isOk()){
-                return new Status(Status.ERROR,0,"using invalid `disciminatorValue`:"+sm.getMessage());
+                return new Status(Status.ERROR,0,"using invalid `disciminatorValue`:"+sm.getMessage(),this);
             }
         }
         return ts.OK_STATUS;

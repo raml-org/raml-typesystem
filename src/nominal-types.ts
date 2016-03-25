@@ -12,7 +12,7 @@ export type FacetValidator=ti.FacetValidator;
 export type IPrintDetailsSettings=ti.IPrintDetailsSettings;
 export type IAnnotationType=ti.IAnnotationType;
 export type INamedEntity=ti.INamedEntity;
-import _=require("underscore")
+import _=require("./utils")
 declare var global:any;
 global["extraInjectors"]=[];
 

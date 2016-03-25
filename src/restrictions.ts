@@ -26,7 +26,7 @@ export abstract class MatchesProperty extends ts.Constraint{
         if (vl!==null&&vl!==undefined){
             var st=t.validate(vl);
             if (!st.isOk()){
-                return ts.error("value of declareProperty "+n+ ": "+st.getMessage())
+                return ts.error("value of declareProperty "+n+ ": "+st.getMessage(),this)
             }
         }
         return ts.OK_STATUS;
@@ -39,17 +39,17 @@ export abstract class MatchesProperty extends ts.Constraint{
         if (this._type.isAnonymous()){
             var st=this._type.validateType(registry);
             if (!st.isOk()){
-                return new Status(Status.ERROR,0,"property "+this.propId()+" range type has error:"+st.getMessage())
+                return new Status(Status.ERROR,0,"property "+this.propId()+" range type has error:"+st.getMessage(),this)
             }
             return st;
         }
         if (this._type.isSubTypeOf(ts.UNKNOWN)||this._type.isSubTypeOf(ts.RECURRENT)){
-            return new Status(Status.ERROR,0,"property "+this.propId()+" refers to unknown type "+this._type.name())
+            return new Status(Status.ERROR,0,"property "+this.propId()+" refers to unknown type "+this._type.name(),this)
         }
         if (this._type.isUnion()){
            var ui= _.find(this._type.typeFamily(),x=>x.isSubTypeOf(ts.UNKNOWN));
            if (ui){
-               return new Status(Status.ERROR,0,"property "+this.propId()+" refers to unknown type "+ui.name())
+               return new Status(Status.ERROR,0,"property "+this.propId()+" refers to unknown type "+ui.name(),this)
            }
         }
         return ts.OK_STATUS;
@@ -71,7 +71,7 @@ export class MatchToSchema extends  ts.Constraint{
             try {
                 so = su.getJSONSchema(strVal);
             } catch (e){
-                return new ts.Status(ts.Status.ERROR,0,"Incorrect schema :"+ e.message);
+                return new ts.Status(ts.Status.ERROR,0,"Incorrect schema :"+ e.message,this);
             }
         }
         if (strVal.charAt(0)=="<"){
@@ -91,7 +91,7 @@ export class MatchToSchema extends  ts.Constraint{
                 if (e.message=="Object.keys called on non-object"){
                     return ts.OK_STATUS;
                 }
-                return new ts.Status(ts.Status.ERROR,0,"Example does not conform to schema:"+e.message);
+                return new ts.Status(ts.Status.ERROR,0,"Example does not conform to schema:"+e.message,this);
             }
             //validate using classical schema;
         }
@@ -148,7 +148,9 @@ export class KnownPropertyRestriction extends ts.Constraint{
                     });
                 })
                 if (Object.keys(nm).length > 0&&mp.length>0) {
-                    return ts.error("unmatched properties:" + Object.keys(nm).join(","));
+                    var s=new ts.Status(ts.Status.OK,0,"",this);
+                    Object.keys(nm).forEach(x=>s.addSubStatus(ts.error("Unknown property:"+x,this)));
+                    return s;
                 }
             }
         }
@@ -187,7 +189,7 @@ export class HasProperty extends ts.Constraint{
             if (i.hasOwnProperty(this.name)) {
                 return ts.OK_STATUS;
             }
-            return ts.error("object should have declared property: " + this.name);
+            return ts.error("object should have declared property: " + this.name,this);
         }
         return ts.OK_STATUS;
     }
@@ -315,7 +317,7 @@ export class MapPropertyIs extends MatchesProperty{
     validateSelf(t:ts.TypeRegistry):ts.Status{
         var m=this.checkValue();
         if (m){
-            return new Status(Status.ERROR,0,m);
+            return new Status(Status.ERROR,0,m,this);
         }
         return super.validateSelf(t);
     }
@@ -357,7 +359,7 @@ export class MapPropertyIs extends MatchesProperty{
     check(i:any):ts.Status{
         if (i) {
             if (typeof i == 'object') {
-                var rs:ts.Status = new ts.Status(ts.Status.OK, 0, "");
+                var rs:ts.Status = new ts.Status(ts.Status.OK, 0, "",this);
                 Object.getOwnPropertyNames(i).forEach(n=> {
                     if (n.match(this.regexp)) {
                         var stat = this.validateProp(i, n, this.type);
@@ -440,7 +442,7 @@ export class AdditionalPropertyIs extends MatchesProperty{
     }
     check(i:any):ts.Status{
         var t=this.type;
-        var res=new ts.Status(ts.Status.OK,0,"");
+        var res=new ts.Status(ts.Status.OK,0,"",this);
         if (i&&typeof i==="object") {
             Object.getOwnPropertyNames(i).forEach(n=> {
                 if (!this.match(n)) {
@@ -468,11 +470,11 @@ export abstract class FacetRestriction<T> extends ts.Constraint{
 
     validateSelf(registry:ts.TypeRegistry):ts.Status{
         if (!this.owner().isSubTypeOf(this.requiredType())){
-            return ts.error(this.facetName()+" facet can only be used with "+this.requiredType().name()+" types");
+            return ts.error(this.facetName()+" facet can only be used with "+this.requiredType().name()+" types",this);
         }
         var m=this.checkValue();
         if (m){
-            return ts.error(m);
+            return ts.error(m,this);
         }
         return ts.OK_STATUS;
     }
@@ -528,7 +530,7 @@ export abstract class MinMaxRestriction extends FacetRestriction<Number>{
         return ts.OK_STATUS;
     }
     createError():ts.Status{
-        return ts.error(this.toString());
+        return ts.error(this.toString(),this);
     }
 
     minValue(){
@@ -755,7 +757,7 @@ export class UniqueItems extends FacetRestriction<boolean>{
         if (Array.isArray(i)){
             var r:any[]=i;
             if (_.unique(r).length!= r.length){
-                return ts.error(this.toString());
+                return ts.error(this.toString(),this);
             }
         }
         return ts.OK_STATUS
@@ -798,7 +800,7 @@ export class ComponentShouldBeOfType extends FacetRestriction<ts.AbstractType>{
     }
     check(i:any):ts.Status{
 
-        var rs=new ts.Status(ts.Status.OK,0,"");
+        var rs=new ts.Status(ts.Status.OK,0,"",this);
         if (Array.isArray(i)){
             var ar:any[]=i;
             for (var j=0;j<ar.length;j++){
@@ -811,17 +813,17 @@ export class ComponentShouldBeOfType extends FacetRestriction<ts.AbstractType>{
         if (this.type.isAnonymous()) {
             var st = this.type.validateType(registry);
             if (!st.isOk()) {
-                return new Status(Status.ERROR, 0,  "component type has error:" + st.getMessage())
+                return new Status(Status.ERROR, 0,  "component type has error:" + st.getMessage(),this)
             }
             return st;
         }
         if (this.type.isSubTypeOf(ts.UNKNOWN) || this.type.isSubTypeOf(ts.RECURRENT)) {
-            return new Status(Status.ERROR, 0, "component refers to unknown type " + this.type.name())
+            return new Status(Status.ERROR, 0, "component refers to unknown type " + this.type.name(),this)
         }
         if (this.type.isUnion()) {
             var ui = _.find(this.type.typeFamily(), x=>x.isSubTypeOf(ts.UNKNOWN));
             if (ui) {
-                return new Status(Status.ERROR, 0, "component refers to unknown type " + ui.name())
+                return new Status(Status.ERROR, 0, "component refers to unknown type " + ui.name(),this)
             }
         }
         return ts.OK_STATUS;
@@ -878,7 +880,7 @@ export class Pattern extends FacetRestriction<string>{
             try {
                 var mm=st.match(this._value);
                 if (!mm){
-                    return new ts.Status(ts.Status.ERROR, 0, "string should match to " + this.value());
+                    return new ts.Status(ts.Status.ERROR, 0, "string should match to " + this.value(),this);
                 }
             }catch (e){
 
@@ -935,7 +937,7 @@ export class Enum extends FacetRestriction<string[]>{
     check(i:any):ts.Status{
         if (!this.checkStatus) {
             if (!this.value().some(x=>x == i)) {
-                return ts.error(this.toString());
+                return ts.error(this.toString(),this);
             }
         }
         return ts.OK_STATUS

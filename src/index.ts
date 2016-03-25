@@ -7,7 +7,7 @@ import {CustomFacet} from "./metainfo";
 import {FacetDeclaration} from "./metainfo";
 import {Status} from "./typesystem";
 import nm=require("./nominals")
-import nt=require("./nominal-interfaces")
+export import nt=require("./nominal-types")
 export interface IStatus {
 
 
