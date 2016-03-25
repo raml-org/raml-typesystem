@@ -94,6 +94,12 @@ export function toNominal(t:ts.AbstractType,callback:StringToBuiltIn,customizer:
             vs = new nt.ValueType(t.name(), null);
 
         }
+        else if (t instanceof ts.ExternalType){
+            var e=<ts.ExternalType>t;
+            var et=new nt.ExternalType(e.name());
+            et.schemaString= e.schema();
+            vs=et;
+        }
     }
     if (!vs){
         vs=new nt.StructuredType(t.name());

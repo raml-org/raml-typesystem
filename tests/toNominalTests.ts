@@ -122,4 +122,19 @@ describe("To nominals",function() {
 
         assert.isTrue(nt.getFixedFacets()["rr"]==3);
     });
+    it("is External", function () {
+        var tps = ps.parseJSONTypeCollection({
+            types:{
+                A: {type:"{}"},
+                B: { type:"A",rr: 3}
+
+            }
+        },ts.builtInRegistry())
+        var tp=tps.getType("B")
+        var nt=nm.toNominal(tp,x=>null);
+
+        assert.isTrue(!nt.isExternal());
+        assert.isTrue(nt.hasExternalInHierarchy());
+    });
+
 });
