@@ -108,6 +108,18 @@ describe("To nominals",function() {
         var nt=nm.toNominal(tp,x=>null);
         var details=nt.printDetails();
         assert.isTrue(details.indexOf("z : number[ValueType]")!=-1);
+    });
+    it("fixed facets acccess", function () {
+        var tps = ps.parseJSONTypeCollection({
+            types:{
+                A: {type:"object","properties":{"z":"number"},"facets": {"rr": "number"}},
+                B: { type:"A",rr: 3}
 
+            }
+        },ts.builtInRegistry())
+        var tp=tps.getType("B")
+        var nt=nm.toNominal(tp,x=>null);
+
+        assert.isTrue(nt.getFixedFacets()["rr"]==3);
     });
 });

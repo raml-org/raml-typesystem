@@ -124,6 +124,9 @@ export function toNominal(t:ts.AbstractType,callback:StringToBuiltIn,customizer:
         vs.addFacet(prop);
 
     })
+    t.customFacets().forEach(x=>{
+        vs.fixFacet(x.facetName(), x.value());
+    })
     vs.addAdapter(t);
     if (t.isEmpty()){
         vs.addAdapter(new nt.Empty());
