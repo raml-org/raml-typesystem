@@ -31,4 +31,29 @@ describe("Simple validation testing",function() {
         });
         assert.isTrue(f);
     });
+    it("Type error message #7", function () {
+        var tp = ps.parseJSONTypeCollection({
+
+            types:{
+                XX:{
+                    type:"object",
+                    properties:{
+                        c:"string",
+                    },
+                    example:{
+                        c:4,
+                    }
+                }
+            }
+        });
+        var t=tp.getType("XX");
+        var st=t.validateType(ts.builtInRegistry());
+        var f=false;
+        st.getErrors().forEach(x=>{
+            if (x.getMessage().indexOf("string is expected")!=-1){
+                f=true;
+            }
+        });
+        assert.isTrue(f);
+    });
 });

@@ -1311,7 +1311,7 @@ export class TypeOfRestriction extends Constraint{
             if (to === this.val) {
                 return OK_STATUS;
             }
-            return error("should be " + this.val,this);
+            return error(this.val+" is expected",this);
 
     }
 
@@ -1355,7 +1355,7 @@ export class IntegerRestriction extends Constraint{
         if (is_int(i)){
             return OK_STATUS;
         }
-        return error("should be integer",this);
+        return error("integer is expected",this);
     }
 
     requiredType(){
