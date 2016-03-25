@@ -26,7 +26,9 @@ export abstract class MatchesProperty extends ts.Constraint{
         if (vl!==null&&vl!==undefined){
             var st=t.validate(vl);
             if (!st.isOk()){
-                return ts.error("value of declareProperty "+n+ ": "+st.getMessage(),this)
+                var s=new Status(Status.OK,0,"",this);
+                st.getErrors().forEach(x=>s.addSubStatus(x));
+                return s;
             }
         }
         return ts.OK_STATUS;
