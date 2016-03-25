@@ -13,6 +13,5 @@ describe("Simple validation testing",function() {
         })
         var wr=new jsschema.SchemaWriter();
         wr.store(tp)
-        console.log(wr.getResult())
     });
 });

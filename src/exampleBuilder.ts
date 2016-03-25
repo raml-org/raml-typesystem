@@ -15,6 +15,10 @@ export function example(t:rt.AbstractType):any{
             return examples[0];
         }
     }
+    var d=t.oneMeta(meta.Default);
+    if (d){
+        return d.value();
+    }
     if (t.isObject()){
         var result:any={};
         t.meta().forEach(x=>{

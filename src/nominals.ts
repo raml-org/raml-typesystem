@@ -114,11 +114,15 @@ export function toNominal(t:ts.AbstractType,callback:StringToBuiltIn,customizer:
         var prop=pc?pc(x.id):new nt.Property(x.id);
         prop.withDomain(<nt.StructuredType>vs);
         prop.withRange(toNominal(x.type,callback));
+        if (!x.optional){
+            prop.withRequired(true);
+        }
     });
     proto.facetDeclarations.forEach(x=>{
         var prop=pc?pc(x.facetName()):new nt.Property(x.facetName());
         prop.withRange(toNominal(x.type(),callback));
         vs.addFacet(prop);
+
     })
     vs.addAdapter(t);
     if (t.isEmpty()){
