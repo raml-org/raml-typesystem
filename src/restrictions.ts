@@ -6,6 +6,7 @@ import {AndRestriction} from "./typesystem";
 import {Constraint} from "./typesystem";
 import {AbstractType} from "./typesystem";
 import {Status} from "./typesystem";
+import {autoCloseFlag} from "./typesystem";
 
 /**
  * this class is an abstract super type for every constraint that can select properties from objects
@@ -818,7 +819,7 @@ export class ComponentShouldBeOfType extends FacetRestriction<ts.AbstractType>{
         if (Array.isArray(i)){
             var ar:any[]=i;
             for (var j=0;j<ar.length;j++){
-                rs.addSubStatus(this.type.validate(ar[j]));
+                rs.addSubStatus(this.type.validate(ar[j],true));
             }
         }
         return rs;

@@ -62,7 +62,7 @@ export class Status {
         }
     }
     getErrors():Status[]{
-        if (this.isError()){
+        if (this.isError()||this.isWarning()){
             if (this.subStatus.length>0){
                 var rs:Status[]=[];
                 this.subStatus.forEach(x=>rs=rs.concat(x.getErrors()));
@@ -756,7 +756,7 @@ export abstract class AbstractType{
             var cp=new KnownPropertyRestriction(true);
             cp.patchOwner(this);
             cp.check(i).getErrors().forEach(x=>{
-                result.addSubStatus(new Status(Status.ERROR,0,x.getMessage(),this));
+                result.addSubStatus(new Status(Status.WARNING,0,x.getMessage(),this));
             });
         }
         return  result;
