@@ -1,7 +1,24 @@
-import ps= require("../src/parse")
+import ps= require("./actualParse")
 import ts = require("../src/typesystem")
 import chai = require("chai");
 import assert = chai.assert;
+
+describe("JSON Schemas testing",function() {
+    it("schema with reference, example is valid", function () {
+        var tp = ps.parseJSON("SomeType", {
+            type: '{"$schema":"http://json-schema.org/draft-04/schema","type":"object","properties":{"parentName":{"type":"string","required":true},"child":{"$ref":"./content/jsonschemetest/test1/scheme.json#"}}}'
+        });
+
+        assert.isTrue(tp.validate({parentName:"someName",child:{childName:"anotherName"}}).isOk());
+    });
+    it("schema with reference, example is invalid", function () {
+        var tp = ps.parseJSON("SomeType", {
+            type: '{"$schema":"http://json-schema.org/draft-04/schema","type":"object","properties":{"parentName":{"type":"string","required":true},"child":{"$ref":"./content/jsonschemetest/test1/scheme.json#"}}}'
+        });
+
+        assert.isTrue(!tp.validate({parentName:"someName",child:{childName1:"anotherName"}}).isOk());
+    });
+})
 
 describe("Simple validation testing",function() {
     it("built in types exist", function () {

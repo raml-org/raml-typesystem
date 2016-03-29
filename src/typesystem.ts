@@ -382,7 +382,7 @@ export abstract class AbstractType{
 
                 if (x.isJSON()) {
                     try {
-                        su.getJSONSchema(x.schema());
+                        su.getJSONSchema(x.schema(), x.getContentProvider && x.getContentProvider());
                     } catch (e){
                         rs.addSubStatus(new Status(Status.ERROR,0, e.message,this));
                     }
@@ -1494,11 +1494,18 @@ registry.types().forEach(x=>x.lock())
 
 
 export class ExternalType extends InheritedType{
-
-    constructor( name: string,private _content:string,private json:boolean){
+    constructor( name: string,private _content:string,private json:boolean, private provider: su.IContentProvider){
         super(name);
-        this.addMeta(new restr.MatchToSchema(_content));
+        this.addMeta(new restr.MatchToSchema(_content, provider));
         this.addSuper(EXTERNAL);
+    }
+
+    getContentProvider() {
+        return this.provider;
+    }
+
+    setContentProvider(provider: su.IContentProvider) {
+        this.provider = provider;
     }
 
     kind():string{

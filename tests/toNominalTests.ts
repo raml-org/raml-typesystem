@@ -1,4 +1,4 @@
-import ps= require("../src/parse")
+import ps= require("./actualParse")
 import ts = require("../src/typesystem")
 import chai = require("chai");
 import assert = chai.assert;

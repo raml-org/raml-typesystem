@@ -12,6 +12,9 @@ import {AdditionalPropertyIs} from "./restrictions";
 import {MapPropertyIs} from "./restrictions";
 import {TypeRegistry} from "./typesystem";
 import {ComponentShouldBeOfType} from "./restrictions";
+
+import su = require('./schemaUtil');
+
 export enum NodeKind{
     SCALAR,
     ARRAY,
@@ -33,7 +36,7 @@ export interface ParseNode {
 
 class JSObjectNode implements ParseNode{
 
-    constructor(private _key:string,private obj:any,private inArr:boolean=false){
+    constructor(private _key:string,private obj:any,private inArr:boolean=false, private provider: su.IContentProvider){
     }
 
     value(){
@@ -56,17 +59,17 @@ class JSObjectNode implements ParseNode{
             return null;
         }
         if (this.obj.hasOwnProperty(k)){
-            return new JSObjectNode(k,this.obj[k]);
+            return new JSObjectNode(k,this.obj[k], false, this.contentProvider());
         }
         return null;
     }
 
     children():JSObjectNode[]{
         if (Array.isArray(this.obj)){
-            return (<any[]>this.obj).map(x=>new JSObjectNode(null,x,true));
+            return (<any[]>this.obj).map(x=>new JSObjectNode(null,x,true, this.contentProvider()));
         }
         else if (this.obj&&typeof this.obj=="object"){
-            return Object.keys(this.obj).map(x=>new JSObjectNode(x,this.obj[x]));
+            return Object.keys(this.obj).map(x=>new JSObjectNode(x,this.obj[x], false, this.provider));
         }
         return []
     }
@@ -82,12 +85,16 @@ class JSObjectNode implements ParseNode{
         }
         return NodeKind.SCALAR;
     }
+
+    contentProvider(): su.IContentProvider {
+        return this.provider;
+    };
 }
-export function parseJSON(name: string,n:any,r:ts.TypeRegistry=ts.builtInRegistry()):ts.AbstractType {
-    return parse(name,new JSObjectNode(null,n),r);
+export function parseJSON(name: string,n:any,r:ts.TypeRegistry=ts.builtInRegistry(), provider?: su.IContentProvider):ts.AbstractType {
+    return parse(name,new JSObjectNode(null,n, false, provider),r);
 }
-export function parseJSONTypeCollection(n:any,r:ts.TypeRegistry=ts.builtInRegistry()):TypeCollection {
-    return parseTypeCollection(new JSObjectNode(null,n),r);
+export function parseJSONTypeCollection(n:any,r:ts.TypeRegistry=ts.builtInRegistry(), provider?: su.IContentProvider):TypeCollection {
+    return parseTypeCollection(new JSObjectNode(null,n, false, provider),r);
 }
 function isOptional(p:string) {
     return p.charAt(p.length - 1) == '?';
@@ -235,7 +242,9 @@ export class AccumulatingRegistry extends ts.TypeRegistry{
 }
 
 export function parseTypes(n:any,tr:ts.TypeRegistry=ts.builtInRegistry()):TypeCollection{
-    return parseTypeCollection(new JSObjectNode(null,n),tr);
+    var provider: su.IContentProvider = n.provider && n.provider();
+
+    return parseTypeCollection(new JSObjectNode(null,n, false, provider),tr);
 }
 
 class WrapArrayNode implements ParseNode{
@@ -583,8 +592,11 @@ function typeToSignature(t:ts.AbstractType):string{
  */
 export function parse(name: string,n:ParseNode,r:ts.TypeRegistry=ts.builtInRegistry(),defaultsToAny:boolean=false,annotation:boolean=false):ts.AbstractType{
     //Build super types.
+
+    var provider: su.IContentProvider = (<any>n).contentProvider ? (<any>n).contentProvider() : null;
+
     if (n.kind()==NodeKind.SCALAR){
-        var sp= n.value()?typeExpressions.parseToType(""+n.value(),r):ts.STRING;
+        var sp= n.value()?typeExpressions.parseToType(""+n.value(),r, provider):ts.STRING;
         if (name==null){
             return sp;
         }
@@ -599,7 +611,7 @@ export function parse(name: string,n:ParseNode,r:ts.TypeRegistry=ts.builtInRegis
     if (n.kind()==NodeKind.ARRAY){
         var supers:ts.AbstractType[]=[];
         n.children().forEach(x=>{
-            supers.push(typeExpressions.parseToType(""+x.value(),r))
+            supers.push(typeExpressions.parseToType(""+x.value(),r, provider))
         })
         var res=ts.derive(name,supers);
         if (r instanceof AccumulatingRegistry){
@@ -633,10 +645,10 @@ export function parse(name: string,n:ParseNode,r:ts.TypeRegistry=ts.builtInRegis
     }
     else{
         if (tp.kind()==NodeKind.SCALAR){
-            superTypes=[typeExpressions.parseToType(""+tp.value(),r)];
+            superTypes=[typeExpressions.parseToType(""+tp.value(),r, provider)];
         }
         else if (tp.kind()==NodeKind.ARRAY){
-            superTypes=tp.children().map(x=>x.value()).map(y=>typeExpressions.parseToType(""+y,r));
+            superTypes=tp.children().map(x=>x.value()).map(y=>typeExpressions.parseToType(""+y,r, provider));
         }
     }
     var result=ts.derive(name,superTypes);
