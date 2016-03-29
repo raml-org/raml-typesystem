@@ -8,6 +8,13 @@ import {FacetDeclaration} from "./metainfo";
 import {Status} from "./typesystem";
 import nm=require("./nominals")
 export import nominalTypes=require("./nominal-types")
+
+export interface IValidationPath{
+
+    name: string
+    child?:IValidationPath
+
+}
 export interface IStatus {
 
 
@@ -41,7 +48,7 @@ export interface IStatus {
 
     getErrors():IStatus[];
 
-
+    getValidationPath():IValidationPath;
 }
 /**
  * this is a common super interface for restrictions and meta data

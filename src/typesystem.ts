@@ -1,6 +1,13 @@
 /// <reference path="../typings/main.d.ts" />
 import _=require("underscore")
 import su=require("./schemaUtil")
+
+export interface IValidationPath{
+
+    name: string
+    child?:IValidationPath
+
+}
 export class Status {
 
     public static CODE_CONFLICTING_TYPE_KIND = 4;
@@ -21,11 +28,30 @@ export class Status {
 
     protected subStatus:Status[] = [];
 
+    protected vp:IValidationPath
+
+    getValidationPath():IValidationPath{
+        return this.vp;
+    }
+
+    setValidationPath(c:IValidationPath){
+        this.vp=c;
+        this.subStatus.forEach(x=>{
+            if (x.getValidationPath()){
+                x.setValidationPath(c);
+            }
+            else{
+                x.setValidationPath(c);
+            }
+        })
+    }
+
     public constructor(severity:number, code:number, message:string,source:any) {
         this.severity = severity;
         this.code = code;
         this.message = message;
         this.source=source;
+
     }
 
     addSubStatus(st:Status) {
@@ -38,7 +64,9 @@ export class Status {
     getErrors():Status[]{
         if (this.isError()){
             if (this.subStatus.length>0){
-                return this.subStatus.filter(x=>x.isError());
+                var rs:Status[]=[];
+                this.subStatus.forEach(x=>rs=rs.concat(x.getErrors()));
+                return rs;
             }
             return [this];
         }
@@ -1369,6 +1397,7 @@ export class IntegerRestriction extends Constraint{
         return true;
     }
 }
+
 
 export class OrRestriction extends Constraint{
 

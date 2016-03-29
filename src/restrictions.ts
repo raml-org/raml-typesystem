@@ -28,6 +28,7 @@ export abstract class MatchesProperty extends ts.Constraint{
             if (!st.isOk()){
                 var s=new Status(Status.OK,0,"",this);
                 st.getErrors().forEach(x=>s.addSubStatus(x));
+
                 return s;
             }
         }
@@ -41,17 +42,23 @@ export abstract class MatchesProperty extends ts.Constraint{
         if (this._type.isAnonymous()){
             var st=this._type.validateType(registry);
             if (!st.isOk()){
-                return new Status(Status.ERROR,0,"property "+this.propId()+" range type has error:"+st.getMessage(),this)
+                var p= new Status(Status.ERROR,0,"property "+this.propId()+" range type has error:"+st.getMessage(),this)
+                p.setValidationPath({name: this.propId()})
+                return p;
             }
             return st;
         }
         if (this._type.isSubTypeOf(ts.UNKNOWN)||this._type.isSubTypeOf(ts.RECURRENT)){
-            return new Status(Status.ERROR,0,"property "+this.propId()+" refers to unknown type "+this._type.name(),this)
+            var p= new Status(Status.ERROR,0,"property "+this.propId()+" refers to unknown type "+this._type.name(),this)
+            p.setValidationPath({name: this.propId()})
+            return p;
         }
         if (this._type.isUnion()){
            var ui= _.find(this._type.typeFamily(),x=>x.isSubTypeOf(ts.UNKNOWN));
            if (ui){
-               return new Status(Status.ERROR,0,"property "+this.propId()+" refers to unknown type "+ui.name(),this)
+               var p=new Status(Status.ERROR,0,"property "+this.propId()+" refers to unknown type "+ui.name(),this);
+               p.setValidationPath({name: this.propId()})
+               return p;
            }
         }
         return ts.OK_STATUS;
@@ -472,11 +479,15 @@ export abstract class FacetRestriction<T> extends ts.Constraint{
 
     validateSelf(registry:ts.TypeRegistry):ts.Status{
         if (!this.owner().isSubTypeOf(this.requiredType())){
-            return ts.error(this.facetName()+" facet can only be used with "+this.requiredType().name()+" types",this);
+            var rs= ts.error(this.facetName()+" facet can only be used with "+this.requiredType().name()+" types",this);
+            rs.setValidationPath({name:this.facetName()});
+            return rs;
         }
         var m=this.checkValue();
         if (m){
-            return ts.error(m,this);
+            var rs= ts.error(m,this);
+            rs.setValidationPath({name:this.facetName()});
+            return rs;
         }
         return ts.OK_STATUS;
     }

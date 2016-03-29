@@ -125,6 +125,7 @@ export class Example extends MetaInfo{
         if (!valOwner.isOk()){
             var c= new Status(Status.ERROR,0,"using invalid `example`:"+valOwner.getMessage(),this);
             valOwner.getErrors().forEach(x=>c.addSubStatus(x));
+            c.setValidationPath({name: "example"})
             return c;
         }
         return ts.OK_STATUS;
@@ -181,7 +182,8 @@ export class Examples extends MetaInfo{
             Object.keys(v).forEach(x=>{
                 if (typeof v[x]=='object') {
                     var example = parseExampleIfNeeded(v[x].content, this.owner());
-                    rs.addSubStatus(this.owner().validateDirect(example,true));
+                    var res=this.owner().validateDirect(example,true);
+                    res.getErrors().forEach(ex=>rs.addSubStatus(ex));
                     Object.keys(v[x]).forEach(key=>{
                         if (key.charAt(0)=='('&&key.charAt(key.length-1)==')'){
                             var a=new Annotation(key.substring(1,key.length-1),v[x][key]);
@@ -190,6 +192,7 @@ export class Examples extends MetaInfo{
                     });
                 }
             });
+            rs.setValidationPath({name: "examples"})
             return rs;
         }
         else{
