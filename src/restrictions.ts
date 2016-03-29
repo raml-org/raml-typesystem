@@ -987,7 +987,7 @@ export class Enum extends FacetRestriction<string[]>{
             this._value.forEach(x=> {
                 var res = this.owner().validate(x);
                 if (!res.isOk()) {
-                    return res;
+                    result= res.getMessage();
                 }
             })
         }finally {
