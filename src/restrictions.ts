@@ -987,7 +987,7 @@ export class Enum extends FacetRestriction<string[]>{
             this._value.forEach(x=> {
                 var res = this.owner().validate(x);
                 if (!res.isOk()) {
-                    result = "all enum values should be valid instances of declaring type"
+                    return res;
                 }
             })
         }finally {
