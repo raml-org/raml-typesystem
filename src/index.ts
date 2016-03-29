@@ -7,7 +7,7 @@ import {CustomFacet} from "./metainfo";
 import {FacetDeclaration} from "./metainfo";
 import {Status} from "./typesystem";
 import nm=require("./nominals")
-export import nt=require("./nominal-types")
+export import nominalTypes=require("./nominal-types")
 export interface IStatus {
 
 
@@ -721,7 +721,7 @@ export class TypeConstructor {
 export function setPropertyConstructor(c:any){
     nm.setPropertyConstructor(c);
 }
-export function toNominal(t:IParsedType,bt: (name:string)=>nt.ITypeDefinition) :nt.ITypeDefinition{
+export function toNominal(t:IParsedType,bt: (name:string)=>nominalTypes.ITypeDefinition) :nominalTypes.ITypeDefinition{
      return nm.toNominal(<ts.AbstractType>t,bt);
 }
 
