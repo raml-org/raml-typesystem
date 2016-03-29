@@ -1,9 +1,13 @@
 //import _ = require("underscore")
 /// <reference path="../typings/main.d.ts" />
 declare function require(s:string):any;
+declare var __dirname: string;
+
 var path = require('path');
 var URL = require('url');
 var fs = require('fs');
+
+var rootPath = path.resolve(__dirname, '../../tests/root.json');
 
 class Unit {
     private _absolutePath: string;
@@ -32,7 +36,7 @@ class Unit {
 }
 
 export class ContentProvider {
-    private unit = new Unit('/Users/dreamflyer/Desktop/raml-labs-new-1/typesystem-ts/tests/root.json');
+    private unit = new Unit(rootPath);
 
     contextPath() {
         if(!this.unit) {
