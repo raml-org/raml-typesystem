@@ -25,7 +25,7 @@ export abstract class MatchesProperty extends ts.Constraint{
     validateProp(i: any,n:string, t:ts.AbstractType){
         var vl=i[n];
         if (vl!==null&&vl!==undefined){
-            var st=t.validate(vl);
+            var st=t.validate(vl,true);
             if (!st.isOk()){
                 var s=new Status(Status.OK,0,"",this);
                 st.getErrors().forEach(x=>s.addSubStatus(x));
