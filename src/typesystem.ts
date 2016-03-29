@@ -261,7 +261,7 @@ export class TypeRegistry {
 
 export class RestrictionsConflict extends Status{
     constructor(protected _conflicting:Constraint,protected _stack:RestrictionStackEntry,source:any){
-        super(Status.ERROR,0,"Restrictions conflict",source);
+        super(Status.ERROR,0,"Restrictions conflict "+_conflicting+" and "+_stack.getRestriction().toString(),source);
     }
     getConflictDescription():string{
         var rs="";
@@ -1368,6 +1368,10 @@ export class TypeOfRestriction extends Constraint{
             return this.nothing(r);
         }
         return null;
+    }
+
+    toString(){
+        return "should be of type "+this.val;
     }
 }
 function is_int(value:any){
