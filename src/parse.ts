@@ -683,6 +683,14 @@ export function parse(name: string,n:ParseNode,r:ts.TypeRegistry=ts.builtInRegis
                 return;
             }
         }
+        if (key=="items"){
+            if (result.isSubTypeOf(ts.ARRAY)){
+                var tp=parse(null, x,r);
+                actualResult.addMeta(new ComponentShouldBeOfType(tp));
+                return;
+            }
+        }
+
         if (key==="facets"){
             return;
         }
@@ -729,6 +737,7 @@ export function parse(name: string,n:ParseNode,r:ts.TypeRegistry=ts.builtInRegis
             }
         }
     }
+
     var props=n.childWithKey("facets");
     if (props){
         if (props.kind()==NodeKind.MAP){

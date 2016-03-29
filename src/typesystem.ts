@@ -1181,13 +1181,16 @@ export class UnionType extends DerivedType{
 
     validateDirect(i:any,autoClose:boolean=false):Status {
         var st=new Status(Status.OK,0,"",this);
+        var options:Status=null;
         for (var j=0;j<this.options().length;j++){
             var s=this.options()[j].validateDirect(i,autoClose);
             if (s.isOk()){
                 return s;
             }
-            st.addSubStatus(s);
+            options=s;
         }
+
+        st.addSubStatus(options);
         return st;
     }
 

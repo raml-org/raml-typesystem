@@ -144,6 +144,7 @@ export class KnownPropertyRestriction extends ts.Constraint{
     }
 
     check(i:any):ts.Status{
+
         if (this._value) {
             if (i&&typeof  i == 'object') {
                 var nm:{ [name:string]:boolean} = {};
@@ -194,7 +195,7 @@ export class HasProperty extends ts.Constraint{
         super();
     }
     check(i:any):ts.Status{
-        if (i&&typeof i=='object') {
+        if (i&&typeof i=='object'&&!Array.isArray(i)) {
             if (i.hasOwnProperty(this.name)) {
                 return ts.OK_STATUS;
             }
