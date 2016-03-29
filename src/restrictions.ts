@@ -60,7 +60,7 @@ export abstract class MatchesProperty extends ts.Constraint{
 
 export class MatchToSchema extends  ts.Constraint{
 
-    constructor(private _value:string){
+    constructor(private _value:string, private provider: su.IContentProvider){
         super();
     }
     value(){
@@ -71,7 +71,7 @@ export class MatchToSchema extends  ts.Constraint{
         var strVal=this.value();
         if (strVal.charAt(0)=="{"){
             try {
-                so = su.getJSONSchema(strVal);
+                so = su.getJSONSchema(strVal, this.provider);
             } catch (e){
                 return new ts.Status(ts.Status.ERROR,0,"Incorrect schema :"+ e.message,this);
             }

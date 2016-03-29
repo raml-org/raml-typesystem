@@ -1,5 +1,6 @@
 import typeExpression=require("./typeExpressionParser")
 import ts=require("./typesystem")
+import schemaUtil = require('./schemaUtil')
 import {ComponentShouldBeOfType} from "./restrictions";
 import {AdditionalPropertyIs} from "./restrictions";
 export interface BaseNode{
@@ -20,13 +21,13 @@ export interface Literal extends BaseNode{
     params?:BaseNode[];
 }
 
-export function parseToType(val:string,t:ts.TypeRegistry):ts.AbstractType{
+export function parseToType(val:string,t:ts.TypeRegistry, contentProvider: schemaUtil.IContentProvider = null):ts.AbstractType{
     try {
 
         var q=val.trim();
         var json=q.charAt(0)=='{';
         if (json || q.charAt(0)=='<'){
-            return new ts.ExternalType("",q,json);
+            return new ts.ExternalType("", q, json, contentProvider);
         }
         var mapShortCutIndex=val.indexOf("{}");
         var isMap:boolean=false;

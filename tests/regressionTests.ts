@@ -1,4 +1,4 @@
-import ps= require("../src/parse")
+import ps= require("./actualParse")
 import ts = require("../src/typesystem")
 import chai = require("chai");
 import assert = chai.assert;
@@ -24,7 +24,7 @@ describe("Simple validation testing",function() {
         var t=tp.getType("XX");
         var st=t.validateType(ts.builtInRegistry());
         var f=false;
-        st.getErrors().forEach(x=>{
+        st.getErrors().forEach((x: any)=>{
             if (x.getMessage().indexOf("Unknown property")!=-1){
                 f=true;
             }
@@ -49,7 +49,7 @@ describe("Simple validation testing",function() {
         var t=tp.getType("XX");
         var st=t.validateType(ts.builtInRegistry());
         var f=false;
-        st.getErrors().forEach(x=>{
+        st.getErrors().forEach((x: any)=>{
             if (x.getMessage().indexOf("string is expected")!=-1){
                 f=true;
             }
@@ -74,7 +74,7 @@ describe("Simple validation testing",function() {
         var t=tp.getType("XX");
         var st=t.validateType(ts.builtInRegistry());
         var f=false;
-        st.getErrors().forEach(x=>{
+        st.getErrors().forEach((x: any)=>{
             if (x.getMessage().indexOf("Required property:")!=-1){
                 f=true;
             }
