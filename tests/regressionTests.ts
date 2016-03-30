@@ -245,4 +245,34 @@ describe("Simple validation testing",function() {
         assert.isTrue(st.getErrors().length===1);
 
     });
+    it("Invalid JSON example 2", function () {
+        var tp = ps.parseJSONTypeCollection({
+
+            types:{
+                a: {
+                    "type":`
+                    {
+                "required": "message",
+                "$schema": "http://json-schema.org/draft-04/schema",
+                "type": "object",
+                "properties": {
+                  "message": {
+                    "required": true,
+                    "type": "string"
+                  }
+                },
+                "additionalProperties": false
+              }`
+
+                    ,example: `{ "message":"s" ,"r":2 }`
+                }
+
+            }
+        });
+        var t=tp.getType("a");
+        var st=t.validateType(ts.builtInRegistry());
+        var f=false;
+        assert.isTrue(st.getErrors().length===1);
+        assert.isTrue(st.getMessage()==="Example does not conform to schema:Content is not valid according to schema:Additional properties not allowed: r r")
+    });
 });
