@@ -129,4 +129,28 @@ describe("Simple validation testing",function() {
         assert.isTrue(st.getErrors().length===1);
         assert.equal(st.getErrors()[0].getValidationPathAsString(),"z/1");
     });
+    it("unknown property path ", function () {
+        var tp = ps.parseJSONTypeCollection({
+
+            types:{
+                z: {
+                  type: "object",
+                  properties:{
+                      mm: "number"
+                  }
+                },
+                a: {
+                    "type": "object",
+                    properties:{
+                        z: "z"
+                    }
+                }
+            }
+        });
+        var t=tp.getType("a");
+        var st= t.validate({z:{ mm: 3, d: 1}});
+        var f=false;
+        assert.isTrue(st.getErrors().length===1);
+        assert.equal(st.getErrors()[0].getValidationPathAsString(),"z/d");
+    });
 });

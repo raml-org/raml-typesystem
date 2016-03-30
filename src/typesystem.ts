@@ -820,7 +820,9 @@ export abstract class AbstractType{
             var cp=new KnownPropertyRestriction(true);
             cp.patchOwner(this);
             cp.check(i).getErrors().forEach(x=>{
-                result.addSubStatus(new Status(Status.WARNING,0,x.getMessage(),this));
+                var rs=new Status(Status.WARNING,0,x.getMessage(),this);
+                rs.setValidationPath(x.getValidationPath())
+                result.addSubStatus(rs);
             });
         }
         return  result;

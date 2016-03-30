@@ -275,4 +275,5 @@ describe("Simple validation testing",function() {
         assert.isTrue(st.getErrors().length===1);
         assert.isTrue(st.getMessage()==="Example does not conform to schema:Content is not valid according to schema:Additional properties not allowed: r r")
     });
+
 });

@@ -80,7 +80,7 @@ class Example implements nm.IExpandableExample{
 
     isYAML():boolean {
         if (typeof this._value==="string") {
-            return !this.isJSONString() && !this.isXMLString();
+            return !(this.isJSONString() || this.isXMLString());
         }
         return true;
     }

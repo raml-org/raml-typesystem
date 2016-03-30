@@ -191,7 +191,11 @@ export class KnownPropertyRestriction extends ts.Constraint{
                 })
                 if (Object.keys(nm).length > 0&&mp.length>0) {
                     var s=new ts.Status(ts.Status.OK,0,"",this);
-                    Object.keys(nm).forEach(x=>s.addSubStatus(ts.error("Unknown property:"+x,this)));
+                    Object.keys(nm).forEach(x=>{
+                        var err=ts.error("Unknown property:"+x,this);
+                        err.setValidationPath({name:x});
+                        s.addSubStatus(err)}
+                    );
                     return s;
                 }
             }
