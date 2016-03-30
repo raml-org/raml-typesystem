@@ -225,4 +225,24 @@ describe("Simple validation testing",function() {
         assert.isTrue(st.getErrors().length===1);
 
     });
+    it("Invalid JSON example", function () {
+        var tp = ps.parseJSONTypeCollection({
+
+            types:{
+                a: {
+                    "type":" object",
+                    properties:{
+                        x: "number"
+                    }
+                    ,example: "{ d: 5}"
+                }
+
+            }
+        });
+        var t=tp.getType("a");
+        var st=t.validateType(ts.builtInRegistry());
+        var f=false;
+        assert.isTrue(st.getErrors().length===1);
+
+    });
 });

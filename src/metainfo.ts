@@ -101,7 +101,10 @@ function parseExampleIfNeeded(val:any,type:ts.AbstractType):any{
                 try {
                     return JSON.parse(exampleString);
                 } catch (e) {
-
+                    if (type.isObject()||type.isArray()){
+                        var c= new Status(Status.ERROR,0,"Can not parse JSON example:"+e.message,this);
+                        return c;
+                    }
                 }
             }
             if (firstChar=="<") {
@@ -121,8 +124,16 @@ export class Example extends MetaInfo{
     }
 
     validateSelf(registry:ts.TypeRegistry):ts.Status {
-        var valOwner=this.owner().validateDirect(parseExampleIfNeeded(this.value(),this.owner()),true,false);
+        var rr=parseExampleIfNeeded(this.value(),this.owner());
+        if (rr instanceof ts.Status){
+            rr.setValidationPath({name: "example"})
+            return rr;
+        }
+        var valOwner=this.owner().validateDirect(rr,true,false);
         if (!valOwner.isOk()){
+            if (typeof this.value()==="string"){
+
+            }
             var c= new Status(Status.ERROR,0,"using invalid `example`:"+valOwner.getMessage(),this);
             valOwner.getErrors().forEach(x=>c.addSubStatus(x));
             c.setValidationPath({name: "example"})
@@ -182,6 +193,11 @@ export class Examples extends MetaInfo{
             Object.keys(v).forEach(x=>{
                 if (typeof v[x]=='object') {
                     var example = parseExampleIfNeeded(v[x].content, this.owner());
+                    if (example instanceof ts.Status){
+                        example.setValidationPath({name: "example"})
+                        rs.addSubStatus(example);
+                        return;
+                    }
                     var res=this.owner().validateDirect(example,true,false);
                     res.getErrors().forEach(ex=>rs.addSubStatus(ex));
                     Object.keys(v[x]).forEach(key=>{
