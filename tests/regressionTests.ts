@@ -81,4 +81,25 @@ describe("Simple validation testing",function() {
         });
         assert.isTrue(f);
     });
+    it("Builtins type of is validated only once", function () {
+        var tp = ps.parseJSONTypeCollection({
+
+            types:{
+                XX:{
+                    type:"object",
+                    properties:{
+                        c:"string",
+                    },
+                    example:{
+                        c:{ a: "3"}
+                    }
+                }
+            }
+        });
+        var t=tp.getType("XX");
+        var st=t.validateType(ts.builtInRegistry());
+        var f=false;
+
+        assert.isTrue(st.getErrors().length===1);
+    });
 });

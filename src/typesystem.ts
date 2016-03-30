@@ -724,7 +724,21 @@ export abstract class AbstractType{
             rs=rs.concat(<Constraint[]>this.meta().filter(x=>x instanceof Constraint));
             return rs;
         }
-        return <Constraint[]>this.meta().filter(x=>x instanceof Constraint);
+        var result:Constraint[]=[];
+        var generic:GenericTypeOf=null;
+        this.meta().forEach(x=>{
+            if (x instanceof Constraint){
+                if (x instanceof  GenericTypeOf){
+                    if (generic){
+                        return;
+                    }
+                    generic=x;
+                }
+                result.push(x);
+            }
+
+        })
+        return result;
     }
 
     customFacets():TypeInformation[]{
@@ -1325,7 +1339,11 @@ export  class NothingRestrictionWithLocation extends NothingRestriction{
     another(){return this._another;}
 }
 
-export class TypeOfRestriction extends Constraint{
+export abstract class GenericTypeOf extends Constraint{
+
+}
+
+export class TypeOfRestriction extends GenericTypeOf{
 
     constructor(private val: string){
         super();
@@ -1381,13 +1399,13 @@ function is_int(value:any){
         return false;
     }
 }
-export class IntegerRestriction extends Constraint{
+export class IntegerRestriction extends GenericTypeOf{
 
     constructor(){
         super();
     }
     check(i:any):Status {
-        if (is_int(i)){
+        if (typeof i=="number"&&is_int(i)){
             return OK_STATUS;
         }
         return error("integer is expected",this);
@@ -1398,6 +1416,32 @@ export class IntegerRestriction extends Constraint{
     }
     facetName(){
         return "should be integer"
+    }
+
+    value(){
+        return true;
+    }
+}
+export class ScalarRestriction extends GenericTypeOf{
+
+    constructor(){
+        super();
+    }
+    check(i:any):Status {
+        if (!i){
+            return OK_STATUS;
+        }
+        if (typeof i==='number'||typeof i==='boolean'||typeof i==='string'){
+            return OK_STATUS;
+        }
+        return error("scalar is expected",this);
+    }
+
+    requiredType(){
+        return ANY;
+    }
+    facetName(){
+        return "should be scalar"
     }
 
     value(){
@@ -1525,7 +1569,7 @@ STRING.addMeta(new TypeOfRestriction("string"));
 INTEGER.addMeta(new IntegerRestriction());
 DATE.addMeta(new TypeOfRestriction("string"));
 FILE.addMeta(new TypeOfRestriction("string"));
-SCALAR.addMeta(new OrRestriction([new TypeOfRestriction("string"), new TypeOfRestriction("boolean"), new TypeOfRestriction("number")]));
+SCALAR.addMeta(new ScalarRestriction());
 registry.types().forEach(x=>x.lock())
 
 
