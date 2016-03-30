@@ -34,15 +34,56 @@ export class Status {
         return this.vp;
     }
 
+    getValidationPathAsString(){
+        if (!this.vp){
+            return "";
+        }
+        var s="";
+        var c=this.vp;
+        while (c){
+            s+= c.name;
+            if (c.child){
+                s+='/'
+            }
+            c= c.child
+        }
+        return s;
+    }
+
+    patchPath(p:IValidationPath):IValidationPath{
+        if (!p){
+            return null;
+        }
+        else{
+            var c=p;
+            var r:IValidationPath=null;
+            var cp:IValidationPath=null;
+            while (c){
+                if (!r){
+                    r={name: c.name};
+                    cp=r;
+                }
+                else{
+                    var news= {name: c.name};
+                    cp.child=news;
+                    c= c.child;
+                    cp=news;
+                }
+            }
+            return r;
+        }
+    }
     setValidationPath(c:IValidationPath){
-        this.vp=c;
+        if (this.vp){
+            c=this.patchPath(c);
+            c.child=this.vp;
+            this.vp=c;
+        }
+        else {
+            this.vp = c;
+        }
         this.subStatus.forEach(x=>{
-            if (x.getValidationPath()){
-                x.setValidationPath(c);
-            }
-            else{
-                x.setValidationPath(c);
-            }
+            x.setValidationPath(this.vp);
         })
     }
 
@@ -139,7 +180,7 @@ export abstract class Constraint extends TypeInformation{
 
 
 
-    abstract check(i:any):Status
+    abstract check(i:any,parentPath:IValidationPath):Status
 
 
     private static intersections:{ [id:string]:AbstractType}={}
@@ -769,12 +810,12 @@ export abstract class AbstractType{
     /**
      * validates object against this type without performing AC
      */
-    validateDirect(i:any,autoClose:boolean=false,nullAllowed:boolean=true):Status{
+    validateDirect(i:any,autoClose:boolean=false,nullAllowed:boolean=true,path:IValidationPath=null):Status{
         var result=new Status(Status.OK,0,"",this);
         if (!nullAllowed&&(i===null||i===undefined)){
             return error("object is expected",this)
         }
-        this.restrictions(true).forEach(x=>result.addSubStatus(x.check(i)));
+        this.restrictions(true).forEach(x=>result.addSubStatus(x.check(i,path)));
         if ((autoClose||autoCloseFlag)&&this.isObject()&&(!this.oneMeta(KnownPropertyRestriction))){
             var cp=new KnownPropertyRestriction(true);
             cp.patchOwner(this);
@@ -1467,10 +1508,10 @@ export class OrRestriction extends Constraint{
     constructor(private val: Constraint[]){
         super();
     }
-    check(i:any):Status {
+    check(i:any,p:IValidationPath):Status {
         var cs=new Status(Status.OK,0,"",this);
         for (var j=0;j<this.val.length;j++){
-            var m=this.val[j].check(i);
+            var m=this.val[j].check(i,p);
             if (m.isOk()){
                 return OK_STATUS;
             }
@@ -1499,9 +1540,9 @@ export class AndRestriction extends Constraint{
     options(){
         return this.val;
     }
-    check(i:any):Status {
+    check(i:any,p:IValidationPath):Status {
         for (var j=0;j<this.val.length;j++){
-            var st=this.val[j].check(i);
+            var st=this.val[j].check(i,p);
             if (!st.isOk()){
                 return st;
             }

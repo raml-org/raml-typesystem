@@ -7,7 +7,7 @@ import {Constraint} from "./typesystem";
 import {AbstractType} from "./typesystem";
 import {Status} from "./typesystem";
 import {autoCloseFlag} from "./typesystem";
-
+export type IValidationPath=ts.IValidationPath;
 /**
  * this class is an abstract super type for every constraint that can select properties from objects
  */
@@ -18,11 +18,36 @@ export abstract class MatchesProperty extends ts.Constraint{
 
     constructor(private _type:ts.AbstractType){super()}
 
-    check(i:any):ts.Status{
+    check(i:any,p:ts.IValidationPath):ts.Status{
         throw new Error("Should be never called");
     }
 
-    validateProp(i: any,n:string, t:ts.AbstractType){
+    patchPath(p:ts.IValidationPath):IValidationPath{
+        if (!p){
+            return { name: this.propId()};
+        }
+        else{
+            var c=p;
+            var r:IValidationPath=null;
+            var cp:IValidationPath=null;
+            while (c){
+                if (!r){
+                    r={name: c.name};
+                    cp=r;
+                }
+                else{
+                    var news= {name: c.name};
+                    cp.child=news;
+                    c= c.child;
+                    cp=news;
+                }
+            }
+            r.child={name:this.propId()};
+            return r;
+        }
+    }
+
+    validateProp(i: any,n:string, t:ts.AbstractType,q:ts.IValidationPath){
         var vl=i[n];
         if (vl!==null&&vl!==undefined){
 
@@ -30,11 +55,12 @@ export abstract class MatchesProperty extends ts.Constraint{
             if (!st.isOk()){
                 if (t.isUnknown()|| t.isRecurrent()){
                     var s=new Status(Status.ERROR,0,"Validating instance against unknown type:"+ t.name(),this);
+                    s.setValidationPath(this.patchPath(q));
                     return s;
                 }
                 var s=new Status(Status.OK,0,"",this);
                 st.getErrors().forEach(x=>s.addSubStatus(x));
-
+                s.setValidationPath(this.patchPath(q));
                 return s;
             }
         }
@@ -245,10 +271,10 @@ export class PropertyIs extends MatchesProperty{
         return s===this.name;
     }
 
-    check(i:any):ts.Status{
+    check(i:any,p:ts.IValidationPath):ts.Status{
         if (i && typeof i==="object") {
             if (i.hasOwnProperty(this.name)) {
-                var st = this.validateProp(i, this.name, this.type);
+                var st = this.validateProp(i, this.name, this.type,p);
                 return st;
             }
         }
@@ -372,13 +398,13 @@ export class MapPropertyIs extends MatchesProperty{
         return null;
     }
 
-    check(i:any):ts.Status{
+    check(i:any,p:ts.IValidationPath):ts.Status{
         if (i) {
             if (typeof i == 'object') {
                 var rs:ts.Status = new ts.Status(ts.Status.OK, 0, "",this);
                 Object.getOwnPropertyNames(i).forEach(n=> {
                     if (n.match(this.regexp)) {
-                        var stat = this.validateProp(i, n, this.type);
+                        var stat = this.validateProp(i, n, this.type,p);
                         if (!stat.isOk()) {
                             rs.addSubStatus(stat);
                         }
@@ -456,13 +482,13 @@ export class AdditionalPropertyIs extends MatchesProperty{
         }
         return null;
     }
-    check(i:any):ts.Status{
+    check(i:any,p:ts.IValidationPath):ts.Status{
         var t=this.type;
         var res=new ts.Status(ts.Status.OK,0,"",this);
         if (i&&typeof i==="object") {
             Object.getOwnPropertyNames(i).forEach(n=> {
                 if (!this.match(n)) {
-                    var stat = this.validateProp(i, n, t);
+                    var stat = this.validateProp(i, n, t,p);
                     if (!stat.isOk()) {
                         res.addSubStatus(stat);
                     }
@@ -824,7 +850,9 @@ export class ComponentShouldBeOfType extends FacetRestriction<ts.AbstractType>{
         if (Array.isArray(i)){
             var ar:any[]=i;
             for (var j=0;j<ar.length;j++){
-                rs.addSubStatus(this.type.validate(ar[j],true));
+                var ss=this.type.validate(ar[j],true);
+                ss.setValidationPath({ name:""+j})
+                rs.addSubStatus(ss);
             }
         }
         return rs;
