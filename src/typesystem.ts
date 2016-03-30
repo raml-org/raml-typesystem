@@ -715,7 +715,7 @@ export abstract class AbstractType{
     /**
      * @return all restrictions associated with type
      */
-    restrictions():Constraint[]{
+    restrictions(forValidation:boolean=false):Constraint[]{
         if (this.isUnion()){
             var rs:Constraint[]=[];
             this.superTypes().forEach(x=>{
@@ -728,7 +728,7 @@ export abstract class AbstractType{
         var generic:GenericTypeOf=null;
         this.meta().forEach(x=>{
             if (x instanceof Constraint){
-                if (x instanceof  GenericTypeOf){
+                if (x instanceof  GenericTypeOf&&forValidation){
                     if (generic){
                         return;
                     }
@@ -740,6 +740,7 @@ export abstract class AbstractType{
         })
         return result;
     }
+
 
     customFacets():TypeInformation[]{
         return this.declaredMeta().filter(x=>x instanceof metaInfo.CustomFacet)
@@ -765,7 +766,7 @@ export abstract class AbstractType{
      */
     validateDirect(i:any,autoClose:boolean=false):Status{
         var result=new Status(Status.OK,0,"",this);
-        this.restrictions().forEach(x=>result.addSubStatus(x.check(i)));
+        this.restrictions(true).forEach(x=>result.addSubStatus(x.check(i)));
         if ((autoClose||autoCloseFlag)&&this.isObject()&&(!this.oneMeta(KnownPropertyRestriction))){
             var cp=new KnownPropertyRestriction(true);
             cp.patchOwner(this);

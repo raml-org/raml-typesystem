@@ -102,4 +102,20 @@ describe("Simple validation testing",function() {
 
         assert.isTrue(st.getErrors().length===1);
     });
+    it("Incompatible typeof lead to confluent types", function () {
+        var tp = ps.parseJSONTypeCollection({
+
+            types:{
+                XX:{
+                    type:["string","number"],
+
+                }
+            }
+        });
+        var t=tp.getType("XX");
+        var st=t.validateType(ts.builtInRegistry());
+        var f=false;
+
+        assert.isTrue(st.getErrors().length===1);
+    });
 });
