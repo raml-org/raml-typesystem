@@ -70,8 +70,10 @@ export class JSONSchemaObject {
     jsonSchema: any;
 
     constructor(private schema:string, private provider: IContentProvider){
-        if(!this.provider) {
-            provider = new DummyProvider();
+        if(!provider) {
+            this.provider = new DummyProvider();
+        } else {
+            this.provider = provider;
         }
 
         if(!schema||schema.trim().length==0||schema.trim().charAt(0)!='{'){
