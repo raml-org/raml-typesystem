@@ -366,17 +366,18 @@ export abstract class AbstractType{
         this.validateHierarchy(rs);
         if (rs.isOk()) {
             rs.addSubStatus(this.checkConfluent());
+            this.superTypes().forEach(x=>{
+                if (x.isAnonymous()){
+                    rs.addSubStatus(x.validateType(tr))
+                }
+            })
         }
         this.validateMeta(tr).getErrors().forEach(x=>rs.addSubStatus(x));
         //if (this.isPolymorphic()||(this.isUnion())) {
         //    rs.addSubStatus(this.canDoAc());
         //}
 
-        this.superTypes().forEach(x=>{
-            if (x.isAnonymous()){
-                rs.addSubStatus(x.validateType(tr))
-            }
-        })
+
         if (this.isObject()){
             var required:{ [name:string]:boolean}={};
             this.restrictions().forEach(x=>{

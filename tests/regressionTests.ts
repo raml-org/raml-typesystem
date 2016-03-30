@@ -146,4 +146,52 @@ describe("Simple validation testing",function() {
         })
         assert.isTrue(err)
     });
+    it("Validating recurrent types error count", function () {
+        var tp = ps.parseJSONTypeCollection({
+
+            types:{
+                A:{
+                    type:"b",
+                },
+                B:"a[]"
+            }
+        });
+        var t=tp.getType("B");
+        var st=t.validateType(ts.builtInRegistry());
+        var f=false;
+
+        assert.isTrue(st.getErrors().length===1);
+
+    });
+    it("Validating recurrent types error count (union types)", function () {
+        var tp = ps.parseJSONTypeCollection({
+
+            types:{
+                a: "b | c",
+                b: "a | c",
+                c: "string"
+            }
+        });
+        var t=tp.getType("b");
+        var st=t.validateType(ts.builtInRegistry());
+        var f=false;
+
+        assert.isTrue(st.getErrors().length===1);
+
+    });
+    it("Validating recurrent types error count (array types)", function () {
+        var tp = ps.parseJSONTypeCollection({
+
+            types:{
+                a: "b[]",
+                b: "a[]",
+                c: "string"
+            }
+        });
+        var t=tp.getType("b");
+        var st=t.validateType(ts.builtInRegistry());
+        var f=false;
+        assert.isTrue(st.getErrors().length===1);
+
+    });
 });
