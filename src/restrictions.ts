@@ -25,8 +25,13 @@ export abstract class MatchesProperty extends ts.Constraint{
     validateProp(i: any,n:string, t:ts.AbstractType){
         var vl=i[n];
         if (vl!==null&&vl!==undefined){
+
             var st=t.validate(vl,true);
             if (!st.isOk()){
+                if (t.isUnknown()|| t.isRecurrent()){
+                    var s=new Status(Status.ERROR,0,"Validating instance against unknown type:"+ t.name(),this);
+                    return s;
+                }
                 var s=new Status(Status.OK,0,"",this);
                 st.getErrors().forEach(x=>s.addSubStatus(x));
 
