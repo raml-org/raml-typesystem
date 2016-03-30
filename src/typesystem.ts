@@ -366,11 +366,32 @@ export abstract class AbstractType{
         this.validateHierarchy(rs);
         if (rs.isOk()) {
             rs.addSubStatus(this.checkConfluent());
-            this.superTypes().forEach(x=>{
-                if (x.isAnonymous()){
-                    rs.addSubStatus(x.validateType(tr))
+
+            if (this.isExternal()){
+                var allS=this.allSuperTypes();
+                var mma:ExternalType[]=<ExternalType[]>allS.filter(x=>x instanceof ExternalType);
+                if (this instanceof ExternalType){
+                    mma.push(<ExternalType><any>this);
                 }
-            })
+                mma.forEach(x=>{
+
+                    if (x.isJSON()) {
+                        try {
+                            su.getJSONSchema(x.schema(), x.getContentProvider && x.getContentProvider());
+                        } catch (e){
+                            rs.addSubStatus(new Status(Status.ERROR,0, e.message,this));
+                        }
+                    }
+                });
+
+            }
+            if (rs.isOk()) {
+                this.superTypes().forEach(x=> {
+                    if (x.isAnonymous()) {
+                        rs.addSubStatus(x.validateType(tr))
+                    }
+                })
+            }
         }
         this.validateMeta(tr).getErrors().forEach(x=>rs.addSubStatus(x));
         //if (this.isPolymorphic()||(this.isUnion())) {
@@ -401,24 +422,7 @@ export abstract class AbstractType{
                 }
             })
         }
-        if (this.isExternal()){
-            var allS=this.allSuperTypes();
-            var mma:ExternalType[]=<ExternalType[]>allS.filter(x=>x instanceof ExternalType);
-            if (this instanceof ExternalType){
-                mma.push(<ExternalType><any>this);
-            }
-            mma.forEach(x=>{
 
-                if (x.isJSON()) {
-                    try {
-                        su.getJSONSchema(x.schema(), x.getContentProvider && x.getContentProvider());
-                    } catch (e){
-                        rs.addSubStatus(new Status(Status.ERROR,0, e.message,this));
-                    }
-                }
-            });
-
-        }
         return rs;
     }
 

@@ -194,4 +194,18 @@ describe("Simple validation testing",function() {
         assert.isTrue(st.getErrors().length===1);
 
     });
+    it("Validating incorrect JSON external type", function () {
+        var tp = ps.parseJSONTypeCollection({
+
+            types:{
+                a: "{ properties: {}}",
+
+            }
+        });
+        var t=tp.getType("a");
+        var st=t.validateType(ts.builtInRegistry());
+        var f=false;
+        assert.isTrue(st.getErrors().length===1);
+
+    });
 });

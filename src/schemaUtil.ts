@@ -85,7 +85,7 @@ export class JSONSchemaObject {
         try {
             var jsonSchemaObject = JSON.parse(schema);
         } catch(err){
-            throw new Error("It is not JSON schema");
+            throw new Error("It is not JSON schema(can not parse JSON:"+err.message+")");
         }
 
         if(!jsonSchemaObject){
