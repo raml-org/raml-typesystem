@@ -34,7 +34,7 @@ export class Status {
         return this.vp;
     }
 
-    getValidationPathAsString(){
+    getValidationPathAsString():string{
         if (!this.vp){
             return "";
         }

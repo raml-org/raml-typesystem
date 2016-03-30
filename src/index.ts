@@ -46,9 +46,17 @@ export interface IStatus {
      */
     getSource():any
 
+    /**
+     * returns primitive error statuses gathered recurrently, returns warnings to.
+     */
     getErrors():IStatus[];
 
     getValidationPath():IValidationPath;
+
+    /**
+     * returns path to this status
+     */
+    getValidationPathAsString():string;
 }
 /**
  * this is a common super interface for restrictions and meta data
