@@ -26,7 +26,7 @@ export abstract class MatchesProperty extends ts.Constraint{
         var vl=i[n];
         if (vl!==null&&vl!==undefined){
 
-            var st=t.validate(vl,true);
+            var st=t.validate(vl,true,false);
             if (!st.isOk()){
                 if (t.isUnknown()|| t.isRecurrent()){
                     var s=new Status(Status.ERROR,0,"Validating instance against unknown type:"+ t.name(),this);

@@ -64,7 +64,7 @@ export class Annotation extends MetaInfo{
                 q="";
             }
         }
-        var valOwner=tp.validateDirect(q,true);
+        var valOwner=tp.validateDirect(q,true,false);
         if (!valOwner.isOk()){
             var res=new Status(Status.OK,0,"invalid annotation value"+valOwner.getMessage(),this);
             res.addSubStatus(valOwner);
@@ -121,7 +121,7 @@ export class Example extends MetaInfo{
     }
 
     validateSelf(registry:ts.TypeRegistry):ts.Status {
-        var valOwner=this.owner().validateDirect(parseExampleIfNeeded(this.value(),this.owner()),true);
+        var valOwner=this.owner().validateDirect(parseExampleIfNeeded(this.value(),this.owner()),true,false);
         if (!valOwner.isOk()){
             var c= new Status(Status.ERROR,0,"using invalid `example`:"+valOwner.getMessage(),this);
             valOwner.getErrors().forEach(x=>c.addSubStatus(x));
@@ -182,7 +182,7 @@ export class Examples extends MetaInfo{
             Object.keys(v).forEach(x=>{
                 if (typeof v[x]=='object') {
                     var example = parseExampleIfNeeded(v[x].content, this.owner());
-                    var res=this.owner().validateDirect(example,true);
+                    var res=this.owner().validateDirect(example,true,false);
                     res.getErrors().forEach(ex=>rs.addSubStatus(ex));
                     Object.keys(v[x]).forEach(key=>{
                         if (key.charAt(0)=='('&&key.charAt(key.length-1)==')'){

@@ -521,7 +521,7 @@ export abstract class AbstractType{
                 var cd:CustomFacet = x;
                 if (fds.hasOwnProperty(cd.facetName())) {
                     var ft = fds[cd.facetName()].value();
-                    rs.addSubStatus(ft.validate((cd.value())));
+                    rs.addSubStatus(ft.validateDirect(cd.value(),false,false));
                     delete rfds[cd.facetName()];
                 }
                 else {
@@ -769,8 +769,11 @@ export abstract class AbstractType{
     /**
      * validates object against this type without performing AC
      */
-    validateDirect(i:any,autoClose:boolean=false):Status{
+    validateDirect(i:any,autoClose:boolean=false,nullAllowed:boolean=true):Status{
         var result=new Status(Status.OK,0,"",this);
+        if (!nullAllowed&&(i===null||i===undefined)){
+            return error("object is expected",this)
+        }
         this.restrictions(true).forEach(x=>result.addSubStatus(x.check(i)));
         if ((autoClose||autoCloseFlag)&&this.isObject()&&(!this.oneMeta(KnownPropertyRestriction))){
             var cp=new KnownPropertyRestriction(true);
@@ -781,8 +784,11 @@ export abstract class AbstractType{
         }
         return  result;
     }
-    validate(i:any,autoClose:boolean=false):Status{
+    validate(i:any,autoClose:boolean=false,nullAllowed:boolean=true):Status{
         var g=autoCloseFlag;
+        if (!nullAllowed&&(i===null||i===undefined)){
+            return error("object is expected",this)
+        }
         if (autoClose){
             autoCloseFlag=true;
         }
@@ -1358,7 +1364,7 @@ export class TypeOfRestriction extends GenericTypeOf{
 
             var to = typeof i;
             if (i===null||i===undefined){
-                to="null";
+                return OK_STATUS;
             }
             if (Array.isArray(i)) {
                 to = "array";

@@ -134,13 +134,13 @@ describe("Simple validation testing",function() {
             }
         });
         var t=tp.getType("XX");
-        var st=t.validateType(ts.builtInRegistry());
+        var st:ts.Status=t.validateType(ts.builtInRegistry());
         var f=false;
 
         assert.isTrue(st.getErrors().length===2);
         var err=false;
-        st.getErrors().forEach(m=>{
-            if (m.getMessage().indexOf("against")!=-1){
+        st.getErrors().forEach(x=>{
+            if (x.getMessage().indexOf("against")!=-1){
                 err=true;
             }
         })
@@ -199,6 +199,23 @@ describe("Simple validation testing",function() {
 
             types:{
                 a: "{ properties: {}}",
+
+            }
+        });
+        var t=tp.getType("a");
+        var st=t.validateType(ts.builtInRegistry());
+        var f=false;
+        assert.isTrue(st.getErrors().length===1);
+
+    });
+    it("Top level null is not allowed", function () {
+        var tp = ps.parseJSONTypeCollection({
+
+            types:{
+                a: {
+                    "type":" object"
+                    ,example: null
+                }
 
             }
         });
