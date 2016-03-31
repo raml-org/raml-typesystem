@@ -46,7 +46,7 @@ export function toNominal(t:ts.AbstractType,callback:StringToBuiltIn,customizer:
     }
 
     if (t.isBuiltin()){
-        var s= callback(t.name());
+        var s= t.name()!="any"?callback(t.name()):null;
         if (!s){
             if (t.isScalar()){
                 vs=new nt.ValueType(t.name(),null);
