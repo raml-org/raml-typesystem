@@ -1274,7 +1274,7 @@ export class UnionType extends DerivedType{
     }
 
     restrictions(){
-        return [new OrRestriction(this.allOptions().map(x=>new AndRestriction(x.restrictions())))]
+        return [new OrRestriction(this.allOptions().map(x=>new AndRestriction(x.restrictions())),"union type options does not pass validation")]
     }
 }
 export class IntersectionType extends DerivedType{
@@ -1513,17 +1513,28 @@ export class ScalarRestriction extends GenericTypeOf{
 
 export class OrRestriction extends Constraint{
 
-    constructor(private val: Constraint[]){
+    constructor(private val: Constraint[],private _extraMessage?:string){
         super();
     }
+
     check(i:any,p:IValidationPath):Status {
         var cs=new Status(Status.OK,0,"",this);
+        var first:Status=null;
         for (var j=0;j<this.val.length;j++){
             var m=this.val[j].check(i,p);
             if (m.isOk()){
                 return OK_STATUS;
             }
-            cs.addSubStatus(m);
+            if (!first){
+                first=m;
+            }
+            ;
+        }
+        if (first){
+            cs.addSubStatus(first);
+            if (this._extraMessage){
+                cs.addSubStatus(error(this._extraMessage,this));
+            }
         }
         return cs;
     }
