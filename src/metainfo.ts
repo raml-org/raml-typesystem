@@ -194,12 +194,15 @@ export class Examples extends MetaInfo{
                 if (typeof v[x]=='object') {
                     var example = parseExampleIfNeeded(v[x].content, this.owner());
                     if (example instanceof ts.Status){
-                        example.setValidationPath({name: "example"})
+                        example.setValidationPath({name: x })
                         rs.addSubStatus(example);
                         return;
                     }
                     var res=this.owner().validateDirect(example,true,false);
-                    res.getErrors().forEach(ex=>rs.addSubStatus(ex));
+                    res.getErrors().forEach(ex=>{
+                        rs.addSubStatus(ex);
+                        ex.setValidationPath({name:x,child:{name: "content"}});
+                    });
                     Object.keys(v[x]).forEach(key=>{
                         if (key.charAt(0)=='('&&key.charAt(key.length-1)==')'){
                             var a=new Annotation(key.substring(1,key.length-1),v[x][key]);
@@ -208,7 +211,6 @@ export class Examples extends MetaInfo{
                     });
                 }
             });
-            rs.setValidationPath({name: "examples"})
             return rs;
         }
         else{

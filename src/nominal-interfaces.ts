@@ -359,11 +359,6 @@ export interface IProperty extends INamedEntity{
     domain():ITypeDefinition
 
     /**
-     * facet validator which is associated with this property
-     */
-    getFacetValidator():FacetValidator
-
-    /**
      * true if this property is required to fill
      */
     isRequired():boolean;

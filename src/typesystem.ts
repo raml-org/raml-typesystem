@@ -62,6 +62,8 @@ export class Status {
                 if (!r){
                     r={name: c.name};
                     cp=r;
+                    c= c.child;
+                    cp=r;
                 }
                 else{
                     var news= {name: c.name};
@@ -76,7 +78,11 @@ export class Status {
     setValidationPath(c:IValidationPath){
         if (this.vp){
             c=this.patchPath(c);
-            c.child=this.vp;
+            var m=c;
+            while (m.child){
+                m= m.child;
+            }
+            m.child=this.vp;
             this.vp=c;
         }
         else {

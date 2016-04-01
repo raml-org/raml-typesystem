@@ -275,5 +275,22 @@ describe("Simple validation testing",function() {
         assert.isTrue(st.getErrors().length===1);
         assert.isTrue(st.getMessage()==="Example does not conform to schema:Content is not valid according to schema:Additional properties not allowed: r r")
     });
+    it("Valid example", function () {
+        var tp = ps.parseJSONTypeCollection({
 
+            types:{
+                a: {
+                    "type":"object",
+                    properties:{
+                        x:"string[]"
+                    },
+                    example: {x:[]}
+                }
+
+            }
+        });
+        var t=tp.getType("a");
+        var st=t.validateType(ts.builtInRegistry());
+        assert.isTrue(st.getErrors().length===0);
+    });
 });
