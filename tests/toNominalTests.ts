@@ -136,5 +136,61 @@ describe("To nominals",function() {
         assert.isTrue(!nt.isExternal());
         assert.isTrue(nt.hasExternalInHierarchy());
     });
+    it("nominal hierarchy 1 (Arrays)", function () {
+        var tps = ps.parseJSONTypeCollection({
+            types:{
+                A: "string[]"
+            }
+        },ts.builtInRegistry())
+        var tp=tps.getType("A")
+        var nt=nm.toNominal(tp,x=>null);
+        var st=nt.allSuperTypes();
+        assert.isTrue(st.length==2);
+        assert.isTrue(nt.isArray())
+        assert.isTrue(st[0].nameId()=="array");
+        assert.isTrue(!st[0].isArray());
+        assert.isTrue(st[1].nameId()=="any");
+    });
+    it("nominal hierarchy 2 (union)", function () {
+        var tps = ps.parseJSONTypeCollection({
+            types:{
+                A: "string|number"
+            }
+        },ts.builtInRegistry())
+        var tp=tps.getType("A")
+        var nt=nm.toNominal(tp,x=>null);
+        var st=nt.allSuperTypes();
+        assert.isTrue(st.length==2);
+        assert.isTrue(nt.isUnion())
+        assert.isTrue(st[0].nameId()=="union");
+        assert.isTrue(st[1].nameId()=="any");
+    });
+    it("nominal hierarchy 3", function () {
+        var tps = ps.parseJSONTypeCollection({
+            types:{
+                A: { type: "string|number"}
+            }
+        },ts.builtInRegistry())
+        var tp=tps.getType("A")
+        var nt=nm.toNominal(tp,x=>null);
+        var st=nt.allSuperTypes();
+        assert.isTrue(st.length==2);
+        assert.isTrue(nt.isUnion())
+        assert.isTrue(st[0].nameId()=="union");
+        assert.isTrue(st[1].nameId()=="any");
+    });
+    it("nominal hierarchy 4 (object)", function () {
+        var tps = ps.parseJSONTypeCollection({
+            types:{
+                A: { type: "object"}
+            }
+        },ts.builtInRegistry())
+        var tp=tps.getType("A")
+        var nt=nm.toNominal(tp,x=>null);
 
+        var st=nt.allSuperTypes();
+        assert.isTrue(st.length==2);
+        assert.isTrue(st[0].nameId()=="object");
+        assert.isTrue(st[1].nameId()=="any");
+    });
 });

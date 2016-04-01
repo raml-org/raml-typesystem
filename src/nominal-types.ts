@@ -55,6 +55,9 @@ export class Described extends Adaptable{
     nameId():string{return this._name;}
     description():string{return this._description}
 
+    setName(n:string){
+        this._name=n;
+    }
 
     private _tags:string[]=[]
 

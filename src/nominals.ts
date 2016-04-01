@@ -46,7 +46,7 @@ export function toNominal(t:ts.AbstractType,callback:StringToBuiltIn,customizer:
     }
 
     if (t.isBuiltin()){
-        var s= t.name()!="any"?callback(t.name()):null;
+        var s= (t.name()!="any"&& t.name()!="array")?callback(t.name()):null;
         if (!s){
             if (t.isScalar()){
                 vs=new nt.ValueType(t.name(),null);
@@ -74,6 +74,9 @@ export function toNominal(t:ts.AbstractType,callback:StringToBuiltIn,customizer:
         }
         else if (t.isUnion()) {
             var ut = new nt.Union(t.name(), null);
+            if (t.superTypes().length==0) {
+                ut._superTypes.push(toNominal(ts.UNION, callback, customizer));
+            }
             t.typeFamily().forEach(x=>{
                 if (ut.left==null){
                     ut.left=toNominal(x,callback);
@@ -104,7 +107,7 @@ export function toNominal(t:ts.AbstractType,callback:StringToBuiltIn,customizer:
     if (!vs){
         vs=new nt.StructuredType(t.name());
     }
-    t.putExtra(NOMINAL, vs);
+
     t.superTypes().forEach(x=>{
         var mn=<nt.AbstractType>toNominal(x,callback);
         if (x.isBuiltin()){
@@ -114,6 +117,21 @@ export function toNominal(t:ts.AbstractType,callback:StringToBuiltIn,customizer:
             vs.addSuperType(mn);
         }
     })
+    if (t.isEmpty()){
+        if (t.isArray()&& t.superTypes().length==1&& t.superTypes()[0].isAnonymous()){
+            var q= <nt.AbstractType>vs.superTypes()[0];
+            q.setName(t.name());
+            q._subTypes= q._subTypes.filter(x=>x!=vs);
+            vs=q;
+        }
+        if (t.isUnion()&& t.superTypes().length==1&& t.superTypes()[0].isAnonymous()){
+            var q= <nt.AbstractType>vs.superTypes()[0];
+            q.setName(t.name());
+            q._subTypes= q._subTypes.filter(x=>x!=vs);
+            vs=q;
+        }
+    }
+    t.putExtra(NOMINAL, vs);
 
     var proto=parse.toProto(t);
     proto.properties.forEach(x=>{

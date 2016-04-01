@@ -1595,6 +1595,7 @@ export const STRING=SCALAR.inherit("string");
 export const DATE=SCALAR.inherit("date");
 export const FILE=SCALAR.inherit("file");
 export const NOTHING=new RootType("nothing");
+export const UNION=ANY.inherit("union");
 export const UNKNOWN=NOTHING.inherit("unknown");
 export const RECURRENT=NOTHING.inherit("recurrent");
 
@@ -1602,6 +1603,7 @@ export const RECURRENT=NOTHING.inherit("recurrent");
 ///
 //POLYMORPHIC.addMeta(new Polymorphic())
 ANY.addMeta(BUILT_IN);
+UNION.addMeta(BUILT_IN);
 SCALAR.addMeta(BUILT_IN);
 OBJECT.addMeta(BUILT_IN);
 ARRAY.addMeta(BUILT_IN);
@@ -1617,6 +1619,7 @@ UNKNOWN.lock();
 RECURRENT.addMeta(BUILT_IN);
 RECURRENT.lock();
 EXTERNAL.lock();
+UNION.lock();
 
 ///lets register all types in registry
 
