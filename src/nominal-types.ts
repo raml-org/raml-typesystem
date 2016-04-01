@@ -341,20 +341,20 @@ export class AbstractType extends Described implements ITypeDefinition{
         if (this._af){
             return this._af;
         }
-        var sp=this.allSuperTypes();
+        //var sp=this.allSuperTypes();
         var mm:{ [name:string]:any}={};
         for (var q in  this.fixedFacets){
             mm[q]=this.fixedFacets[q];
         }
-        sp.forEach(x=>{
-            if (x instanceof AbstractType) {
-                (<AbstractType>x).contributeFacets(mm);
-                var ff = (<AbstractType>x).fixedFacets;
-                for (var q in  ff) {
-                    mm[q] = ff[q];
-                }
-            }
-        });
+        // sp.forEach(x=>{
+        //     if (x instanceof AbstractType) {
+        //         (<AbstractType>x).contributeFacets(mm);
+        //         var ff = (<AbstractType>x).fixedFacets;
+        //         for (var q in  ff) {
+        //             mm[q] = ff[q];
+        //         }
+        //     }
+        // });
         this.contributeFacets(mm);
         this._af=mm;
         return mm;
