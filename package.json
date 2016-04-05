@@ -24,18 +24,13 @@
     "raml",
     "typesystem"
   ],
-  "files": [
-    "dist/",
-    "typings/",
-    "typings.json"
-  ],
   "author": {
     "name": "Pavel Petrochenko",
     "email": "petrochenko.pavel.a@gmail.com",
     "url": "ru.linkedin.com/in/petrochenkopavel"
   },
   "homepage": "https://github.com/mulesoft-labs/typesystem-ts",
-  "license": "MIT",
+  "license": "Apache-2.0",
   "bugs": {
     "url": "https://github.com/mulesoft-labs/typesystem-ts/issues"
   },
