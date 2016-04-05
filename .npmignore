@@ -1,7 +1,5 @@
 /node_modules
 
-/typings/
-
 /src/**/*.js
 /src/**/*.js.map
 /src/**/*.d.ts
@@ -15,5 +13,7 @@
 /tools/**/*.d.ts
 
 /.idea
+
+/coverage
 
 *.iml
