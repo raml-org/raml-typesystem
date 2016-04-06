@@ -17,10 +17,10 @@ Parsing and validating a single type:
 ```js
 import ts = require("raml-typesystem")
 
-var personType = ts.parseJSON("Person", {
-  type: "string[]",
-  minItems:3,
-  maxItems:2
+var personType = ts.loadType( {
+    type: "string[]",
+    minItems:3,
+    maxItems:2
 })
 
 var isValid = personType.validateType();
@@ -31,19 +31,42 @@ Parsing and validating a `types` collection:
 ```js
 import ts = require("raml-typesystem")
 
-var typeCollection = ts.parseJSONTypeCollection({
-  types: {
-    Person: {
-      type: "object",
-      properties:{
-          kind: "string"
-      }
-    },
-    Man: {
-      type: "Person",
-      discriminator: "kind"
+var typeCollection = ts.loadTypeCollection({
+    types: {
+        Person: {
+            type: "object",
+            properties:{
+                kind: "string"
+            }
+        },
+        Man: {
+            type: "Person",
+            discriminator: "kind"
+        }
     }
-  }
 })
 var isValid = typeCollection.getType("Person").validateType()
+```
+
+
+Validating object against type:
+
+```js
+import ts = require("raml-typesystem")
+
+var typeCollection = ts.loadTypeCollection({
+    types: {
+        Person: {
+            type: "object",
+            properties:{
+                kind: "string"
+            }
+        },
+        Man: {
+            type: "Person",
+            discriminator: "kind"
+        }
+    }
+})
+var isValid = typeCollection.getType("Person").validate({dd: true})
 ```

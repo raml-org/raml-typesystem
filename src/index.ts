@@ -186,7 +186,7 @@ export interface IParsedType {
      */
     validate(i:any,autoClose?:boolean): IStatus
 
-    validateType(reg:ITypeRegistry):IStatus
+    validateType(reg?:ITypeRegistry):IStatus
 
     ac(i:any):IParsedType
 

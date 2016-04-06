@@ -408,7 +408,7 @@ export abstract class AbstractType{
         return [];
     }
 
-    validateType(tr:TypeRegistry):Status{
+    validateType(tr:TypeRegistry=builtInRegistry()):Status{
         var rs=new Status(Status.OK,0,"",this);
         this.validateHierarchy(rs);
         if (rs.isOk()) {
