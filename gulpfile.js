@@ -29,7 +29,7 @@ gulp.task("typedoc", function() {
             hideGenerator: true,
             excludeExternals: true,
             mode: "file",
-            readme:"readmeTypeDoc.txt"
+            readme:"readmeTypeDoc.md"
         }))
         ;
 });
