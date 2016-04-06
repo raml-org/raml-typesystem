@@ -433,10 +433,11 @@ export interface ITypeCollection {
 /**
  * loads type collection from JSON type definition
  * @param data
- * @returns {TypeCollection}
+ * @param registry - optional registry of types which ar already known (does not modified during parse)
+ * @returns {TypeCollection} returns a new instance of type collection with a parsed types
  */
-export function loadTypeCollection(data:ITypeCollection):IParsedTypeCollection {
-    return tc.parseJSONTypeCollection(data, ts.builtInRegistry());
+export function loadTypeCollection(data:ITypeCollection,registry:ITypeRegistry=ts.builtInRegistry()):IParsedTypeCollection {
+    return tc.parseJSONTypeCollection(data, <any>registry);
 }
 /**
  * loads type  from JSON type definition
