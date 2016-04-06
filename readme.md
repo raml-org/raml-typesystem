@@ -70,3 +70,16 @@ var typeCollection = ts.loadTypeCollection({
 })
 var isValid = typeCollection.getType("Person").validate({dd: true})
 ```
+
+## Contribute
+
+The typesystem-ts repo is an open source project and any contribution is always welcome. Please follow these simple steps when contributing to this project:
+
+1. Check for open issues or open a fresh issue to start a discussion around an idea or a bug.
+2. Fork the repository on Github and make your changes on the develop branch (or branch off of it).
+3. Send a pull request (with the develop branch as the target).
+4. One of the main contributor or admin will review the PR and merge.
+
+A big thank you goes out to everyone who helped with the project, the contributors and everyone who took the time to report issues and give feedback.
+
+You can also directly get in touch with us. Simply send us an email to: info@raml.org
