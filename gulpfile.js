@@ -54,4 +54,3 @@ gulp.task('typescript:compile', function () {
 });
 
 gulp.task('build',['typescript:compile']);
-
