@@ -4,7 +4,11 @@
   "main": "dist/src/index.js",
   "scripts": {
     "test-cov": " ./node_modules/.bin/istanbul cover _mocha dist/tests/*Tests.js",
-    "build": "rm -rf dist/ && ./node_modules/typescript/bin/tsc "
+    "build": "rm -rf dist/ && ./node_modules/typescript/bin/tsc ",
+    "pullall" : "dev-env-installer pullall",
+    "buildall" : "dev-env-installer buildall",
+    "testall" : "dev-env-installer testall",
+    "devInstall": "dev-env-installer install"
   },
   "dependencies": {
     "json-schema-compatibility": "^1.1.0",
@@ -36,6 +40,7 @@
     "mocha": "^2.2.1",
     "typedoc": "^0.3.12",
     "typescript": "1.8.7",
-    "typings": "^0.5.1"
+    "typings": "^0.5.1",
+    "dev-env-installer":"^0.0.1"
   }
 }
