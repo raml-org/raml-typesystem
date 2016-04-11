@@ -667,6 +667,9 @@ export class AbstractType extends Described implements ITypeDefinition{
         if(this.isAnnotationType()){
             result.push("annotation");
         }
+        if(this.isExternal()){
+            result.push("external");
+        }
         return result;
     }
 }
