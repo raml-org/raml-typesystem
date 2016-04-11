@@ -138,7 +138,15 @@ export interface ITypeDefinition extends INamedEntity {
      */
     allProperties(visited?:any): IProperty[];
 
+    /**
+     * Facets declared by the type and its supertypes
+     */
     allFacets(visited?:any):IProperty[];
+
+    /**
+     * Facets declared by the type
+     */
+    facets():IProperty[];
 
     /**
      * Whether this type is value type. Does not perform a search in super types.
@@ -154,6 +162,11 @@ export interface ITypeDefinition extends INamedEntity {
      * Whether this type is an array. Does not perform a search in super types.
      */
     isArray():boolean;
+
+    /**
+     * Whether this type is object. Performs a search in super types.
+     */
+    isObject():boolean;
 
     /**
      * true if this type is array or one of its super types is array.
@@ -257,6 +270,11 @@ export interface ITypeDefinition extends INamedEntity {
     getFixedFacets():{ [name:string]:any};
 
     /**
+     * @return map of fixed facet names to fixed facet values;
+     */
+    allFixedFacets():{ [name:string]:any};
+
+    /**
      * Print details of this type.
      * Used mostly for debug and demosntration purposes.
      * @param indent
@@ -282,6 +300,8 @@ export interface ITypeDefinition extends INamedEntity {
      * properties or facets, or having user-defined name as opposed to a synthetic user-defined type.
      */
     genuineUserDefinedType() : ITypeDefinition;
+
+    kind():string[];
 
 }
 export interface FacetValidator{
