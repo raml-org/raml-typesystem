@@ -5,7 +5,7 @@
     "declaration": true,
     "noImplicitAny": true,
     "moduleResolution": "node",
-    "removeComments": true,
+    "removeComments": false,
     "sourceMap": true,
     "outDir":"dist/"
   },

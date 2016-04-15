@@ -182,6 +182,10 @@ export class AbstractType extends Described implements ITypeDefinition{
         return this._allFacets;
     }
 
+    facets():IProperty[]{
+        return [].concat(this._facets);
+    }
+
     facet(name: string){
         return _.find(this.allFacets(),x=>x.nameId()==name);
     }
@@ -337,27 +341,31 @@ export class AbstractType extends Described implements ITypeDefinition{
     protected _af:{ [name:string]:any};
 
     getFixedFacets():{ [name:string]:any}{
-        if (this._af){
-            return this._af;
-        }
-        //var sp=this.allSuperTypes();
         var mm:{ [name:string]:any}={};
         for (var q in  this.fixedFacets){
             mm[q]=this.fixedFacets[q];
         }
-        // sp.forEach(x=>{
-        //     if (x instanceof AbstractType) {
-        //         (<AbstractType>x).contributeFacets(mm);
-        //         var ff = (<AbstractType>x).fixedFacets;
-        //         for (var q in  ff) {
-        //             mm[q] = ff[q];
-        //         }
-        //     }
-        // });
         this.contributeFacets(mm);
+        return mm;
+    }
+
+    allFixedFacets():{ [name:string]:any}{
+        if (this._af){
+            return this._af;
+        }
+        var sp=this.allSuperTypes();
+        sp.push(this);
+        var mm:{ [name:string]:any}={};
+        sp.forEach(x=>{
+            var ff = x.getFixedFacets();
+            for( var key in Object.keys(ff)){
+                mm[key] = ff[key];
+            }
+        });
         this._af=mm;
         return mm;
     }
+
     protected contributeFacets(x:{ [name:string]:any}){
 
     }
@@ -621,12 +629,48 @@ export class AbstractType extends Described implements ITypeDefinition{
         return false;
     }
 
+    isObject() {
+        if(this.nameId()=="object"){
+            return true;
+        }
+        for(var t of this.allSuperTypes()){
+            if(t.isObject()){
+                return true;
+            }
+        }
+        return false;
+    }
+
     array():IArrayType {
         return null;
     }
 
     isValueType() {
         return false;
+    }
+
+    kind():string[]{
+
+        var result:string[] = [];
+        if(this.isObject()){
+            result.push("object");
+        }
+        if(this.isArray()){
+            result.push("array");
+        }
+        if(this.isValueType()){
+            result.push("value");
+        }
+        if(this.isUnion()){
+            result.push("union");
+        }
+        if(this.isAnnotationType()){
+            result.push("annotation");
+        }
+        if(this.isExternal()){
+            result.push("external");
+        }
+        return result;
     }
 }
 export class ValueType extends AbstractType implements ITypeDefinition{
@@ -646,6 +690,10 @@ export class ValueType extends AbstractType implements ITypeDefinition{
     }
 
     isUnionType(){
+        return false;
+    }
+
+    isObject() {
         return false;
     }
 }
@@ -892,6 +940,10 @@ export class Union extends AbstractType implements IUnionType{
         return true;
     }
 
+    isObject() {
+        return this.leftType().isObject() && this.rightType().isObject();
+    }
+
     hasArrayInHierarchy(){
         if (this.left&&this.right){
             return this.left.hasArrayInHierarchy()||this.right.hasArrayInHierarchy();
@@ -914,6 +966,10 @@ export class Array extends AbstractType implements IArrayType{
 
     isArray() {
         return true;
+    }
+
+    isObject() {
+        return false;
     }
 
     arrayInHierarchy(){

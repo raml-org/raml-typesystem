@@ -1,5 +1,7 @@
 # RAML Data Type System
 
+[![Build Status](https://travis-ci.org/raml-org/typesystem-ts.svg?branch=master)](https://travis-ci.org/raml-org/typesystem-ts)
+
 This module contains a lightweight implementation of the type system that was introduced with [RAML 1.0](http://raml.org).
 
 It allows you to to parse, validate , modify RAML types, as well as store them back to JSON.
