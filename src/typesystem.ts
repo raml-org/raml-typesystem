@@ -1645,9 +1645,14 @@ STRING.addMeta(new TypeOfRestriction("string"));
 INTEGER.addMeta(new IntegerRestriction());
 DATE.addMeta(new TypeOfRestriction("string"));
 FILE.addMeta(new TypeOfRestriction("string"));
+var arrayOfString=ARRAY.inherit("");
+arrayOfString.addMeta(new ComponentShouldBeOfType(STRING))
+FILE.addMeta(new FacetDeclaration("fileTypes",arrayOfString,true));
+FILE.addMeta(new FacetDeclaration("minLength",INTEGER,true));
+FILE.addMeta(new FacetDeclaration("maxLength",INTEGER,true));
+
 SCALAR.addMeta(new ScalarRestriction());
 registry.types().forEach(x=>x.lock())
-
 
 export class ExternalType extends InheritedType{
     constructor( name: string,private _content:string,private json:boolean, private provider: su.IContentProvider){
