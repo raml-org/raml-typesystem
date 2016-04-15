@@ -323,4 +323,26 @@ describe("Simple validation testing",function() {
         var st=t.validateType(ts.builtInRegistry());
         assert.isTrue(st.getErrors().length===0);
     });
+    it("not required property in long syntax", function () {
+        var tp = ps.parseJSONTypeCollection({
+
+            types:{
+                a: {
+                    "type":"object",
+                    properties:{
+                        x:"string",
+                        y:{
+                            type:"string",
+                            required: false
+                        }
+                    },
+                    example: {x:"A"}
+                }
+
+            }
+        });
+        var t=tp.getType("a");
+        var st=t.validateType(ts.builtInRegistry());
+        assert.isTrue(st.getErrors().length===0);
+    });
 });

@@ -352,6 +352,13 @@ export function parsePropertyBean(n:ParseNode,tr:ts.TypeRegistry):PropertyBean{
     }
     result.type=parse(null, n,tr);
     result.id=name;
+    var rs=n.childWithKey("required");
+    if (rs){
+        if (rs.value()==false){
+            result.optional=true;
+            result.id=n.key();
+        }
+    }
     return result;
 }
 
