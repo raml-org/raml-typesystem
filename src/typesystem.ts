@@ -716,6 +716,14 @@ export abstract class AbstractType{
 
     /**
      *
+     * @return true if type is integer or inherited from integer
+     */
+    isInteger():boolean{
+        return this==<AbstractType>INTEGER||this.allSuperTypes().indexOf(INTEGER)!=-1;
+    }
+
+    /**
+     *
      * @return true if type is number or inherited from number
      */
     isFile():boolean{
