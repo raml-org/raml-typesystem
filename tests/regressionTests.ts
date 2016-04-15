@@ -293,4 +293,34 @@ describe("Simple validation testing",function() {
         var st=t.validateType(ts.builtInRegistry());
         assert.isTrue(st.getErrors().length===0);
     });
+    it("Valid example of format property", function () {
+        var tp = ps.parseJSONTypeCollection({
+
+            types:{
+                a: {
+                    type:"number",
+                   format: "int16"
+                }
+
+            }
+        });
+        var t=tp.getType("a");
+        var st=t.validateType(ts.builtInRegistry());
+        assert.isTrue(st.getErrors().length===0);
+    });
+    it("Valid example of not using format property", function () {
+        var tp = ps.parseJSONTypeCollection({
+
+            types:{
+                a: {
+                    type:"number",
+
+                }
+
+            }
+        });
+        var t=tp.getType("a");
+        var st=t.validateType(ts.builtInRegistry());
+        assert.isTrue(st.getErrors().length===0);
+    });
 });

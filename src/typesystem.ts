@@ -1637,6 +1637,7 @@ registry.addType(FILE);
 
 NOTHING.addMeta(new NothingRestriction());
 NUMBER.addMeta(new TypeOfRestriction("number"));
+NUMBER.addMeta(new FacetDeclaration("format",STRING,true));
 BOOLEAN.addMeta(new TypeOfRestriction("boolean"));
 OBJECT.addMeta(new TypeOfRestriction("object"));
 ARRAY.addMeta(new TypeOfRestriction("array"));
