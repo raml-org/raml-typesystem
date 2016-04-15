@@ -340,6 +340,23 @@ describe("Simple validation testing",function() {
         var st=t.validateType(ts.builtInRegistry());
         assert.isTrue(st.getErrors().length===0);
     });
+    it("File related facets negative test", function () {
+        var tp = ps.parseJSONTypeCollection({
+
+            types:{
+                a: {
+                    type:"file",
+                    fileTypes:["applicaiton/json"],
+                    minLength:"1",
+                    maxLength:2000
+                }
+
+            }
+        });
+        var t=tp.getType("a");
+        var st=t.validateType(ts.builtInRegistry());
+        assert.isTrue(st.getErrors().length===1);
+    });
     it("not required property in long syntax", function () {
         var tp = ps.parseJSONTypeCollection({
 
