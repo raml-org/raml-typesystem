@@ -167,7 +167,9 @@ export class JSONSchemaObject {
         var id = schema.id.trim();
 
         if(!(id.lastIndexOf('#') === id.length - 1)) {
-            return schema;
+            id = id + '#';
+
+            schema.id = id;
         };
 
         var currentPath = id.substr(0, id.length -1);
@@ -191,6 +193,10 @@ export class JSONSchemaObject {
 
             if(reference.indexOf('#') === 0) {
                 return;
+            }
+
+            if(reference.indexOf('#') === -1) {
+                reference = reference + '#';
             }
 
             if(!this.provider.isAbsolutePath(reference)) {
