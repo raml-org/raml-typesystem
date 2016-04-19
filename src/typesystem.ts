@@ -592,8 +592,12 @@ export abstract class AbstractType{
             if (x instanceof MapPropertyIs){
                 var mm:MapPropertyIs=x;
                 Object.keys(knownPropertySet).forEach(c=>{
-                    if (c.match(mm.regexpValue())){
-                        rs.addSubStatus(new Status(Status.ERROR, 0, "map property " + mm.facetName()+" conflicts with property:"+c,this))
+                    try {
+                        if (c.match(mm.regexpValue())) {
+                            rs.addSubStatus(new Status(Status.ERROR, 0, "map property " + mm.facetName() + " conflicts with property:" + c, this))
+                        }
+                    } catch (e){
+                        //ignore incorrect regexps here
                     }
                 })
             }

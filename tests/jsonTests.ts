@@ -1113,5 +1113,24 @@ describe("Type collection parse and store",function(){
         assert.isTrue(!val);
 
     });
+    it ("one more pattern properties test",function(){
+        var st={
 
+
+            types:{
+                t1:{
+                    type:"object",
+                    properties:{
+                        x: "number",
+                        "[x2]":"string"
+                    }
+                }
+            }
+        };
+        var col=ps.parseJSONTypeCollection(st);
+        var t=col.getType("t1");
+        var val= t.validateType(ts.builtInRegistry()).isOk();
+        assert.isTrue(val);
+
+    });
 });
