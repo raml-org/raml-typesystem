@@ -154,6 +154,8 @@ export class Status {
 
 export const OK_STATUS=new Status(Status.OK,Status.OK,"",null);
 export const SCHEMA_AND_TYPE="SCHEMA"
+export const GLOBAL="GLOBAL"
+
 export const TOPLEVEL="TOPLEVEL"
 
 export function error(message:string,source:any){

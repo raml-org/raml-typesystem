@@ -331,7 +331,7 @@ export function parseTypeCollection(n:ParseNode,tr:ts.TypeRegistry):TypeCollecti
     }
     if (tpes!=null&&tpes.kind()===NodeKind.MAP){
         tpes.children().forEach(x=>{
-           result.addAnnotationType(parse(x.key(),x,reg,false,true))
+           result.addAnnotationType(parse(x.key(),x,reg,false,true,false))
         });
     }
     
@@ -357,7 +357,7 @@ export function parsePropertyBean(n:ParseNode,tr:ts.TypeRegistry):PropertyBean{
         name=name.substring(1,name.length-1);
         result.regExp=true;
     }
-    result.type=parse(null, n,tr);
+    result.type=parse(null, n,tr,false,false,false);
     result.id=name;
     var rs=n.childWithKey("required");
     if (rs){
@@ -604,7 +604,7 @@ function typeToSignature(t:ts.AbstractType):string{
  * @param r
  * @returns {any}
  */
-export function parse(name: string,n:ParseNode,r:ts.TypeRegistry=ts.builtInRegistry(),defaultsToAny:boolean=false,annotation:boolean=false):ts.AbstractType{
+export function parse(name: string,n:ParseNode,r:ts.TypeRegistry=ts.builtInRegistry(),defaultsToAny:boolean=false,annotation:boolean=false,global:boolean=true):ts.AbstractType{
     //Build super types.
 
     var provider: su.IContentProvider = (<any>n).contentProvider ? (<any>n).contentProvider() : null;
@@ -634,6 +634,7 @@ export function parse(name: string,n:ParseNode,r:ts.TypeRegistry=ts.builtInRegis
         }
         return res;
     }
+
     var superTypes:AbstractType[]=[];
     var tp=n.childWithKey("type");
     var shAndType:boolean=false;
@@ -705,7 +706,7 @@ export function parse(name: string,n:ParseNode,r:ts.TypeRegistry=ts.builtInRegis
         }
         if (key=="items"){
             if (result.isSubTypeOf(ts.ARRAY)){
-                var tp=parse(null, x,r);
+                var tp=parse(null, x,r,false,false,false);
                 actualResult.addMeta(new ComponentShouldBeOfType(tp));
                 return;
             }
@@ -777,5 +778,6 @@ export function parse(name: string,n:ParseNode,r:ts.TypeRegistry=ts.builtInRegis
     if (shAndType){
         actualResult.putExtra(ts.SCHEMA_AND_TYPE,true);
     }
+    actualResult.putExtra(ts.GLOBAL,global);
     return actualResult;
 }

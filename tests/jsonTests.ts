@@ -1402,4 +1402,30 @@ describe("Type collection parse and store",function(){
         var val= t.validateType(ts.builtInRegistry()).isOk();
         assert.isTrue(val);
     });
+    it ("discriminator is only allowed for top levels",function(){
+        var st={
+
+
+            types:{
+                t1:{
+                    type:"object",
+                    properties:{
+                        x: {
+                            type: "object",
+                            properties:{
+                                xx:"string"
+                            },
+                            discriminator: "xx"
+                        }
+
+                    }
+                },
+
+            }
+        };
+        var col=ps.parseJSONTypeCollection(st);
+        var t=col.getType("t1");
+        var val= t.validateType(ts.builtInRegistry()).isOk();
+        assert.isTrue(!val);
+    });
 });
