@@ -333,6 +333,7 @@ export function parseTypeCollection(n:ParseNode,tr:ts.TypeRegistry):TypeCollecti
            result.addAnnotationType(parse(x.key(),x,reg,false,true))
         });
     }
+    
     return result;
 }
 

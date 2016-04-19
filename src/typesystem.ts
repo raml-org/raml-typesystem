@@ -154,6 +154,8 @@ export class Status {
 
 export const OK_STATUS=new Status(Status.OK,Status.OK,"",null);
 export const SCHEMA_AND_TYPE="SCHEMA"
+export const TOPLEVEL="TOPLEVEL"
+
 export function error(message:string,source:any){
     return new Status(Status.ERROR,0,message,source);
 }
@@ -265,6 +267,7 @@ import {PropertyIs} from "./restrictions";
 import {ComponentShouldBeOfType} from "./restrictions";
 import exO=require("./exampleBuilder")
 import {NotScalar} from "./metainfo";
+import {MapPropertyIs} from "./restrictions";
 
 export var autoCloseFlag=false;
 /**
@@ -568,7 +571,12 @@ export abstract class AbstractType{
                 }
             }
         })
-
+        var knownPropertySet:{ [name:string]:boolean}={}
+        this.meta().forEach(x=> {
+                if (x instanceof PropertyIs){
+                    knownPropertySet[(<PropertyIs>x).propId()]=true;
+                }
+        });
         this.meta().forEach(x=> {
             if (x instanceof CustomFacet) {
                 var cd:CustomFacet = x;
@@ -580,6 +588,14 @@ export abstract class AbstractType{
                 else {
                     rs.addSubStatus(new Status(Status.ERROR, 0, "specifying unknown facet:" + cd.facetName(),this))
                 }
+            }
+            if (x instanceof MapPropertyIs){
+                var mm:MapPropertyIs=x;
+                Object.keys(knownPropertySet).forEach(c=>{
+                    if (c.match(mm.regexpValue())){
+                        rs.addSubStatus(new Status(Status.ERROR, 0, "map property " + mm.facetName()+" conflicts with property:"+c,this))
+                    }
+                })
             }
         })
         if (Object.getOwnPropertyNames(rfds).length > 0) {

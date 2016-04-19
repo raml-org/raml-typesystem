@@ -265,6 +265,7 @@ export class Discriminator extends ts.TypeInformation{
         if (!this.owner().isSubTypeOf(ts.OBJECT)){
             return new Status(Status.ERROR,0,"you only can use `discriminator` with object types",this)
         }
+        
         var prop=_.find(this.owner().meta(),x=>x instanceof PropertyIs&& (<PropertyIs>x).propertyName()==this.value());
         if (!prop){
             return new Status(Status.ERROR,0,"Using unknown property: "+this.value()+" as discriminator",this);
