@@ -1133,4 +1133,63 @@ describe("Type collection parse and store",function(){
         assert.isTrue(val);
 
     });
+    it ("no external types in properties ",function(){
+        var st={
+
+
+            types:{
+                t0:"{}",
+                t1:{
+                    type:"object",
+                    properties:{
+                        x: "t0"
+                    }
+                }
+            }
+        };
+        var col=ps.parseJSONTypeCollection(st);
+        var t=col.getType("t1");
+        var val= t.validateType(ts.builtInRegistry()).isOk();
+        assert.isTrue(!val);
+
+    });
+    it ("no external types in components",function(){
+        var st={
+
+
+            types:{
+                t0:"{}",
+                t1:{
+                    type:"object",
+                    properties:{
+                        x: "t0[]"
+                    }
+                }
+            }
+        };
+        var col=ps.parseJSONTypeCollection(st);
+        var t=col.getType("t1");
+        var val= t.validateType(ts.builtInRegistry()).isOk();
+        assert.isTrue(!val);
+
+    });
+    it ("it is illegal to do semantic inheritance from external types",function(){
+        var st={
+
+
+            types:{
+                t0:"{}",
+                t1:{
+                    type:[ "object","t0"],
+                    properties:{
+                        x: "number"
+                    }
+                }
+            }
+        };
+        var col=ps.parseJSONTypeCollection(st);
+        var t=col.getType("t1");
+        var val= t.validateType(ts.builtInRegistry()).isOk();
+        assert.isTrue(!val);
+    });
 });

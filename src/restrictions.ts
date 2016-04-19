@@ -80,6 +80,11 @@ export abstract class MatchesProperty extends ts.Constraint{
             }
             return st;
         }
+        if (this._type.isExternal()){
+            var p= new Status(Status.ERROR,0,"It is not allowed to use external types in property definitions",this)
+            p.setValidationPath({name: this.propId()})
+            return p;
+        }
         if (this._type.isSubTypeOf(ts.UNKNOWN)||this._type.isSubTypeOf(ts.RECURRENT)){
             var p= new Status(Status.ERROR,0,"property "+this.propId()+" refers to unknown type "+this._type.name(),this)
             p.setValidationPath({name: this.propId()})
@@ -868,6 +873,10 @@ export class ComponentShouldBeOfType extends FacetRestriction<ts.AbstractType>{
                 return new Status(Status.ERROR, 0,  "component type has error:" + st.getMessage(),this)
             }
             return st;
+        }
+        if (this.type.isExternal()){
+            var p= new Status(Status.ERROR,0,"It is not allowed to use external types in component type definitions",this)
+            return p;
         }
         if (this.type.isSubTypeOf(ts.UNKNOWN) || this.type.isSubTypeOf(ts.RECURRENT)) {
             return new Status(Status.ERROR, 0, "component refers to unknown type " + this.type.name(),this)

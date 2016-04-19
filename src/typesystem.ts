@@ -484,6 +484,7 @@ export abstract class AbstractType{
             rs.addSubStatus(new Status(Status.ERROR, 0, "redefining builtin type:"+this.name(),this))
 
         }
+
         if (this.isSubTypeOf(RECURRENT)) {
             rs.addSubStatus(new Status(Status.ERROR, 0, "recurrent type definition",this))
         }
@@ -505,6 +506,23 @@ export abstract class AbstractType{
            if ((fs.indexOf(this)!=-1)||fs.some(x=>x===UNKNOWN||x===RECURRENT)){
                rs.addSubStatus(new Status(Status.ERROR, 0, "recurrent array type definition",this))
            }
+        }
+        var supers=this.superTypes();
+        var hasExternal:boolean=false;
+        var hasNotExternal:boolean=false;
+
+        if (supers.length>1){
+            supers.forEach(x=>{
+                if (x.isExternal()){
+                   hasExternal=true;
+                }
+                else{
+                    hasNotExternal=true;
+                }
+            })
+        }
+        if (hasExternal&&hasNotExternal){
+            rs.addSubStatus(new Status(Status.ERROR, 0, "It is not allowed to mix RAML types with externals",this))
         }
     };
 
