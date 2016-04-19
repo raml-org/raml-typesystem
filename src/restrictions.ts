@@ -186,7 +186,7 @@ export class KnownPropertyRestriction extends ts.Constraint{
             if (i&&typeof  i == 'object') {
                 var nm:{ [name:string]:boolean} = {};
                 Object.getOwnPropertyNames(i).forEach(n=>nm[n] = true);
-                var mp:MatchesProperty[] = <MatchesProperty[]>this.owner().metaOfType(<any>MatchesProperty);
+                var mp:MatchesProperty[] = <MatchesProperty[]>this.owner().knownProperties();
                 Object.getOwnPropertyNames(i).forEach(p=> {
                     mp.forEach(v=> {
                         if (v.matches(p)) {
@@ -194,6 +194,7 @@ export class KnownPropertyRestriction extends ts.Constraint{
                         }
                     });
                 })
+
                 if (Object.keys(nm).length > 0&&mp.length>0) {
                     var s=new ts.Status(ts.Status.OK,0,"",this);
                     Object.keys(nm).forEach(x=>{

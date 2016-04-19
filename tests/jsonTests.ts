@@ -1232,4 +1232,174 @@ describe("Type collection parse and store",function(){
         assert.isTrue(val);
 
     });
+    it ("extending from object and union",function(){
+        var st={
+
+
+            types:{
+                t1:{
+                    type:"object",
+                    properties:{
+                        x: "number",
+
+                    }
+                },
+                t2:{
+                    type:"object",
+                    properties:{
+                        y: "number",
+
+                    }
+                },
+                t3:{
+                    type:"object",
+                    properties:{
+                        z: "number",
+
+                    }
+                },
+                t4:{
+                    type: ["t1","t2|t3"],
+                    example:{
+                        x: 1,
+                        y: 2
+                    }
+                }
+            }
+        };
+        var col=ps.parseJSONTypeCollection(st);
+        var t=col.getType("t4");
+        var val= t.validateType(ts.builtInRegistry()).isOk();
+        assert.isTrue(val);
+
+    });
+    it ("extending from object and union (negative)",function(){
+        var st={
+
+
+            types:{
+                t1:{
+                    type:"object",
+                    properties:{
+                        x: "number",
+
+                    }
+                },
+                t2:{
+                    type:"object",
+                    properties:{
+                        y: "number",
+
+                    }
+                },
+                t3:{
+                    type:"object",
+                    properties:{
+                        z: "number",
+
+                    }
+                },
+                t4:{
+                    type: ["t1","t2|t3"],
+                    example:{
+                        x: 1,
+                        y2: 2
+                    }
+                }
+            }
+        };
+        var col=ps.parseJSONTypeCollection(st);
+        var t=col.getType("t4");
+        var val= t.validateType(ts.builtInRegistry()).isOk();
+        assert.isTrue(!val);
+
+    });
+    it ("extending from object and union types allows to use object facets",function(){
+        var st={
+
+
+            types:{
+                t1:{
+                    type:"object",
+                    properties:{
+                        x: "number",
+
+                    }
+                },
+                t2:{
+                    type:"object",
+                    properties:{
+                        y: "number",
+
+                    }
+                },
+                t3:{
+                    type:"object",
+                    properties:{
+                        z: "number",
+
+                    }
+                },
+                t4:{
+                    type: ["t1","t2|t3"],
+                    properties:{
+                        y2: "number"
+                    },
+                    example:{
+                        x: 1,
+                        y2: 2,
+                        y: 3
+                    }
+                }
+            }
+        };
+        var col=ps.parseJSONTypeCollection(st);
+        var t=col.getType("t4");
+        var val= t.validateType(ts.builtInRegistry()).isOk();
+        assert.isTrue(val);
+
+    });
+    it ("extending from object union type allows to use object facets",function(){
+        var st={
+
+
+            types:{
+                t1:{
+                    type:"object",
+                    properties:{
+                        x: "number",
+
+                    }
+                },
+                t2:{
+                    type:"object",
+                    properties:{
+                        y: "number",
+
+                    }
+                },
+                t3:{
+                    type:"object",
+                    properties:{
+                        z: "number",
+
+                    }
+                },
+                t4:{
+                    type: ["t2|t3"],
+                    properties:{
+                        y2: "number"
+                    },
+                    example:{
+                        y2: 2,
+                        y: 3
+                    }
+                }
+            }
+        };
+        var col=ps.parseJSONTypeCollection(st);
+        var t=col.getType("t4");
+        var val= t.validateType(ts.builtInRegistry()).isOk();
+        assert.isTrue(val);
+    });
 });

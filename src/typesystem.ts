@@ -268,6 +268,7 @@ import {ComponentShouldBeOfType} from "./restrictions";
 import exO=require("./exampleBuilder")
 import {NotScalar} from "./metainfo";
 import {MapPropertyIs} from "./restrictions";
+import {MatchesProperty} from "./restrictions";
 
 export var autoCloseFlag=false;
 /**
@@ -359,6 +360,10 @@ export abstract class AbstractType{
     }
 
 
+    knownProperties():MatchesProperty[]{
+        return <MatchesProperty[]>this.metaOfType(<any>MatchesProperty);
+    }
+
     abstract kind():string;
 
     protected _locked:boolean=false;
@@ -384,7 +389,7 @@ export abstract class AbstractType{
     }
 
     isSubTypeOf(t:AbstractType):boolean{
-        return t===ANY||this===t|| this.allSuperTypes().indexOf(t)!=-1
+        return t===ANY||this===t|| this.superTypes().some(x=>x.isSubTypeOf(t))
     }
     isSuperTypeOf(t:AbstractType):boolean{
         return this===t|| this.allSubTypes().indexOf(t)!=-1
@@ -1219,6 +1224,14 @@ export class InheritedType extends AbstractType{
         return this._superTypes;
     }
 
+    knownProperties():MatchesProperty[]{
+        var vs= <MatchesProperty[]>this.metaOfType(<any>MatchesProperty);
+        this.superTypes().forEach(x=>{
+            vs=vs.concat(x.knownProperties());
+        })
+        return vs;
+    }
+
     kind(){
         return "inherited"
     }
@@ -1284,6 +1297,16 @@ export class UnionType extends DerivedType{
     kind(){
         return "union"
     }
+    isSubTypeOf(t:AbstractType):boolean{
+        var isSubType=true;
+        this.allOptions().forEach(x=>{
+            if (!x.isSubTypeOf(t)){
+                isSubType=false
+            }
+        })
+        return isSubType;
+        //return t===ANY||this===t|| this.superTypes().some(x=>x.isSubTypeOf(t));
+    }
 
     validate(i:any):Status{
         return this.validateDirect(i);
@@ -1296,7 +1319,13 @@ export class UnionType extends DerivedType{
         });
         return res;
     }
-
+    knownProperties():MatchesProperty[]{
+        var vs= <MatchesProperty[]>this.metaOfType(<any>MatchesProperty);
+        this.options().forEach(x=>{
+            vs=vs.concat(x.knownProperties());
+        })
+        return vs;
+    }
 
     validateDirect(i:any,autoClose:boolean=false):Status {
         var st=new Status(Status.OK,0,"",this);
