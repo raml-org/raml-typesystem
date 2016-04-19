@@ -78,6 +78,12 @@ export class FacetDeclaration extends MetaInfo{
     constructor(private name: string,private _type:ts.AbstractType,private optional:boolean){
         super(name,_type,true)
     }
+    actualName(){
+        if (this.name.charAt(this.name.length-1)=='?'){
+            return this.name.substr(0,this.name.length-1);
+        }
+        return this.name;
+    }
 
     isOptional(){
         return this.optional;

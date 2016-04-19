@@ -1057,4 +1057,22 @@ describe("Type collection parse and store",function(){
         assert.isTrue(!val);
 
     });
+    it ("builtin facets",function(){
+        var st={
+
+
+            types:{
+                t1:{
+                    type:"number",
+                    facets:{ properties:"string"}
+
+                }
+            }
+        };
+        var col=ps.parseJSONTypeCollection(st);
+        var t=col.getType("t1");
+        var val= t.validateType(ts.builtInRegistry()).isOk();
+        assert.isTrue(!val);
+
+    });
 });

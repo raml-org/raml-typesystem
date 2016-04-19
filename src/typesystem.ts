@@ -532,14 +532,14 @@ export abstract class AbstractType{
             if (x instanceof FacetDeclaration) {
                 var fd:FacetDeclaration = x;
 
-                fds[fd.facetName()] = fd;
+                fds[fd.actualName()] = fd;
                 if (!fd.isOptional()) {
                     if (fd.owner()!==this) {
-                        rfds[fd.facetName()] = fd;
+                        rfds[fd.actualName()] = fd;
                     }
                 }
                 if (fd.owner()!=this){
-                    super_facets[fd.facetName()]=fd;
+                    super_facets[fd.actualName()]=fd;
                 }
 
             }
@@ -548,16 +548,19 @@ export abstract class AbstractType{
             if (x instanceof FacetDeclaration) {
                 var fd:FacetDeclaration = x;
                 if (fd.owner()==this){
-                    if (super_facets.hasOwnProperty(fd.facetName())){
-                        rs.addSubStatus(new Status(Status.ERROR, 0, "facet :" + fd.facetName()+" can not be overriden",this))
+                    var an=fd.actualName();
+                    if (super_facets.hasOwnProperty(an)){
+                        rs.addSubStatus(new Status(Status.ERROR, 0, "facet :" + an+" can not be overriden",this))
 
                     }
-                    var fp=fr.getInstance().facetPrototypeWithName(fd.facetName());
-                    if (fp&&fp.isApplicable(this)){
-                        rs.addSubStatus(new Status(Status.ERROR, 0, "built-in facet :" + fd.facetName()+" can not be overriden",this))
+
+                    var fp=fr.getInstance().facetPrototypeWithName(an);
+                    if (fp&&fp.isApplicable(this)||an=="type"||fd.facetName()=="properties"||an=="schema"||an=="facets"){
+                        rs.addSubStatus(new Status(Status.ERROR, 0, "built-in facet :" + an+" can not be overriden",this))
                     }
-                    if (fd.facetName().charAt(0)=='('){
-                        rs.addSubStatus(new Status(Status.ERROR, 0, "facet :" + fd.facetName()+" can not start from '('",this))
+
+                    if (an.charAt(0)=='('){
+                        rs.addSubStatus(new Status(Status.ERROR, 0, "facet :" + an+" can not start from '('",this))
                     }
                 }
             }
