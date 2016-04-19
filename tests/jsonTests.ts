@@ -946,26 +946,26 @@ describe("Type collection parse and store",function(){
         var q=ps.storeAsJSON(col);
         assert.deepEqual(q,st);
     });
-    it ("map types",function(){
-        var st={
-
-
-            types:{
-                t1:{
-                    type:"object",
-                    properties: {
-                        numberMap: "number{}"
-                    }
-
-                }
-            }
-        };
-        var col=ps.parseJSONTypeCollection(st);
-        var t=col.getType("t1");
-        assert.isTrue(t.validateType(ts.builtInRegistry()).isOk());
-        assert.isTrue(t.validate({ "numberMap":{a:2}}).isOk());
-        assert.isTrue(!t.validate({ "numberMap":{a:"ss"}}).isOk());
-    });
+    // it ("map types",function(){
+    //     var st={
+    //
+    //
+    //         types:{
+    //             t1:{
+    //                 type:"object",
+    //                 properties: {
+    //                     numberMap: "number{}"
+    //                 }
+    //
+    //             }
+    //         }
+    //     };
+    //     var col=ps.parseJSONTypeCollection(st);
+    //     var t=col.getType("t1");
+    //     assert.isTrue(t.validateType(ts.builtInRegistry()).isOk());
+    //     assert.isTrue(t.validate({ "numberMap":{a:2}}).isOk());
+    //     assert.isTrue(!t.validate({ "numberMap":{a:"ss"}}).isOk());
+    // });
     it ("repeat option",function(){
         var st={
 

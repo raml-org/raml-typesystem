@@ -29,19 +29,9 @@ export function parseToType(val:string,t:ts.TypeRegistry, contentProvider: schem
         if (json || q.charAt(0)=='<'){
             return new ts.ExternalType("", q, json, contentProvider);
         }
-        var mapShortCutIndex=val.indexOf("{}");
-        var isMap:boolean=false;
-        if (mapShortCutIndex!=-1){
-            isMap=true;
-            val=val.substr(0,val.length-2);
-        }
+
         var node:BaseNode = typeExpression.parse(val);
         var result= parseNode(node, t);
-        if (isMap){
-            var tp=ts.derive("",[ts.OBJECT]);
-            tp.addMeta(new AdditionalPropertyIs(result));
-            return tp;
-        }
         return result;
     } catch (e){
         return ts.derive(val,[ts.UNKNOWN]);
