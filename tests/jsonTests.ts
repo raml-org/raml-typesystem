@@ -1075,4 +1075,22 @@ describe("Type collection parse and store",function(){
         assert.isTrue(!val);
 
     });
+    it ("schema and type can not be used together",function(){
+        var st={
+
+
+            types:{
+                t1:{
+                    type:"number",
+                    schema: "integer"
+
+                }
+            }
+        };
+        var col=ps.parseJSONTypeCollection(st);
+        var t=col.getType("t1");
+        var val= t.validateType(ts.builtInRegistry()).isOk();
+        assert.isTrue(!val);
+
+    });
 });

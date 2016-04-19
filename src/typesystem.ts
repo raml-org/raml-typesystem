@@ -153,7 +153,7 @@ export class Status {
 }
 
 export const OK_STATUS=new Status(Status.OK,Status.OK,"",null);
-
+export const SCHEMA_AND_TYPE="SCHEMA"
 export function error(message:string,source:any){
     return new Status(Status.ERROR,0,message,source);
 }
@@ -439,6 +439,9 @@ export abstract class AbstractType{
                     }
                 })
             }
+        }
+        if (this.getExtra(SCHEMA_AND_TYPE)){
+            rs.addSubStatus(new Status(Status.ERROR,0, "schema and type are mutually exclusive",this));
         }
         this.validateMeta(tr).getErrors().forEach(x=>rs.addSubStatus(x));
         //if (this.isPolymorphic()||(this.isUnion())) {

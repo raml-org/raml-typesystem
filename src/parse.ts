@@ -310,6 +310,7 @@ export function parseTypeCollection(n:ParseNode,tr:ts.TypeRegistry):TypeCollecti
     if (schemas&&schemas.kind()===NodeKind.ARRAY){
         schemas=transformToArray(schemas);
     }
+
     var reg=new AccumulatingRegistry(tpes,schemas,tr,result);
     if (tpes&&tpes.kind()!==NodeKind.SCALAR){
         tpes.children().forEach(x=>{
@@ -629,8 +630,14 @@ export function parse(name: string,n:ParseNode,r:ts.TypeRegistry=ts.builtInRegis
     }
     var superTypes:AbstractType[]=[];
     var tp=n.childWithKey("type");
+    var shAndType:boolean=false;
     if (!tp){
         tp=n.childWithKey("schema");
+    }
+    else{
+        if (n.childWithKey("schema")){
+            shAndType=true;
+        }
     }
     if (!tp){
         if (defaultsToAny){
@@ -761,6 +768,9 @@ export function parse(name: string,n:ParseNode,r:ts.TypeRegistry=ts.builtInRegis
     }
     if (n.kind()!=NodeKind.SCALAR){
         result.addMeta(new meta.NotScalar());
+    }
+    if (shAndType){
+        actualResult.putExtra(ts.SCHEMA_AND_TYPE,true);
     }
     return actualResult;
 }
