@@ -14,6 +14,7 @@ import {TypeRegistry} from "./typesystem";
 import {ComponentShouldBeOfType} from "./restrictions";
 
 import su = require('./schemaUtil');
+import {KnownPropertyRestriction} from "./restrictions";
 
 export enum NodeKind{
     SCALAR,
@@ -344,11 +345,15 @@ export function parsePropertyBean(n:ParseNode,tr:ts.TypeRegistry):PropertyBean{
         name=name.substr(0,name.length-1);
         result.optional=true;
     }
-    if (name==='[]'||name.length==0){
+    if (name==='[]'||name.length==0||name==='//'){
         result.additonal=true;
 
     }
     else if (name.charAt(0)=='['&&name.charAt(name.length-1)==']'){
+        name=name.substring(1,name.length-1);
+        result.regExp=true;
+    }
+    else if (name.charAt(0)=='/'&&name.charAt(name.length-1)=='/'){
         name=name.substring(1,name.length-1);
         result.regExp=true;
     }
@@ -739,8 +744,7 @@ export function parse(name: string,n:ParseNode,r:ts.TypeRegistry=ts.builtInRegis
         }
         var ap= n.childWithKey("additionalProperties");
         if (ap){
-            var pb=parsePropertyBean(ap,r);
-            result.addMeta(new AdditionalPropertyIs(pb.type));
+            result.addMeta(new KnownPropertyRestriction(ap.value()));
         }
         var props=n.childWithKey("patternProperties");
         if (props) {
