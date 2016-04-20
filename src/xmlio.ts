@@ -8,7 +8,7 @@ export function readObject(content:string,t:ts.AbstractType):any{
     var opts:xml2js.Options={};
     opts.explicitChildren=false;
     opts.explicitArray=false;
-    opts.explicitRoot=false;
+    opts.explicitRoot=true;
     xml2js.parseString(content,opts,function (err,res){
         result=res;
         if (err){

@@ -1,7 +1,9 @@
 /// <reference path="../typings/main.d.ts" />
 declare function require(s:string):any;
 
-import _ = require("underscore")
+import _ = require("underscore");
+
+import xmlValidator = require('./xmlUtil');
 
 var ZSchema=require("z-schema");
 
@@ -330,26 +332,45 @@ export interface ValidationError{
     path:string
 }
 
-export class XMLSchemaObject{
+export class XMLSchemaObject {
+    private schemaObj: xmlValidator.XMLValidator;
+
     constructor(private schema:string){
         if (schema.charAt(0)!='<'){
             throw new Error("Invalid JSON schema")
         }
-        //xmlutil(schema);
+
+        this.schemaObj = new xmlValidator.XMLValidator(schema);
     }
 
     getType() : string {
         return "text.xml";
     }
 
-    validate (content:string){
-
-        //xmlutil(content);
+    validateObject(object:any): any {
+        this.validate(xmlValidator.jsonToXml(object));
     }
 
-    validateObject (object:any){
-        //TODO Validation of objects
-        //xmlutil(content);
+    validate(xml: any) {
+        var validationErrors = this.schemaObj.validate(xml);
+        
+        this.acceptErrors("key", validationErrors, true);
+    }
+    
+    private acceptErrors(key: any, errors: any[], throwImmediately = false): void {
+        if(errors && errors.length>0){
+            var res= new Error("Content is not valid according to schema:"+errors.map(x=>x.message+" "+x.params).join(", "));
+
+            (<any>res).errors=errors;
+
+            globalCache.setValue(key, res);
+
+            if(throwImmediately) {
+                throw res;
+            }
+
+            return;
+        }
     }
 }
 export interface Schema {
