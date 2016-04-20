@@ -15,7 +15,9 @@
     "lrucache": "^1.0.0",
     "underscore": "^1.8.3",
     "xml2js": "^0.4.16",
-    "z-schema": "^3.16.1"
+    "z-schema": "^3.16.1",
+    "xmllint": "^0.1.0 ",
+    "libxml-xsd": "^0.5.2"
   },
   "repository": {
     "type": "git",
