@@ -75,7 +75,7 @@ describe("Simple validation testing",function() {
                     },
                     examples:{
                         R: {
-                            content: {
+                            value: {
                                 c: "A",
                                 vv: 3
                             }
@@ -101,7 +101,7 @@ describe("Simple validation testing",function() {
                     },
                     examples:{
                         R: {
-                            content: {
+                            value: {
                                 c: "A",
                                 vv: 3
                             }
@@ -135,7 +135,7 @@ describe("Simple validation testing",function() {
                     },
                     examples:{
                         R: {
-                            content: {
+                            value: {
                                 c: "A",
                                 vv: 3
                             }
@@ -185,7 +185,7 @@ describe("Simple validation testing",function() {
                     },
                     examples:{
                         R: {
-                            content: {
+                            value: {
                                 c: "A",
                                 vv: 3
                             }

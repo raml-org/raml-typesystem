@@ -130,7 +130,15 @@ export class Example extends MetaInfo{
     }
 
     validateSelf(registry:ts.TypeRegistry):ts.Status {
-        var rr=parseExampleIfNeeded(this.value(),this.owner());
+        var val=this.value();
+        var isVal=false;
+        if (typeof val==="object"&&val){
+            if (val.value){
+                val=val.value;
+                isVal=true;
+            }
+        }
+        var rr=parseExampleIfNeeded(val,this.owner());
         if (rr instanceof ts.Status){
             rr.setValidationPath({name: "example"})
             return rr;
@@ -141,15 +149,28 @@ export class Example extends MetaInfo{
 
             }
             var c= new Status(Status.ERROR,0,"using invalid `example`:"+valOwner.getMessage(),this);
-            valOwner.getErrors().forEach(x=>c.addSubStatus(x));
-            c.setValidationPath({name: "example"})
+            valOwner.getErrors().forEach(x=>{c.addSubStatus(x);
+                if (isVal) {
+                    x.setValidationPath({name: "example", child: {name: "value"}});
+                }
+                else{
+                    x.setValidationPath({name: "example"});
+                }
+            });
+
             return c;
         }
         return ts.OK_STATUS;
     }
 
     example():any{
-        return parseExampleIfNeeded(this.value(),this.owner());
+        var val=this.value();
+        if (typeof val==="object"&&val){
+            if (val.value){
+                val=val.value;
+            }
+        }
+        return parseExampleIfNeeded(val,this.owner());
     }
 }
 export class Required extends MetaInfo{
@@ -184,8 +205,12 @@ export class Examples extends MetaInfo{
         var v=this.value();
         var result:any[]=[];
         Object.keys(v).forEach(x=>{
-            if (typeof v[x]=='object') {
-                var example = parseExampleIfNeeded(v[x].content, this.owner());
+            if (typeof v[x]=='object'&&v[x]) {
+                var val=v[x].value;
+                if (!val){
+                    val=v[x];
+                }
+                var example = parseExampleIfNeeded(val, this.owner());
                 result.push(example);
             }
         });
@@ -196,27 +221,35 @@ export class Examples extends MetaInfo{
         if (typeof this.value()==='object'){
             var rs=new Status(Status.OK,0,"",this);
             var v=this.value();
-            Object.keys(v).forEach(x=>{
-                if (typeof v[x]=='object') {
-                    var example = parseExampleIfNeeded(v[x].content, this.owner());
-                    if (example instanceof ts.Status){
-                        example.setValidationPath({name: x })
-                        rs.addSubStatus(example);
-                        return;
-                    }
-                    var res=this.owner().validateDirect(example,true,false);
-                    res.getErrors().forEach(ex=>{
-                        rs.addSubStatus(ex);
-                        ex.setValidationPath({name:x,child:{name: "content"}});
-                    });
-                    Object.keys(v[x]).forEach(key=>{
-                        if (key.charAt(0)=='('&&key.charAt(key.length-1)==')'){
-                            var a=new Annotation(key.substring(1,key.length-1),v[x][key]);
-                            rs.addSubStatus(a.validateSelf(registry));
+            if (v) {
+                Object.keys(v).forEach(x=> {
+                    if (v[x]) {
+                        var val=v[x].value;
+                        if (!val){
+                            val=v[x];
                         }
-                    });
-                }
-            });
+                        var example = parseExampleIfNeeded(val, this.owner());
+                        if (example instanceof ts.Status) {
+                            example.setValidationPath({name: x})
+                            rs.addSubStatus(example);
+                            return;
+                        }
+                        var res = this.owner().validateDirect(example, true, false);
+                        res.getErrors().forEach(ex=> {
+                            rs.addSubStatus(ex);
+                            ex.setValidationPath({name: x, child: {name: "value"}});
+                        });
+                        if (typeof v[x]=="object"&&v[x].value) {
+                            Object.keys(v[x]).forEach(key=> {
+                                if (key.charAt(0) == '(' && key.charAt(key.length - 1) == ')') {
+                                    var a = new Annotation(key.substring(1, key.length - 1), v[x][key]);
+                                    rs.addSubStatus(a.validateSelf(registry));
+                                }
+                            });
+                        }
+                    }
+                });
+            }
             return rs;
         }
         else{

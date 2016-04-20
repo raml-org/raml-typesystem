@@ -414,10 +414,10 @@ describe("Metadata validation",function() {
                     type: "number",
                     examples: {
                         a:{
-                            content: 4
+                            value: 4
                         },
                         b:{
-                            content: 5
+                            value: 5
                         }
                     }
                 }
@@ -433,11 +433,41 @@ describe("Metadata validation",function() {
                     type: "number",
                     examples: {
                         a:{
-                            content: "4"
+                            value: "4"
                         },
                         b:{
-                            content: 5
+                            value: 5
                         }
+                    }
+                }
+            }
+        })
+        var st= tp.getType("MyNumber").validateType(ts.builtInRegistry());
+        assert.isTrue(!st.isOk());
+    });
+    it("validating - multiple example 1 (without value)", function () {
+        var tp = ps.parseJSONTypeCollection({
+            types: {
+                MyNumber:{
+                    type: "number",
+                    examples: {
+                        a: 4,
+                        b: 5
+                    }
+                }
+            }
+        })
+        var st= tp.getType("MyNumber").validateType(ts.builtInRegistry());
+        assert.isTrue(st.isOk());
+    });
+    it("validating - multiple example 2 (without value)", function () {
+        var tp = ps.parseJSONTypeCollection({
+            types: {
+                MyNumber:{
+                    type: "number",
+                    examples: {
+                        a:"4",
+                        b: 5
                     }
                 }
             }
@@ -452,10 +482,10 @@ describe("Metadata validation",function() {
                     type: "number| integer",
                     examples: {
                         a:{
-                            content: "4"
+                            value: "4"
                         },
                         b:{
-                            content: 5
+                            value: 5
                         }
                     }
                 }
@@ -472,10 +502,10 @@ describe("Metadata validation",function() {
                     type: "number| integer",
                     examples: {
                         a:{
-                            content: 4.2
+                            value: 4.2
                         },
                         b:{
-                            content: 5
+                            value: 5
                         }
                     }
                 }
@@ -495,13 +525,13 @@ describe("Metadata validation",function() {
                     },
                     examples: {
                         a:{
-                            content: {
+                            value: {
                                 x: 3,
                                 y: 2
                             }
                         },
                         b:{
-                            content: {
+                            value: {
                                 x: 3,
                                 y: 4
                             }
@@ -524,13 +554,13 @@ describe("Metadata validation",function() {
                     },
                     examples: {
                         a:{
-                            content: {
+                            value: {
                                 x: 3,
                                 y2: 2
                             }
                         },
                         b:{
-                            content: {
+                            value: {
                                 x: 3,
                                 y: 4
                             }
@@ -553,13 +583,13 @@ describe("Metadata validation",function() {
                     },
                     examples: {
                         a:{
-                            content: `{
+                            value: `{
                                 "x": 3,
                                 "y": 2
                             }`
                         },
                         b:{
-                            content: `{
+                            value: `{
                                 "x": 3,
                                 "y": 4
                             }`
@@ -582,7 +612,7 @@ describe("Metadata validation",function() {
                     },
                     examples: {
                         a:{
-                            content: `<MyNumber><x>2</x><y>3</y></MyNumber>`
+                            value: `<MyNumber><x>2</x><y>3</y></MyNumber>`
                         }
                     }
                 }
@@ -900,7 +930,7 @@ describe("Metadata validation",function() {
                             examples:{
                                 a:{
                                     "(Label)": "3",
-                                    content: [1,2]
+                                    value: [1,2]
                                 }
                             }
                         },
@@ -929,7 +959,7 @@ describe("Metadata validation",function() {
                             examples:{
                                 a:{
                                     "(Label)": 3,
-                                    content: [1,2]
+                                    value: [1,2]
                                 }
                             }
                         },

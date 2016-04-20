@@ -127,7 +127,13 @@ export function exampleFromNominal(n:nm.ITypeDefinition):nm.IExpandableExample[]
             var result:nm.IExpandableExample[]=[]
             if (vl && typeof vl === "object") {
                 Object.keys(vl).forEach(key=> {
-                    result.push(new Example(vl[key].content))
+                    if (vl[key]) {
+                        var val=vl[key].value;
+                        if (!val){
+                            val=vl[key]
+                        }
+                        result.push(new Example(val))
+                    }
 
                 })
             }
