@@ -1,31 +1,34 @@
 /// <reference path="../typings/main.d.ts" />
 declare function require(s:string):any;
 
-var libxml = require('libxml-xsd');
 var xmllint = require('xmllint');
 
 export class XMLValidator {
     private schemaObject: any;
     
     constructor(private schema:string) {
-        if(this.isAtom()) {
-            this.schemaObject = libxml.parse(schema);
+        if(isAtom()) {
+            this.schemaObject = require('libxml-xsd').parse(schema);
         }
     }
 
     validate(xml: string): Error[] {
-        if(this.isAtom()) {
+        if(isAtom()) {
             return this.schemaObject.validate(xml);
         }
 
         return xmllint.validateXML({xml: xml, schema: this.schema});
     }
 
-    private isAtom(): boolean {
-        return (window && (<any>window).atom) ? true: false;
-    }
 }
 
+function isAtom(): boolean {
+    if(typeof window === 'undefined') {
+        return false;
+    }
+    
+    return (window && (<any>window).atom) ? true: false;
+}
 
 function objectToXml(object: any) {
     if(!object) {
