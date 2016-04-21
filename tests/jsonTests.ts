@@ -1606,4 +1606,76 @@ describe("Type collection parse and store",function(){
         var val=status .isOk();
         assert.isTrue(!val);
     });
+    it ("null type (negative)",function(){
+        var st={
+
+
+            types:{
+                t1:{
+                    type:"null",
+                    example: 1
+                },
+
+            }
+        };
+        var col=ps.parseJSONTypeCollection(st);
+        var t=col.getType("t1");
+        var status=t.validateType(ts.builtInRegistry());
+        var val=status .isOk();
+        assert.isTrue(!val);
+    });
+    it ("null type (positive)",function(){
+        var st={
+
+
+            types:{
+                t1:{
+                    type:"null",
+                    example: <string>null
+                },
+
+            }
+        };
+        var col=ps.parseJSONTypeCollection(st);
+        var t=col.getType("t1");
+        var status=t.validateType(ts.builtInRegistry());
+        var val=status .isOk();
+        assert.isTrue(val);
+    });
+    it ("null type (positive) 2",function(){
+        var st={
+
+
+            types:{
+                t1:{
+                    type:"string?",
+                    example: "a"
+                },
+
+            }
+        };
+        var col=ps.parseJSONTypeCollection(st);
+        var t=col.getType("t1");
+        var status=t.validateType(ts.builtInRegistry());
+        var val=status .isOk();
+        assert.isTrue(val);
+    });
+    it ("null type (positive) 3",function(){
+        var st={
+
+
+            types:{
+                t1:{
+                    type:"string?",
+                    example: <string>null
+                },
+
+            }
+        };
+        var col=ps.parseJSONTypeCollection(st);
+        var t=col.getType("t1");
+        var status=t.validateType(ts.builtInRegistry());
+        var val=status .isOk();
+        assert.isTrue(val);
+    });
 });
