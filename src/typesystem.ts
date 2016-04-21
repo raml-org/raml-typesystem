@@ -589,7 +589,7 @@ export abstract class AbstractType{
                     }
 
                     var fp=fr.getInstance().facetPrototypeWithName(an);
-                    if (fp&&fp.isApplicable(this)||an=="type"||fd.facetName()=="properties"||an=="schema"||an=="facets"){
+                    if (fp&&fp.isApplicable(this)||an=="type"||fd.facetName()=="properties"||an=="schema"||an=="facets"||an=="uses"){
                         rs.addSubStatus(new Status(Status.ERROR, 0, "built-in facet :" + an+" can not be overriden",this))
                     }
 
