@@ -338,6 +338,7 @@ export class RestrictionsConflict extends Status{
 }
 var globalId=0;
 
+export var VALIDATED_TYPE:AbstractType=null;
 export abstract class AbstractType{
 
     protected computeConfluent: boolean
@@ -868,6 +869,7 @@ export abstract class AbstractType{
      * validates object against this type without performing AC
      */
     validateDirect(i:any,autoClose:boolean=false,nullAllowed:boolean=true,path:IValidationPath=null):Status{
+        VALIDATED_TYPE=this;
         var result=new Status(Status.OK,0,"",this);
         if (!nullAllowed&&(i===null||i===undefined)){
             return error("object is expected",this)
@@ -1550,13 +1552,14 @@ export class IntegerRestriction extends GenericTypeOf{
     requiredType(){
         return ANY;
     }
+    value(){
+        return true;
+    }
     facetName(){
         return "should be integer"
     }
 
-    value(){
-        return true;
-    }
+    
 }
 export class ScalarRestriction extends GenericTypeOf{
 
@@ -1667,7 +1670,12 @@ export const NUMBER=SCALAR.inherit("number");
 export const INTEGER=NUMBER.inherit("integer");
 export const BOOLEAN=SCALAR.inherit("boolean");
 export const STRING=SCALAR.inherit("string");
-export const DATE=SCALAR.inherit("date");
+//export const DATE=SCALAR.inherit("date");
+export const DATE_ONLY=SCALAR.inherit("date-only");
+export const TIME_ONLY=SCALAR.inherit("time-only");
+export const DATETIME_ONLY=SCALAR.inherit("datetime-only");
+export const DATETIME=SCALAR.inherit("datetime");
+
 export const FILE=SCALAR.inherit("file");
 export const NOTHING=new RootType("nothing");
 export const UNION=ANY.inherit("union");
@@ -1686,7 +1694,12 @@ NUMBER.addMeta(BUILT_IN);
 INTEGER.addMeta(BUILT_IN);
 BOOLEAN.addMeta(BUILT_IN);
 STRING.addMeta(BUILT_IN);
-DATE.addMeta(BUILT_IN);
+DATE_ONLY.addMeta(BUILT_IN);
+TIME_ONLY.addMeta(BUILT_IN);
+DATETIME_ONLY.addMeta(BUILT_IN);
+DATETIME.addMeta(BUILT_IN);
+
+
 FILE.addMeta(BUILT_IN);
 //POLYMORPHIC.addMeta(BUILT_IN);
 UNKNOWN.addMeta(BUILT_IN);
@@ -1706,7 +1719,11 @@ registry.addType(NUMBER);
 registry.addType(INTEGER);
 registry.addType(BOOLEAN);
 registry.addType(STRING);
-registry.addType(DATE);
+registry.addType(DATE_ONLY);
+registry.addType(TIME_ONLY);
+registry.addType(DATETIME_ONLY);
+registry.addType(DATETIME);
+
 registry.addType(FILE);
 //registry.addType(POLYMORPHIC);
 
@@ -1718,16 +1735,26 @@ OBJECT.addMeta(new TypeOfRestriction("object"));
 ARRAY.addMeta(new TypeOfRestriction("array"));
 STRING.addMeta(new TypeOfRestriction("string"));
 INTEGER.addMeta(new IntegerRestriction());
-DATE.addMeta(new TypeOfRestriction("string"));
+
+
+import dt=require("./datetime")
+
+DATE_ONLY.addMeta(new dt.DateOnlyR())
+TIME_ONLY.addMeta(new dt.TimeOnlyR())
+DATETIME_ONLY.addMeta(new dt.DateTimeOnlyR());
+DATETIME.addMeta(new dt.DateTimeR());
+
 FILE.addMeta(new TypeOfRestriction("string"));
 var arrayOfString=ARRAY.inherit("");
 arrayOfString.addMeta(new ComponentShouldBeOfType(STRING))
 FILE.addMeta(new FacetDeclaration("fileTypes",arrayOfString,true));
 FILE.addMeta(new FacetDeclaration("minLength",INTEGER,true));
 FILE.addMeta(new FacetDeclaration("maxLength",INTEGER,true));
+DATETIME.addMeta(new FacetDeclaration("format",STRING,true));
 
 SCALAR.addMeta(new ScalarRestriction());
 registry.types().forEach(x=>x.lock())
+
 
 export class ExternalType extends InheritedType{
     constructor( name: string,private _content:string,private json:boolean, private provider: su.IContentProvider){
