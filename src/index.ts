@@ -223,6 +223,14 @@ export interface IParsedType {
      */
     isString():boolean
     /**
+     * returns true if this type inherits from boolean type
+     */
+    isBoolean(): boolean;
+    /**
+     * returns true if this type inherits from integer type
+     */
+    isInteger(): boolean;
+    /**
      * returns true if this type inherits from number type
      */
     isNumber():boolean
