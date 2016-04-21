@@ -394,9 +394,12 @@ export function getXMLSchema(content: string) {
         return rs;
     }
     var res = new XMLSchemaObject(content);
+
     if (useLint) {
         globalCache.setValue(content, res);
     }
+
+    return res;
 }
 
 export function createSchema(content: string, provider: IContentProvider): Schema {

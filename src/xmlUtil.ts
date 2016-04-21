@@ -27,10 +27,6 @@ export class XMLValidator {
 }
 
 
-export function jsonToXml(jsonObject: any) {
-    return objectToXml(jsonObject);
-}
-
 function objectToXml(object: any) {
     if(!object) {
         return '';
@@ -67,13 +63,13 @@ function objectToXml(object: any) {
 
                 child[key] = root[key];
 
-                result = result + this.objectToXml(child);
+                result = result + objectToXml(child);
             }  else if(typeof root[key] === 'string' || !root[key]) {
                 var child:any = {};
 
                 child[key] = root[key] || '';
 
-                result = result + this.objectToXml(child);
+                result = result + objectToXml(child);
             } else if(typeof root[key] === 'array' || root[key].length) {
                 var children: any[] = root[key];
 
@@ -84,7 +80,7 @@ function objectToXml(object: any) {
 
                     child[key] = member;
 
-                    result = result + this.objectToXml(child);
+                    result = result + objectToXml(child);
                 }
             }
         });
@@ -93,4 +89,8 @@ function objectToXml(object: any) {
     result = result + '</' + nodeName + '>';
 
     return result;
+}
+
+export function jsonToXml(jsonObject: any) {
+    return objectToXml(jsonObject);
 }
