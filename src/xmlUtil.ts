@@ -1,17 +1,19 @@
 /// <reference path="../typings/main.d.ts" />
 declare function require(s:string):any;
 
-var xmllint = require('libxml-xsd');
+//var xmllint = require('libxml-xsd');
 
 export class XMLValidator {
     private schemaObject: any;
     
     constructor(private schema:string) {
-        this.schemaObject = xmllint.parse(schema);
+        //this.schemaObject = xmllint.parse(schema);
     }
 
     validate(xml: string): Error[] {
-        return this.schemaObject.validate(xml);
+        return [];
+        
+        //return this.schemaObject.validate(xml);
     }
 }
 
