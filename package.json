@@ -19,7 +19,8 @@
     "z-schema": "^3.16.1",
     "date-and-time": "0.3.0",
     "libxml-xsd": "^0.5.2",
-    "xmldom": "^0.1.22"
+    "xmldom": "^0.1.22",
+    "xmllint": "^0.1.0 "
   },
   "repository": {
     "type": "git",
