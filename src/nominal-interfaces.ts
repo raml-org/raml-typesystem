@@ -90,6 +90,18 @@ export interface IExpandableExample {
      * Returns null or expansion result as JSON object.
      */
     expandAsJSON() : any;
+
+    isSingle():boolean
+    
+    strict():boolean
+    
+    description():string
+    
+    displayName():string
+    
+    annotations():any
+    
+    name():string
 }
 export class ValueRequirement{
     /**

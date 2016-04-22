@@ -62,7 +62,15 @@ export function example(t:rt.AbstractType):any{
 }
 class Example implements nm.IExpandableExample{
 
-    constructor(private _value:any,private _empty:boolean=false){
+    constructor(
+        private _value:any,
+        private _name:string = null,
+        private _displyName:string=null,
+        private _description:string=null,
+        private _strict:boolean=false,
+        private _annotations:any=null,
+        private _isSingle:boolean=false,
+        private _empty:boolean=false){
 
     }
 
@@ -117,40 +125,93 @@ class Example implements nm.IExpandableExample{
     expandAsJSON():any {
         return this._value;
     }
+
+    isSingle():boolean{
+        return this._isSingle;
+    }
+
+    strict():boolean{
+        return this._strict;
+    }
+
+    description():string{
+        return this._description;
+    }
+
+    displayName():string{
+        return this._displyName;
+    }
+
+    annotations():any{
+        return this._annotations;
+    }
+
+    name():string{
+        return this._name;
+    }
+
 }
+var toExample = function (exampleObj:any, name:string=null,isSingle:boolean=false) {
+    var example:Example;
+    if (exampleObj) {
+        var val = exampleObj.value;
+        if (!val) {
+            val = exampleObj
+            example = new Example(val, name, null, null, true, null, isSingle);
+        }
+        else {
+            var displayName = exampleObj.displayName;
+            var description = exampleObj.description;
+            var strict:boolean = exampleObj.strict;
+            if(strict==null){
+                strict = true;
+            }
+            var aObj:any = null;
+            var annotationNames = Object.keys(exampleObj).filter(x=>x.charAt(0) == "(");
+            if (annotationNames.length > 0) {
+                aObj = {};
+                for (var aName of annotationNames) {
+                    var aVal = exampleObj[aName];
+                    aName = aName.substring(1, aName.length - 1);
+                    aObj[aName] = aVal;
+                }
+            }
+            example = new Example(val, name, displayName, description, strict, aObj, isSingle);
+        }
+    }
+    return example;
+};
 export function exampleFromNominal(n:nm.ITypeDefinition):nm.IExpandableExample[]{
     var tp=n.getAdapter(rt.InheritedType);
     if (tp){
+        var result:nm.IExpandableExample[]=[]
         var ms1=tp.oneMeta(meta.Examples);
         if (ms1){
             var vl=ms1.value();
-            var result:nm.IExpandableExample[]=[]
             if (vl && typeof vl === "object") {
                 Object.keys(vl).forEach(key=> {
-                    if (vl[key]) {
-                        var val=vl[key].value;
-                        if (!val){
-                            val=vl[key]
-                        }
-                        result.push(new Example(val))
-                    }
-
+                    var name = Array.isArray(vl) ? null : key;
+                    var exampleObj = vl[key];
+                    var example = toExample(exampleObj, name);
+                    result.push(example);
                 })
             }
-            return result;
-        }
 
+        }
         var ms=tp.oneMeta(meta.Example);
         if (ms){
 
             var exampleV=ms.example();
             if (exampleV){
-                return [new Example(ms.value())];
+                result.push(toExample(ms.value(),null,true));
             }
+        }
+        if(result.length>0) {
+            return result;
         }
     }
     if (tp) {
-        return [new Example(example(tp),true)];
+        return [new Example(example(tp),null,null,null,false,null,false,true)];
     }
     return [];
 }
