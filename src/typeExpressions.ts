@@ -60,6 +60,15 @@ function parseNode(node:BaseNode,t:ts.TypeRegistry):ts.AbstractType
     }
     else{
         var lit=(<Literal>node);
+        if (lit.value.charAt(lit.value.length-1)=='?'){
+            var result=t.get(lit.value.substr(0,lit.value.length-1));
+            if (!result){
+                result=ts.derive(lit.value,[ts.UNKNOWN]);
+            }
+            result=ts.union(lit.value,[result,ts.NULL]);
+            var a=lit.arr;
+            return wrapArray(a, result);
+        }
         var result=t.get(lit.value);
         if (!result){
             result=ts.derive(lit.value,[ts.UNKNOWN]);

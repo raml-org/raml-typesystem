@@ -338,6 +338,7 @@ export class RestrictionsConflict extends Status{
 }
 var globalId=0;
 
+export var VALIDATED_TYPE:AbstractType=null;
 export abstract class AbstractType{
 
     protected computeConfluent: boolean
@@ -487,9 +488,11 @@ export abstract class AbstractType{
     }
 
     public validateHierarchy(rs:Status) {
-        if (this.getExtra("topLevel")&&builtInRegistry().get(this.name())){
-            rs.addSubStatus(new Status(Status.ERROR, 0, "redefining builtin type:"+this.name(),this))
+        if (!this.isAnonymous()) {
+            if (this.getExtra("topLevel") && builtInRegistry().get(this.name())) {
+                rs.addSubStatus(new Status(Status.ERROR, 0, "redefining builtin type:" + this.name(), this))
 
+            }
         }
 
         if (this.isSubTypeOf(RECURRENT)) {
@@ -586,7 +589,7 @@ export abstract class AbstractType{
                     }
 
                     var fp=fr.getInstance().facetPrototypeWithName(an);
-                    if (fp&&fp.isApplicable(this)||an=="type"||fd.facetName()=="properties"||an=="schema"||an=="facets"){
+                    if (fp&&fp.isApplicable(this)||an=="type"||fd.facetName()=="properties"||an=="schema"||an=="facets"||an=="uses"){
                         rs.addSubStatus(new Status(Status.ERROR, 0, "built-in facet :" + an+" can not be overriden",this))
                     }
 
@@ -857,7 +860,7 @@ export abstract class AbstractType{
         this.allSuperTypes().forEach(x=>rs=rs|| x instanceof UnionType);
         return rs;
     }
-
+    nullable:boolean
     /**
      * return all type information associated with type
      */
@@ -868,9 +871,12 @@ export abstract class AbstractType{
      * validates object against this type without performing AC
      */
     validateDirect(i:any,autoClose:boolean=false,nullAllowed:boolean=true,path:IValidationPath=null):Status{
+        VALIDATED_TYPE=this;
         var result=new Status(Status.OK,0,"",this);
         if (!nullAllowed&&(i===null||i===undefined)){
-            return error("object is expected",this)
+            if (!this.nullable) {
+                return error("object is expected", this)
+            }
         }
         this.restrictions(true).forEach(x=>result.addSubStatus(x.check(i,path)));
         if ((autoClose||autoCloseFlag)&&this.isObject()&&(!this.oneMeta(KnownPropertyRestriction))){
@@ -886,8 +892,10 @@ export abstract class AbstractType{
     }
     validate(i:any,autoClose:boolean=false,nullAllowed:boolean=true):Status{
         var g=autoCloseFlag;
-        if (!nullAllowed&&(i===null||i===undefined)){
-            return error("object is expected",this)
+        if (!nullAllowed&&(i===null||i===undefined)) {
+            if (!this.nullable) {
+                return error("object is expected", this)
+            }
         }
         if (autoClose){
             autoCloseFlag=true;
@@ -1264,6 +1272,9 @@ export class InheritedType extends AbstractType{
         if (!t.isLocked()) {
             t._subTypes.push(this);
         }
+        if (t.nullable){
+            this.nullable=true;
+        }
     }
 
 }
@@ -1298,6 +1309,14 @@ export class UnionType extends DerivedType{
 
     kind(){
         return "union"
+    }
+    constructor(name: string, _options:AbstractType[]){
+        super(name,_options);
+        this.options().forEach(x=>{
+            if (x.nullable){
+                this.nullable=true;
+            }
+        })
     }
     isSubTypeOf(t:AbstractType):boolean{
         var isSubType=true;
@@ -1386,6 +1405,9 @@ export function intersect(name:string, t:AbstractType[]):IntersectionType{
 export function derive(name: string,t:AbstractType[]):InheritedType{
     var r=new InheritedType(name);
     t.forEach(x=>r.addSuper(x));
+    if (r.isSubTypeOf(NULL)){
+        r.nullable=true;
+    }
     return r;
 }
 /**
@@ -1550,13 +1572,38 @@ export class IntegerRestriction extends GenericTypeOf{
     requiredType(){
         return ANY;
     }
+    value(){
+        return true;
+    }
     facetName(){
         return "should be integer"
     }
 
+    
+}
+export class NullRestriction extends GenericTypeOf{
+
+    constructor(){
+        super();
+    }
+    check(i:any):Status {
+        if (i===null||i==undefined){
+            return OK_STATUS;
+        }
+        return error("null is expected",this);
+    }
+
+    requiredType(){
+        return ANY;
+    }
     value(){
         return true;
     }
+    facetName(){
+        return "should be null"
+    }
+
+
 }
 export class ScalarRestriction extends GenericTypeOf{
 
@@ -1662,12 +1709,19 @@ export const OBJECT=ANY.inherit("object");
 //export const POLYMORPHIC=OBJECT.inherit("polymorphic");
 
 export const ARRAY=ANY.inherit("array");
+export const NULL=ANY.inherit("null");
+
 export const EXTERNAL=ANY.inherit("external");
 export const NUMBER=SCALAR.inherit("number");
 export const INTEGER=NUMBER.inherit("integer");
 export const BOOLEAN=SCALAR.inherit("boolean");
 export const STRING=SCALAR.inherit("string");
-export const DATE=SCALAR.inherit("date");
+//export const DATE=SCALAR.inherit("date");
+export const DATE_ONLY=SCALAR.inherit("date-only");
+export const TIME_ONLY=SCALAR.inherit("time-only");
+export const DATETIME_ONLY=SCALAR.inherit("datetime-only");
+export const DATETIME=SCALAR.inherit("datetime");
+
 export const FILE=SCALAR.inherit("file");
 export const NOTHING=new RootType("nothing");
 export const UNION=ANY.inherit("union");
@@ -1678,6 +1732,7 @@ export const RECURRENT=NOTHING.inherit("recurrent");
 ///
 //POLYMORPHIC.addMeta(new Polymorphic())
 ANY.addMeta(BUILT_IN);
+NULL.addMeta(BUILT_IN);
 UNION.addMeta(BUILT_IN);
 SCALAR.addMeta(BUILT_IN);
 OBJECT.addMeta(BUILT_IN);
@@ -1686,7 +1741,12 @@ NUMBER.addMeta(BUILT_IN);
 INTEGER.addMeta(BUILT_IN);
 BOOLEAN.addMeta(BUILT_IN);
 STRING.addMeta(BUILT_IN);
-DATE.addMeta(BUILT_IN);
+DATE_ONLY.addMeta(BUILT_IN);
+TIME_ONLY.addMeta(BUILT_IN);
+DATETIME_ONLY.addMeta(BUILT_IN);
+DATETIME.addMeta(BUILT_IN);
+
+
 FILE.addMeta(BUILT_IN);
 //POLYMORPHIC.addMeta(BUILT_IN);
 UNKNOWN.addMeta(BUILT_IN);
@@ -1705,8 +1765,14 @@ registry.addType(ARRAY);
 registry.addType(NUMBER);
 registry.addType(INTEGER);
 registry.addType(BOOLEAN);
+registry.addType(NULL);
+
 registry.addType(STRING);
-registry.addType(DATE);
+registry.addType(DATE_ONLY);
+registry.addType(TIME_ONLY);
+registry.addType(DATETIME_ONLY);
+registry.addType(DATETIME);
+
 registry.addType(FILE);
 //registry.addType(POLYMORPHIC);
 
@@ -1718,16 +1784,26 @@ OBJECT.addMeta(new TypeOfRestriction("object"));
 ARRAY.addMeta(new TypeOfRestriction("array"));
 STRING.addMeta(new TypeOfRestriction("string"));
 INTEGER.addMeta(new IntegerRestriction());
-DATE.addMeta(new TypeOfRestriction("string"));
+NULL.addMeta(new NullRestriction());
+
+import dt=require("./datetime")
+
+DATE_ONLY.addMeta(new dt.DateOnlyR())
+TIME_ONLY.addMeta(new dt.TimeOnlyR())
+DATETIME_ONLY.addMeta(new dt.DateTimeOnlyR());
+DATETIME.addMeta(new dt.DateTimeR());
+
 FILE.addMeta(new TypeOfRestriction("string"));
 var arrayOfString=ARRAY.inherit("");
 arrayOfString.addMeta(new ComponentShouldBeOfType(STRING))
 FILE.addMeta(new FacetDeclaration("fileTypes",arrayOfString,true));
 FILE.addMeta(new FacetDeclaration("minLength",INTEGER,true));
 FILE.addMeta(new FacetDeclaration("maxLength",INTEGER,true));
-
+DATETIME.addMeta(new FacetDeclaration("format",STRING,true));
+NULL.nullable=true;
 SCALAR.addMeta(new ScalarRestriction());
 registry.types().forEach(x=>x.lock())
+
 
 export class ExternalType extends InheritedType{
     constructor( name: string,private _content:string,private json:boolean, private provider: su.IContentProvider){

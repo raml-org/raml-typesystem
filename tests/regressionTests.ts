@@ -379,4 +379,92 @@ describe("Simple validation testing",function() {
         var st=t.validateType(ts.builtInRegistry());
         assert.isTrue(st.getErrors().length===0);
     });
+    it("strict false", function () {
+        var tp = ps.parseJSONTypeCollection({
+
+            types:{
+                a: {
+                    "type":"object",
+                    properties:{
+                        x:"string",
+                        y:{
+                            type:"string",
+                            required: false
+                        }
+                    },
+                    example: {strict: false, value:"a"}
+                }
+
+            }
+        });
+        var t=tp.getType("a");
+        var st=t.validateType(ts.builtInRegistry());
+        assert.isTrue(st.getErrors().length===0);
+    });
+    it("strict should be boolean", function () {
+        var tp = ps.parseJSONTypeCollection({
+
+            types:{
+                a: {
+                    "type":"object",
+                    properties:{
+                        x:"string",
+                        y:{
+                            type:"string",
+                            required: false
+                        }
+                    },
+                    example: {strict: 3, value:"a"}
+                }
+
+            }
+        });
+        var t=tp.getType("a");
+        var st=t.validateType(ts.builtInRegistry());
+        assert.isTrue(st.getErrors().length!==0);
+    });
+    it("strict in examples", function () {
+        var tp = ps.parseJSONTypeCollection({
+
+            types:{
+                a: {
+                    "type":"object",
+                    properties:{
+                        x:"string",
+                        y:{
+                            type:"string",
+                            required: false
+                        }
+                    },
+                    examples: {a:{strict: false, value:"a"}}
+                }
+
+            }
+        });
+        var t=tp.getType("a");
+        var st=t.validateType(ts.builtInRegistry());
+        assert.isTrue(st.getErrors().length===0);
+    });
+    it("incorrect strict in examples", function () {
+        var tp = ps.parseJSONTypeCollection({
+
+            types:{
+                a: {
+                    "type":"object",
+                    properties:{
+                        x:"string",
+                        y:{
+                            type:"string",
+                            required: false
+                        }
+                    },
+                    examples: {a:{strict: "false", value:"a"}}
+                }
+
+            }
+        });
+        var t=tp.getType("a");
+        var st=t.validateType(ts.builtInRegistry());
+        assert.isTrue(st.getErrors().length===0);
+    });
 });

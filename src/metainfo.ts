@@ -134,8 +134,17 @@ export class Example extends MetaInfo{
         var isVal=false;
         if (typeof val==="object"&&val){
             if (val.value){
+                if (val.strict===false){
+                    return ts.OK_STATUS;
+                }
+                if (val.strict&&typeof val.strict!="boolean"){
+                    var s= new Status(Status.ERROR,0,"strict should be boolean",this);
+                    s.setValidationPath({name: "example", child: {name: "strict"}})
+                    return s;
+                }
                 val=val.value;
                 isVal=true;
+
             }
         }
         var rr=parseExampleIfNeeded(val,this.owner());
@@ -227,6 +236,16 @@ export class Examples extends MetaInfo{
                         var val=v[x].value;
                         if (!val){
                             val=v[x];
+                        }
+                        else{
+                            if (v[x].strict===false){
+                                return ;
+                            }
+                            if (v[x].strict&&typeof v[x].strict!="boolean"){
+                                var s= new Status(Status.ERROR,0,"strict should be boolean",this);
+                                s.setValidationPath({name: x, child: {name: "strict", child: {name: "strict"}}});
+                                return s;
+                            }
                         }
                         var example = parseExampleIfNeeded(val, this.owner());
                         if (example instanceof ts.Status) {

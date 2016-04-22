@@ -696,6 +696,10 @@ export function parse(name: string,n:ParseNode,r:ts.TypeRegistry=ts.builtInRegis
         if (key==="repeat"){
             return;
         }
+        if (key==="uses"){
+            //FIXME this should be handled depending from parse level
+            return;
+        }
         if (key==="schema"){
             return;
         }

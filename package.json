@@ -5,12 +5,13 @@
   "scripts": {
     "test-cov": " ./node_modules/.bin/istanbul cover _mocha dist/tests/*Tests.js",
     "build": "rimraf dist && tsc",
-    "pullall" : "dev-env-installer pullall",
-    "buildall" : "dev-env-installer buildall",
-    "testall" : "dev-env-installer testall",
+    "pullall": "dev-env-installer pullall",
+    "buildall": "dev-env-installer buildall",
+    "testall": "dev-env-installer testall",
     "devInstall": "dev-env-installer install"
   },
   "dependencies": {
+    "date-and-time": "^0.3.0",
     "json-schema-compatibility": "^1.1.0",
     "lrucache": "^1.0.0",
     "underscore": "^1.8.3",
@@ -41,7 +42,7 @@
     "typedoc": "^0.3.12",
     "typescript": "1.8.7",
     "typings": "^0.5.1",
-    "dev-env-installer":"^0.0.2",
-    "rimraf":"*"
+    "dev-env-installer": "^0.0.2",
+    "rimraf": "*"
   }
 }
