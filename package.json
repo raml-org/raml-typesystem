@@ -44,6 +44,7 @@
     "typescript": "1.8.7",
     "typings": "^0.5.1",
     "dev-env-installer": "^0.0.2",
+    "json-loader": "^0.5.1",
     "rimraf": "*"
   }
 }
