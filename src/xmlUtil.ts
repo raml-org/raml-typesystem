@@ -16,7 +16,9 @@ export class XMLValidator {
         }
 
         if(isBrowser()) {
-            return xmllint2.validateXML({xml: xml, schema: this.schema});
+            var result = xmllint2.validateXML({xml: xml, schema: this.schema});
+
+            return (result && result.errors) || [];
         }
 
         return [];
