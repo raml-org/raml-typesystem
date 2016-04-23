@@ -8,7 +8,9 @@ export class XMLValidator {
     private schemaObject: any;
     
     constructor(private schema:string) {
-        this.schemaObject = xmllint1.parse(schema);
+        if(isNode()) {
+            this.schemaObject = xmllint1.parse(schema);
+        }
     }
 
     validate(xml: string): Error[] {
