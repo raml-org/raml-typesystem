@@ -7,7 +7,7 @@ export class XMLValidator {
     private schemaObject: any;
 
     constructor(private schema:string) {
-        
+
     }
 
     validate(xml: string): Error[] {
