@@ -91,7 +91,7 @@ function objectToXml(object: any) {
 
 function browserLinter() {
     return (typeof window !== "undefined" && window && (<any>window).xmllint) || {
-            validateXML: () => {
+            validateXML: (): any => {
                 return {
                     errors: []
                 }
@@ -100,15 +100,15 @@ function browserLinter() {
 }
 
 function isBrowser() {
-    typeof window !== "undefined" && window && !(<any>window).atom;
+    return typeof window !== "undefined" && window && !(<any>window).atom;
 }
 
 function isAtom() {
-    typeof window !== "undefined" && window && (<any>window).atom;
+    return typeof window !== "undefined" && window && (<any>window).atom;
 }
 
 function isNode() {
-    typeof window === "undefined";
+    return typeof window === "undefined";
 }
 
 export function jsonToXml(jsonObject: any) {
