@@ -21,7 +21,7 @@ export class XMLValidator {
         if(isBrowser()) {
             var result = xmllint2.validateXML({xml: xml, schema: this.schema});
             
-            return (result && result.errors) || [];
+            return (result && result.errors && result.errors.map((error: any) => new Error(error))) || [];
         }
 
         if(isNode()) {
