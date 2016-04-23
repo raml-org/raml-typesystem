@@ -1,7 +1,7 @@
 /// <reference path="../typings/main.d.ts" />
 declare function require(s:string):any;
 
-var xmllint2 = require('xmllint');
+var xmllint2 = browserLinter();
 
 export class XMLValidator {
     private schemaObject: any;
@@ -87,6 +87,16 @@ function objectToXml(object: any) {
     result = result + '</' + nodeName + '>';
 
     return result;
+}
+
+function browserLinter() {
+    return (typeof window !== "undefined" && window && (<any>window).xmllint) || {
+            validateXML: () => {
+                return {
+                    errors: []
+                }
+            }
+        };
 }
 
 function isBrowser() {
