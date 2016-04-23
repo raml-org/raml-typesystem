@@ -93,15 +93,15 @@ function objectToXml(object: any) {
 }
 
 function isBrowser() {
-    typeof window !== "undefined" && window && !(<any>window).atom;
+    return typeof window !== "undefined" && window && !(<any>window).atom;
 }
 
 function isAtom() {
-    typeof window !== "undefined" && window && (<any>window).atom;
+    return typeof window !== "undefined" && window && (<any>window).atom;
 }
 
 function isNode() {
-    typeof window === "undefined";
+    return typeof window === "undefined";
 }
 
 export function jsonToXml(jsonObject: any) {
