@@ -23,8 +23,12 @@ export class XMLValidator {
             
             return (result && result.errors) || [];
         }
+
+        if(isNode()) {
+            return this.schemaObject.validate(xml);
+        }
         
-        return this.schemaObject.validate(xml);
+        return [];
     }
 }
 
