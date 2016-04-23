@@ -2,7 +2,7 @@
 declare function require(s:string):any;
 
 var xmllint1 = require('libxml-xsd');
-var xmllint2 = require('xmllint');
+var xmllint2 = browserLinter();
 
 export class XMLValidator {
     private schemaObject: any;
@@ -94,6 +94,16 @@ function objectToXml(object: any) {
     result = result + '</' + nodeName + '>';
 
     return result;
+}
+
+function browserLinter() {
+    return (typeof window !== "undefined" && window && (<any>window).xmllint) || {
+            validateXML: (): any => {
+                return {
+                    errors: []
+                }
+            }
+        };
 }
 
 function isBrowser() {
