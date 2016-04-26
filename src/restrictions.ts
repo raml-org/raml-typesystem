@@ -6,7 +6,6 @@ import {AndRestriction} from "./typesystem";
 import {Constraint} from "./typesystem";
 import {AbstractType} from "./typesystem";
 import {Status} from "./typesystem";
-import {autoCloseFlag} from "./typesystem";
 export type IValidationPath=ts.IValidationPath;
 /**
  * this class is an abstract super type for every constraint that can select properties from objects
@@ -650,6 +649,45 @@ export abstract class MinMaxRestriction extends FacetRestriction<Number>{
             }
         }
         return null;
+    }
+}
+
+export class MultipleOf extends FacetRestriction<Number>{
+
+    constructor(private _value:number){
+        super()
+    }
+    value(){
+        return this._value;
+    }
+    check(o:any):ts.Status{
+        if (typeof  o=='number'){
+            var q=o/this.value();
+            if (!is_int(q)){
+                return new ts.Status(ts.Status.ERROR,0,"result of division of "+o+" on "+this.value()+" should be integer",this);
+            }
+
+        }
+        return ts.OK_STATUS;
+    }
+
+    composeWith(t:ts.Constraint):ts.Constraint{
+        return null;
+    }
+    facetName(){
+        return "multipleOf"
+    }
+
+    checkValue():string{
+        if (typeof this._value !="number"){
+            return this.facetName()+" should be a number";
+        }
+        return null;
+    }
+
+
+    requiredType():ts.AbstractType{
+        return ts.NUMBER;
     }
 }
 /**

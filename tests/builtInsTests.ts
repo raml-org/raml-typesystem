@@ -513,7 +513,7 @@ describe("Type family",function(){
 });
 describe("Facet Registry",function() {
     it ("All facets",function (){
-        assert.equal(facetRegistry.getInstance().allPrototypes().length,29);
+        assert.equal(facetRegistry.getInstance().allPrototypes().length,30);
     });
     it ("All object facets",function (){
         assert.equal(facetRegistry.getInstance().applyableTo(ts.OBJECT).length,19);

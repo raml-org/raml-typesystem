@@ -1678,4 +1678,62 @@ describe("Type collection parse and store",function(){
         var val=status .isOk();
         assert.isTrue(val);
     });
+
+    it ("multiple of (positive)",function(){
+        var st={
+
+
+            types:{
+                t1:{
+                    type:"number",
+                    multipleOf:2,
+                    example: 4
+                },
+
+            }
+        };
+        var col=ps.parseJSONTypeCollection(st);
+        var t=col.getType("t1");
+        var status=t.validateType(ts.builtInRegistry());
+        var val=status .isOk();
+        assert.isTrue(val);
+    });
+    it ("multiple of (negative)",function(){
+        var st={
+
+
+            types:{
+                t1:{
+                    type:"number",
+                    multipleOf:3,
+                    example: 4
+                },
+
+            }
+        };
+        var col=ps.parseJSONTypeCollection(st);
+        var t=col.getType("t1");
+        var status=t.validateType(ts.builtInRegistry());
+        var val=status .isOk();
+        assert.isTrue(!val);
+    });
+    it ("multiple of (negative 2)",function(){
+        var st={
+
+
+            types:{
+                t1:{
+                    type:"number",
+                    multipleOf:"2",
+                    example: 4
+                },
+
+            }
+        };
+        var col=ps.parseJSONTypeCollection(st);
+        var t=col.getType("t1");
+        var status=t.validateType(ts.builtInRegistry());
+        var val=status .isOk();
+        assert.isTrue(!val);
+    });
 });
