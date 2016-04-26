@@ -419,7 +419,7 @@ export class XMLSchemaObject {
     
     private acceptErrors(key: any, errors: any[], throwImmediately = false): void {
         if(errors && errors.length>0){
-            var res= new Error("Content is not valid according to schema:"+errors.map(x=>x.message+" "+x.params).join(", "));
+            var res= new Error("Content is not valid according to schema:"+errors.map(x=>x.message).join(", "));
 
             (<any>res).errors=errors;
 

@@ -1,26 +1,34 @@
 /// <reference path="../typings/main.d.ts" />
 declare function require(s:string):any;
 
-var xmllint:any = null;
-try {
-  xmllint=  require('libxml-xsd');
-}
-catch (e){
+var xmllint1 = require('libxml-xsd');
+var xmllint2 = browserLinter();
 
-}
 export class XMLValidator {
     private schemaObject: any;
     
     constructor(private schema:string) {
-        if (xmllint) {
-            this.schemaObject = xmllint.parse(schema);
+        if(isNode()) {
+            this.schemaObject = xmllint1.parse(schema);
         }
     }
 
     validate(xml: string): Error[] {
-        if (this.schemaObject) {
+        if(isAtom()) {
+            return [];
+        }
+        
+        if(isBrowser()) {
+            var result = xmllint2.validateXML({xml: xml, schema: this.schema});
+            
+            return (result && result.errors && result.errors.map((error: any) => new Error(error))) || [];
+        }
+
+        if(isNode()) {
             return this.schemaObject.validate(xml);
         }
+        
+        return [];
     }
 }
 
@@ -86,6 +94,28 @@ function objectToXml(object: any) {
     result = result + '</' + nodeName + '>';
 
     return result;
+}
+
+function browserLinter() {
+    return (typeof window !== "undefined" && window && (<any>window).xmllint) || {
+            validateXML: (): any => {
+                return {
+                    errors: []
+                }
+            }
+        };
+}
+
+function isBrowser() {
+    return typeof window !== "undefined" && window && !(<any>window).atom;
+}
+
+function isAtom() {
+    return typeof window !== "undefined" && window && (<any>window).atom;
+}
+
+function isNode() {
+    return typeof window === "undefined";
 }
 
 export function jsonToXml(jsonObject: any) {

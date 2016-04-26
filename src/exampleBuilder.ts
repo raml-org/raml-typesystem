@@ -64,11 +64,11 @@ class Example implements nm.IExpandableExample{
 
     constructor(
         private _value:any,
-        private _name:string = null,
-        private _displyName:string=null,
-        private _description:string=null,
-        private _strict:boolean=false,
-        private _annotations:any=null,
+        private _name:string = undefined,
+        private _displayName:string=undefined,
+        private _description:string=undefined,
+        private _strict:boolean=true,
+        private _annotations:any=undefined,
         private _isSingle:boolean=false,
         private _empty:boolean=false){
 
@@ -139,7 +139,7 @@ class Example implements nm.IExpandableExample{
     }
 
     displayName():string{
-        return this._displyName;
+        return this._displayName;
     }
 
     annotations():any{
@@ -157,15 +157,12 @@ var toExample = function (exampleObj:any, name:string=null,isSingle:boolean=fals
         var val = exampleObj.value;
         if (!val) {
             val = exampleObj
-            example = new Example(val, name, null, null, true, null, isSingle);
+            example = new Example(val, name, undefined, undefined, true, undefined, isSingle);
         }
         else {
             var displayName = exampleObj.displayName;
             var description = exampleObj.description;
             var strict:boolean = exampleObj.strict;
-            if(strict==null){
-                strict = true;
-            }
             var aObj:any = null;
             var annotationNames = Object.keys(exampleObj).filter(x=>x.charAt(0) == "(");
             if (annotationNames.length > 0) {
@@ -203,7 +200,7 @@ export function exampleFromNominal(n:nm.ITypeDefinition):nm.IExpandableExample[]
 
             var exampleV=ms.example();
             if (exampleV){
-                result.push(toExample(ms.value(),null,true));
+                result.push(toExample(ms.value(),undefined,true));
             }
         }
         if(result.length>0) {
@@ -211,7 +208,7 @@ export function exampleFromNominal(n:nm.ITypeDefinition):nm.IExpandableExample[]
         }
     }
     if (tp) {
-        return [new Example(example(tp),null,null,null,false,null,false,true)];
+        return [new Example(example(tp),undefined,undefined,undefined,false,undefined,undefined,true)];
     }
     return [];
 }
