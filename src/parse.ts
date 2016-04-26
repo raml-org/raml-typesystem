@@ -33,6 +33,8 @@ export interface ParseNode {
     childWithKey(k:string):ParseNode;
 
     kind(): NodeKind
+
+    anchor?():any
 }
 
 class JSObjectNode implements ParseNode{
@@ -292,6 +294,13 @@ function  transformToArray(n:ParseNode):ParseNode{
 
 export function parseTypeCollection(n:ParseNode,tr:ts.TypeRegistry):TypeCollection{
     var result=new TypeCollection();
+    if (n.anchor){
+        if (n.anchor().__$$){
+            return n.anchor().__$$;
+        }
+        n.anchor().__$$=result;
+    }
+
     var uses=n.childWithKey("uses");
     if (uses&&uses.kind()===NodeKind.ARRAY){
         uses=transformToArray(uses);
