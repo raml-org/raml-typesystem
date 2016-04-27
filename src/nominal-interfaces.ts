@@ -32,6 +32,14 @@ export interface IPrintDetailsSettings {
     printStandardSuperclasses? : boolean
 }
 
+export interface Status{
+    getValidationPathAsString(): string
+    getSeverity(): number
+    isError():boolean
+    getMessage():string
+
+}
+
 
 
 export interface IExpandableExample {
@@ -314,6 +322,8 @@ export interface ITypeDefinition extends INamedEntity {
     genuineUserDefinedType() : ITypeDefinition;
 
     kind():string[];
+
+    validate(x:any):Status[]
 
 }
 export interface FacetValidator{

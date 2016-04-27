@@ -155,6 +155,7 @@ export function toNominal(t:ts.AbstractType,callback:StringToBuiltIn,customizer:
     if (t.isEmpty()){
         vs.addAdapter(new nt.Empty());
     }
+    vs._validator=(x)=>t.validate(x,false).getErrors();
     return vs;
 }
 

@@ -193,4 +193,18 @@ describe("To nominals",function() {
         assert.isTrue(st[0].nameId()=="object");
         assert.isTrue(st[1].nameId()=="any");
     });
+
+    it("nominal validate", function () {
+        var tps = ps.parseJSONTypeCollection({
+            types:{
+                A: { type: "string"}
+            }
+        },ts.builtInRegistry())
+        var tp=tps.getType("A")
+        var nt=nm.toNominal(tp,x=>null);
+
+        assert.isTrue(nt.validate(2).length==1);
+        assert.isTrue(nt.validate("2").length==0);
+
+    });
 });

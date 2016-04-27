@@ -160,6 +160,15 @@ export class AbstractType extends Described implements ITypeDefinition{
         this._facets.push(q);
     }
 
+    _validator:(x:any)=>ti.Status[]
+
+    validate(x:any):ti.Status[]{
+        if (!this._validator){
+            throw new Error("Validate can be used only on runtime types instances")
+        }
+        return this._validator(x)
+    }
+
     allFacets(ps:{[name:string]:ITypeDefinition}={}):IProperty[]{
         if (this._allFacets){
             return this._allFacets;
