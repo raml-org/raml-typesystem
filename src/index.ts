@@ -226,6 +226,34 @@ export interface IParsedType {
      * returns true if this type inherits from number type
      */
     isNumber():boolean
+
+    /**
+     * returns true if this type inherits from boolean type
+     */
+    isBoolean():boolean
+    /**
+     * returns true if this type inherits from integer type
+     */
+    isInteger():boolean
+    /**
+     * returns true if this type inherits from one of date related types
+     */
+    isDateTime():boolean
+
+    /**
+     * returns true if this type inherits from one of date related types
+     */
+    isDateOnly():boolean
+
+    /**
+     * returns true if this type inherits from one of date related types
+     */
+    isTimeOnly():boolean
+
+    /**
+     * returns true if this type inherits from one of date related types
+     */
+    isDateTimeOnly():boolean
     /**
      * returns true if this type inherits from array type
      */

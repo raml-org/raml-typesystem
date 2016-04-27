@@ -783,6 +783,40 @@ export abstract class AbstractType{
     isScalar():boolean{
         return this==<AbstractType>SCALAR||this.allSuperTypes().indexOf(SCALAR)!=-1;
     }
+    /**
+     * returns true if this type inherits from one of date related types
+     */
+    isDateTime():boolean{
+        return this==<AbstractType>DATETIME||this.allSuperTypes().indexOf(DATETIME)!=-1;
+    }
+
+
+    /**
+     * returns true if this type inherits from one of date related types
+     */
+    isDateOnly():boolean{
+        return this==<AbstractType>DATE_ONLY||this.allSuperTypes().indexOf(DATE_ONLY)!=-1
+    }
+
+    /**
+     * returns true if this type inherits from one of date related types
+     */
+    isTimeOnly():boolean{
+        return this==<AbstractType>TIME_ONLY||this.allSuperTypes().indexOf(TIME_ONLY)!=-1
+    }
+
+    /**
+     * returns true if this type inherits from one of date related types
+     */
+    isInteger():boolean{
+        return this==<AbstractType>INTEGER||this.allSuperTypes().indexOf(INTEGER)!=-1
+    }
+    /**
+     * returns true if this type inherits from one of date related types
+     */
+    isDateTimeOnly():boolean{
+        return this==<AbstractType>DATETIME_ONLY||this.allSuperTypes().indexOf(DATETIME_ONLY)!=-1
+    }
 
     /**
      *
