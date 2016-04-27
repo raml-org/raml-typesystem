@@ -680,6 +680,9 @@ export function parse(name: string,n:ParseNode,r:ts.TypeRegistry=ts.builtInRegis
         else if (tp.kind()==NodeKind.ARRAY){
             superTypes=tp.children().map(x=>x.value()).map(y=>typeExpressions.parseToType(""+y,r, provider));
         }
+        else if (tp.kind()==NodeKind.MAP){
+            superTypes=[parse("",tp,r,false,false,false)];
+        }
     }
     var result=ts.derive(name,superTypes);
 

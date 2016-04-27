@@ -1717,14 +1717,17 @@ describe("Type collection parse and store",function(){
         var val=status .isOk();
         assert.isTrue(!val);
     });
-    it ("multiple of (negative 2)",function(){
+
+    it ("inline types",function(){
         var st={
 
 
             types:{
                 t1:{
-                    type:"number",
-                    multipleOf:"2",
+                    type:{
+                        "type": "number"
+                    },
+                    multipleOf: 2,
                     example: 4
                 },
 
@@ -1734,6 +1737,6 @@ describe("Type collection parse and store",function(){
         var t=col.getType("t1");
         var status=t.validateType(ts.builtInRegistry());
         var val=status .isOk();
-        assert.isTrue(!val);
+        assert.isTrue(val);
     });
 });
