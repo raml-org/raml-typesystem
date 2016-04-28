@@ -115,7 +115,19 @@ function parseExampleIfNeeded(val:any,type:ts.AbstractType):any{
             }
             if (firstChar=="<") {
                 try {
-                    return xmlio.readObject(exampleString,type);
+                    var jsonFromXml = xmlio.readObject(exampleString,type);
+
+                    var errors: Status[] = xmlio.getXmlErrors(jsonFromXml);
+
+                    if(errors) {
+                        var error = new Status(Status.ERROR, 0, 'Invalid XML.', {});
+
+                        errors.forEach(child => error.addSubStatus(child));
+                        
+                        return error;
+                    }
+
+                    return jsonFromXml;
                 } catch (e) {
 
                 }
