@@ -234,7 +234,8 @@ export class Examples extends MetaInfo{
                 Object.keys(v).forEach(x=> {
                     if (v[x]) {
                         var val=v[x].value;
-                        if (!val){
+                        var noVal=!val;
+                        if (noVal){
                             val=v[x];
                         }
                         else{
@@ -249,14 +250,14 @@ export class Examples extends MetaInfo{
                         }
                         var example = parseExampleIfNeeded(val, this.owner());
                         if (example instanceof ts.Status) {
-                            example.setValidationPath({name: x})
+                            examplesPatchPath(example,noVal,x)
                             rs.addSubStatus(example);
                             return;
                         }
                         var res = this.owner().validateDirect(example, true, false);
                         res.getErrors().forEach(ex=> {
                             rs.addSubStatus(ex);
-                            ex.setValidationPath({name: x, child: {name: "value"}});
+                            examplesPatchPath(ex,noVal,x)
                         });
                         if (typeof v[x]=="object"&&v[x].value) {
                             Object.keys(v[x]).forEach(key=> {
@@ -274,6 +275,14 @@ export class Examples extends MetaInfo{
         else{
             return new Status(Status.ERROR,0,"examples should be a map",this);
         }
+    }
+}
+function examplesPatchPath(example:ts.Status,noVal:boolean,x: string):void{
+    if (noVal){
+        example.setValidationPath({ name: "examples",child:{name: x}});
+    }
+    else {
+        example.setValidationPath({ name: "examples",child:{name: x, child: {name: "value"}}});
     }
 }
 
