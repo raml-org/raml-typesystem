@@ -156,6 +156,9 @@ export function toNominal(t:ts.AbstractType,callback:StringToBuiltIn,customizer:
         vs.addAdapter(new nt.Empty());
     }
     vs._validator=(x)=>t.validate(x,false).getErrors();
+    if (t.isBuiltin()){
+        vs.buildIn=true;
+    }
     return vs;
 }
 

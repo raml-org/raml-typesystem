@@ -548,6 +548,7 @@ export class AbstractType extends Described implements ITypeDefinition{
     private getTypeClassName() : string {
         return this.constructor.toString().match(/\w+/g)[1];
     }
+    buildIn:boolean;
 
     private isStandardSuperclass(nameId : string, className : string) {
 
@@ -572,7 +573,7 @@ export class AbstractType extends Described implements ITypeDefinition{
      * properties or facets, or having user-defined name as opposed to a synthetic user-defined type.
      */
     isGenuineUserDefinedType() : boolean {
-        return this.nameId()&&this.nameId().length>0;
+        return this.nameId()&&this.nameId().length>0&&!this.buildIn;
     }
 
     /**

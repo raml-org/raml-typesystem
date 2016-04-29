@@ -207,4 +207,18 @@ describe("To nominals",function() {
         assert.isTrue(nt.validate("2").length==0);
 
     });
+    
+    it("genuine user defined type", function () {
+        var tps = ps.parseJSONTypeCollection({
+            types:{
+                A: { type: "object",properties:{ "x":"string"}}
+            }
+        },ts.builtInRegistry())
+        var tp=tps.getType("A")
+        var nt=nm.toNominal(tp,x=>null);
+
+        var range=nt.properties()[0].range();
+        assert.isTrue(!range.isGenuineUserDefinedType())
+        assert.isTrue(tp.isGenuineUserDefinedType())
+    });
 });
