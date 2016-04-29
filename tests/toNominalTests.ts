@@ -207,7 +207,7 @@ describe("To nominals",function() {
         assert.isTrue(nt.validate("2").length==0);
 
     });
-    
+
     it("genuine user defined type", function () {
         var tps = ps.parseJSONTypeCollection({
             types:{
@@ -219,6 +219,6 @@ describe("To nominals",function() {
 
         var range=nt.properties()[0].range();
         assert.isTrue(!range.isGenuineUserDefinedType())
-        assert.isTrue(tp.isGenuineUserDefinedType())
+        assert.isTrue(nt.isGenuineUserDefinedType())
     });
 });
