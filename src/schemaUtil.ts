@@ -127,7 +127,12 @@ export class JSONSchemaObject {
 
         references.forEach(references => validator.setRemoteReference(references.reference, references.content || {}));
 
-        validator.validateSchema(this.jsonSchema);
+        try {
+            validator.validateSchema(this.jsonSchema);
+        } catch (Error) {
+            //we should never be exploding here, instead we'll report this error later
+            return []
+        }
 
         var result = <any[]>validator.getMissingRemoteReferences();
 
