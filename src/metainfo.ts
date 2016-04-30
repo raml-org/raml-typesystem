@@ -100,7 +100,7 @@ export class CustomFacet extends MetaInfo{
 }
 function parseExampleIfNeeded(val:any,type:ts.AbstractType):any{
     if (typeof val==='string'){
-        if (type.isObject()||type.isArray()||type.isExternal()){
+        if (type.isObject() || type.isArray() || type.isExternal() || type.isUnion()){
             var exampleString:string=val;
             var firstChar = exampleString.trim().charAt(0);
             if (firstChar=="{"||firstChar=="[") {
@@ -115,7 +115,19 @@ function parseExampleIfNeeded(val:any,type:ts.AbstractType):any{
             }
             if (firstChar=="<") {
                 try {
-                    return xmlio.readObject(exampleString,type);
+                    var jsonFromXml = xmlio.readObject(exampleString,type);
+
+                    var errors: Status[] = xmlio.getXmlErrors(jsonFromXml);
+
+                    if(errors) {
+                        var error = new Status(Status.ERROR, 0, 'Invalid XML.', {});
+
+                        errors.forEach(child => error.addSubStatus(child));
+                        
+                        return error;
+                    }
+
+                    return jsonFromXml;
                 } catch (e) {
 
                 }
