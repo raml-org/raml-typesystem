@@ -103,7 +103,7 @@ function parseExampleIfNeeded(val:any,type:ts.AbstractType):any{
         if (type.isObject() || type.isArray() || type.isExternal() || type.isUnion()){
             var exampleString:string=val;
             var firstChar = exampleString.trim().charAt(0);
-            if (firstChar=="{"||firstChar=="[") {
+            if ((firstChar=="{" || firstChar=="[") && !type.isUnion()) {
                 try {
                     return JSON.parse(exampleString);
                 } catch (e) {
