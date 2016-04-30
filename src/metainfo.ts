@@ -100,7 +100,7 @@ export class CustomFacet extends MetaInfo{
 }
 function parseExampleIfNeeded(val:any,type:ts.AbstractType):any{
     if (typeof val==='string'){
-        if (type.isObject()||type.isArray()||type.isExternal()){
+        if (type.isObject() || type.isArray() || type.isExternal() || type.isUnion()){
             var exampleString:string=val;
             var firstChar = exampleString.trim().charAt(0);
             if (firstChar=="{"||firstChar=="[") {

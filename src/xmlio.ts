@@ -9,6 +9,13 @@ import {Status} from "./typesystem";
 
 var XML_ERRORS = '@unexpected_root_attributes_and_elements';
 
+var bodyNames: string[] = [
+    'application/x-www-form-urlencoded',
+    'application/json',
+    'application/xml',
+    'multipart/form-data'
+];
+
 export function readObject(content:string,t:ts.AbstractType):any{
     var result:any=null;
     var opts:xml2js.Options={};
@@ -21,7 +28,7 @@ export function readObject(content:string,t:ts.AbstractType):any{
             throw new Error();
         }
     });
-    result = isSchema(t) ? result: postProcess(result,t);
+    result = isSchema(t) ? result: postProcess(result, actualType(t));
     return result;
 }
 
@@ -37,6 +44,33 @@ export function getXmlErrors(root: any): Status[] {
     return errors.map(error => new Status(Status.ERROR, 0, <string>error, {}))
 }
 
+function actualType(type: ts.AbstractType): ts.AbstractType {
+    if(!type) {
+        return type;
+    }
+
+    if(isBodyLike(type)) {
+        if(!type.superTypes() || type.superTypes().length === 0) {
+            return type;
+        }
+        
+        if(type.superTypes().length === 1) {
+            return type.superTypes()[0];
+        }
+        
+        return _.find(type.allSuperTypes(), superType => superType.name() === 'object') || type;
+    }
+    
+    return type;
+}
+
+function isBodyLike(type: ts.AbstractType): boolean {
+    if(!type) {
+        return false;
+    }
+
+    return _.find(bodyNames, name => type.name() === name) ? true : false;
+}
 
 function isSchema(t: ts.AbstractType): boolean {
     if(isXmlContent(t)) {
@@ -54,14 +88,14 @@ function isXmlContent(t: ts.AbstractType): boolean {
     return false;
 }
 
-function postProcess(result: any, t: ts.AbstractType):any{
+function postProcess(result: any, type: ts.AbstractType):any{
     var rootNodeName = Object.keys(result)[0];
 
     var rootNode = result[rootNodeName];
 
     var errors: string[] = [];
 
-    var expectedRootNodeName = rootXmlName(t);
+    var expectedRootNodeName = rootXmlName(type);
 
     if(expectedRootNodeName !== rootNodeName) {
         errors.push('Unexpected root node "' + rootNodeName + '", "' + expectedRootNodeName + '" is expected.');
@@ -69,21 +103,21 @@ function postProcess(result: any, t: ts.AbstractType):any{
 
     var newJson: any;
 
-    if(t.isArray()) {
+    if(type.isArray()) {
         var expectedAttributeNames: string[] = [];
         var expectedElementNames: string[] = [];
 
-        var componentMeta = t.meta().filter(metaInfo => metaInfo instanceof ComponentShouldBeOfType)[0];
+        var componentMeta = type.meta().filter(metaInfo => metaInfo instanceof ComponentShouldBeOfType)[0];
 
         var typeName = componentMeta && componentMeta.value().name();
 
         expectedElementNames.push(typeName);
 
-        newJson = getArray(rootNode, t, errors, true);
+        newJson = getArray(rootNode, type, errors, true);
         
         fillExtras(rootNode, errors, expectedAttributeNames, expectedElementNames);
     } else {
-        newJson = buildJson(rootNode, t, errors);
+        newJson = buildJson(rootNode, type.isUnion() ? selectFromUnion(rootNode, type) : type, errors);
     }
 
     newJson[XML_ERRORS] = errors;
@@ -91,7 +125,39 @@ function postProcess(result: any, t: ts.AbstractType):any{
     return newJson;
 }
 
-function buildJson(node: any, type: ts.AbstractType, errors: string[]) {
+function checkErrors(rootNode: any, actualType: ts.AbstractType): number {
+    var errors: string[] = [];
+
+    var newJson: any;
+
+    newJson = buildJson(rootNode, actualType, errors);
+    
+    var validationErrors = actualType.validateDirect(newJson, true, false).getErrors();
+    
+    return errors.length + (validationErrors && validationErrors.length);
+}
+
+function selectFromUnion(rootNode: any, union: ts.AbstractType): ts.AbstractType {
+    var results: any[] = [];
+    
+    union.typeFamily().forEach(type => results.push({type: type, errors: checkErrors(JSON.parse(JSON.stringify(rootNode)), type)}));
+    
+    if(results.length === 0) {
+        return union;
+    }    
+    
+    var result: any = results[0];
+    
+    results.forEach((oneOf: any) => {
+        if(oneOf.errors < result.errors) {
+            result = oneOf;
+        }
+    });
+
+    return result.type;
+}
+
+function buildJson(node: any, type: ts.AbstractType, errors: string[]): any {
     var initialRoot: any = {
         
     };
@@ -102,6 +168,10 @@ function buildJson(node: any, type: ts.AbstractType, errors: string[]) {
 
     if(type.isScalar()) {
         return toPrimitiveValue(type, node);
+    }
+
+    if(type.isUnion()) {
+        return buildJson(node, selectFromUnion(node, type), errors);
     }
 
     var infos: PropertyIs[] = getInfos(type);
@@ -245,6 +315,10 @@ function rootXmlName(type: ts.AbstractType): string {
     var descriptor: any = xmlDescriptor(type);
 
     var ramlName: string = type.name();
+
+    if(ramlName === '' && type.isUnion()) {
+        ramlName = 'object'
+    }
 
     var actualName = descriptor.name || ramlName;
 
