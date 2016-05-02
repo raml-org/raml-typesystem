@@ -9,12 +9,18 @@ import {Status} from "./typesystem";
 import nm=require("./nominals")
 export import nominalTypes=require("./nominal-types")
 
-export interface IValidationPath{
+import schemaUtil = require('./schemaUtil');
 
+export interface IValidationPath{
     name: string
     child?:IValidationPath
 
 }
+
+export function getSchemaUtils(): any {
+    return schemaUtil;
+}
+
 export interface IStatus {
 
 

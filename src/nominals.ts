@@ -22,8 +22,7 @@ export function setPropertyConstructor(p:PropertyConstructor){
     pc=p;
 }
 
-export interface TypeCustomizer{
-
+export interface TypeCustomizer {
     constructProperty(n:string):nt.Property;
     findCustomizer(t:ts.AbstractType):TypeCustomizer;
 }

@@ -82,5 +82,59 @@ function objectToXml(object: any) {
 }
 
 export function jsonToXml(jsonObject: any) {
+    var nodeName = jsonObject && Object.keys(jsonObject)[0];
+
+    if(nodeName) {
+        var root = jsonObject[nodeName];
+
+        checkAttributes(root);
+    }
+    
     return objectToXml(jsonObject);
+}
+
+function checkAttributes(root: any) {
+    if(!root || typeof root === 'string') {
+        return;
+    }
+    
+    var attributes: any[] = [];
+
+    Object.keys(root).forEach(key => {
+        if(key.indexOf('@') === 0) {
+            var attribute = {key: key, value: root[key]};
+
+            attributes.push(attribute);
+        } else {
+            if(isArray(root[key])) {
+                var elements = root[key];
+
+                elements.forEach((element: any) => checkAttributes(element));
+            } else if(typeof root[key] !== 'string') {
+                checkAttributes(root[key]);
+            }
+        }
+    });
+
+    if(!root['$']) {
+        root['$'] = {};
+    }
+
+    var newAttributes = root['$'];
+
+    attributes.forEach(attribute => {
+        delete root[attribute.key];
+
+        var newKey: string = attribute.key.substring(1);
+
+        newAttributes[newKey] = attribute.value;
+    });
+}
+
+function isArray(instance: any): boolean {
+    if(!instance) {
+        return false;
+    }
+
+    return typeof instance === 'object' && typeof instance.length === 'number';
 }

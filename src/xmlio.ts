@@ -113,7 +113,7 @@ function postProcess(result: any, type: ts.AbstractType):any{
 
         expectedElementNames.push(typeName);
 
-        newJson = getArray(rootNode, type, errors, true);
+        newJson = getArray(rootNode, type, errors);
         
         fillExtras(rootNode, errors, expectedAttributeNames, expectedElementNames);
     } else {
@@ -275,25 +275,19 @@ function getElements(node: any, infos: PropertyIs[], expectedNames: string[], er
     }).filter((info: any) => info);
 }
 
-function getArray(value: any, type: ts.AbstractType, errors: string[], forceWrapped: boolean = false) {
-    if(!value || (typeof value === 'string' && value.trim() === '')) {
-        return [];
-    }
-    
+function getArray(values: any, type: ts.AbstractType, errors: string[]) {
     var descriptor = xmlDescriptor(type);
     
-    var isWrapped = forceWrapped || descriptor.wrapped;
+    var isWrapped = descriptor.wrapped;
 
-    var componentMeta = type.meta().filter(metaInfo => metaInfo instanceof ComponentShouldBeOfType)[0];
+    var componentType = arrayElementType(type);
 
-    var typeName = componentMeta && componentMeta.value().name();
-
-    var values = isWrapped ? value[typeName] : value;
+    var typeName = componentType && componentType.name();
 
     values = isArray(values) ? values : ((Object.keys(values).length === 1 && [values[Object.keys(values)[0]]]) || values);
 
     if(isArray(values)) {
-        values = values.map((value: any) => buildJson(value, componentMeta && componentMeta.value(), errors))
+        values = values.map((value: any) => buildJson(value, componentType, errors))
     } else {
         values = (typeof values === 'object' && values) || [];
     }
@@ -301,12 +295,26 @@ function getArray(value: any, type: ts.AbstractType, errors: string[], forceWrap
     return values;
 }
 
+function arrayElementType(arrayType: ts.AbstractType) {
+    if(!arrayType || !arrayType.isArray()) {
+        return null;
+    }
+
+    var componentMetas: ComponentShouldBeOfType[] = <ComponentShouldBeOfType[]>arrayType.meta().filter(metaInfo => metaInfo instanceof ComponentShouldBeOfType);
+
+    return componentMetas && componentMetas.length > 0 && componentMetas[0].value();
+}
+
 function xmlName(property: PropertyIs): string {
     var descriptor: any = xmlDescriptor(property.value());
 
-    var ramlName: string = property.propId();
+    var ramlName: string = (property.value() && property.value().isArray() && !descriptor.wrapped) ? arrayElementType(property.value()).name() : property.propId();
     
     var actualName = descriptor.name || ramlName;
+
+    if(descriptor.namespace) {
+        actualName = descriptor.namespace + ':' + actualName;
+    }
     
     return (descriptor.prefix || '') + actualName;
 }

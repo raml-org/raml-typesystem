@@ -29,6 +29,12 @@ class ErrorsCache {
 
 var globalCache = new ErrorsCache();
 
+export interface Promise {
+    then(instance: any): any;
+
+    resolve(arg: any): any;
+}
+
 export interface IContentProvider {
     contextPath(): string;
 
@@ -41,6 +47,10 @@ export interface IContentProvider {
     resolvePath(context: string, relativePath: string): string;
 
     isAbsolutePath(uri: string): boolean;
+
+    contentAsync(arg: any): Promise;
+
+    promiseResolve(arg: any): Promise;
 }
 
 class DummyProvider implements  IContentProvider {
@@ -66,6 +76,22 @@ class DummyProvider implements  IContentProvider {
 
     isAbsolutePath(uri: string): boolean {
         return false;
+    }
+
+    contentAsync(reference: string): Promise {
+        return {
+            then: arg => arg(this.content(reference)),
+
+            resolve: () => null
+        };
+    }
+
+    promiseResolve(arg: any): Promise {
+        return {
+            then: arg1 => arg1(arg),
+
+            resolve: () => null
+        }
     }
 }
 
@@ -329,6 +355,44 @@ export class JSONSchemaObject {
         }
 
         globalCache.setValue(key, 1);
+    }
+
+    contentAsync(reference: any): Promise {
+        var remoteSchemeContent: any;
+
+        var api: any = require('json-schema-compatibility');
+
+        var contentPromise = this.provider.contentAsync(reference);
+
+        if(!contentPromise) {
+            return this.provider.promiseResolve({
+                reference: reference,
+                content: null,
+                error: new Error('Reference not found: ' + reference)
+            });
+        }
+
+        var result = contentPromise.then((cnt: any) => {
+            var content: any = {reference: reference};
+
+            try {
+                var jsonObject = JSON.parse(cnt);
+
+                this.setupId(jsonObject, this.provider.normalizePath(reference));
+
+                remoteSchemeContent = api.v4(jsonObject);
+
+                delete remoteSchemeContent['$schema'];
+
+                content.content = remoteSchemeContent;
+            } catch(exception) {
+                content.error = exception;
+            }
+
+            return content;
+        });
+
+        return result;
     }
 }
 export interface ValidationError{
