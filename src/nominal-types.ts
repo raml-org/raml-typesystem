@@ -725,7 +725,7 @@ export class AbstractType extends Described implements ITypeDefinition{
             // return adapter.getExtra && adapter.getExtra("topLevel");
             //TODO determine whether "topLevel" actually means a simple top-level type and
             //this flag is absent due to a bug
-            return adapter.getExtra && adapter.getExtra("definedInTypes");
+            return adapter.getExtra && (adapter.getExtra("definedInTypes") || adapter.getExtra("topLevel"));
         })) {
             return true;
         }
