@@ -48,6 +48,10 @@ export class Adaptable{
         })
         return result;
     }
+
+    getAdapters() : any[] {
+        return this.adapters;
+    }
 }
 export class Described extends Adaptable{
     constructor(private _name:string,private _description=""){super()}
@@ -573,7 +577,13 @@ export class AbstractType extends Described implements ITypeDefinition{
      * properties or facets, or having user-defined name as opposed to a synthetic user-defined type.
      */
     isGenuineUserDefinedType() : boolean {
-        return this.nameId()&&this.nameId().length>0&&!this.buildIn;
+        if (this.buildIn) return false;
+
+        if (this.properties() && this.properties().length > 0) return true;
+
+        if (this.getFixedFacets() && Object.keys(this.getFixedFacets()).length > 0) return true;
+
+        return this.isTopLevel()&&this.nameId()&&this.nameId().length>0;
     }
 
     /**
@@ -581,13 +591,40 @@ export class AbstractType extends Described implements ITypeDefinition{
      * Genuine user defined type is a type user intentionally defined and filled with
      * properties or facets, or having user-defined name as opposed to a synthetic user-defined type.
      */
-    genuineUserDefinedType() : ITypeDefinition {
-        if (this.getAdapter(Empty)){
-            if (this.superTypes().length==1){
-                return this.superTypes()[0];
+    genuineUserDefinedTypeInHierarchy() : ITypeDefinition {
+        if (this.isGenuineUserDefinedType()) return this;
+
+        var result:ITypeDefinition=null;
+
+        var allSuperTypes=this.allSuperTypes();
+        allSuperTypes.forEach(currentSuperType=>{
+            if (!result && currentSuperType.isGenuineUserDefinedType()){
+                result = currentSuperType;
             }
-        }
-        return this;
+        });
+
+        return result;
+    }
+
+    /**
+     * Returns whether this type contain genuine user defined type in its hierarchy.
+     * Genuine user defined type is a type user intentionally defined and filled with
+     * properties or facets, or having user-defined name as opposed to a synthetic user-defined type.
+     */
+    hasGenuineUserDefinedTypeInHierarchy() : boolean {
+        return _.find(this.allSuperTypes(),x=>{
+                var mm=<any>x;
+                if (mm.uc){
+                    return false;
+                }
+                mm.uc=true;
+                try{
+                    return x.isGenuineUserDefinedType()
+                }finally{
+                    mm.uc=false
+                }
+
+            })!=null;
     }
 
     customProperties():IProperty[]{
@@ -681,6 +718,19 @@ export class AbstractType extends Described implements ITypeDefinition{
             result.push("external");
         }
         return result;
+    }
+
+    private isTopLevel() : boolean {
+        if(this.getAdapters() && _.find(this.getAdapters(), adapter=>{
+            // return adapter.getExtra && adapter.getExtra("topLevel");
+            //TODO determine whether "topLevel" actually means a simple top-level type and
+            //this flag is absent due to a bug
+            return adapter.getExtra && adapter.getExtra("definedInTypes");
+        })) {
+            return true;
+        }
+
+        return false;
     }
 }
 export class ValueType extends AbstractType implements ITypeDefinition{

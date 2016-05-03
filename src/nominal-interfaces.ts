@@ -308,18 +308,25 @@ export interface ITypeDefinition extends INamedEntity {
     examples() : IExpandableExample[];
 
     /**
-     * Returns whether this type contain genuine user defined type in its hierarchy.
+     * Returns whether this type is genuine user defined type.
      * Genuine user defined type is a type user intentionally defined and filled with
      * properties or facets, or having user-defined name as opposed to a synthetic user-defined type.
      */
     isGenuineUserDefinedType() : boolean;
 
     /**
+     * Returns whether this type contain genuine user defined type in its hierarchy.
+     * Genuine user defined type is a type user intentionally defined and filled with
+     * properties or facets, or having user-defined name as opposed to a synthetic user-defined type.
+     */
+    hasGenuineUserDefinedTypeInHierarchy() : boolean;
+
+    /**
      * Returns nearest genuine user-define type in the hierarchy.
      * Genuine user defined type is a type user intentionally defined and filled with
      * properties or facets, or having user-defined name as opposed to a synthetic user-defined type.
      */
-    genuineUserDefinedType() : ITypeDefinition;
+    genuineUserDefinedTypeInHierarchy() : ITypeDefinition;
 
     kind():string[];
 
