@@ -451,10 +451,13 @@ export abstract class AbstractType{
                 })
             }
         }
+
         if (this.getExtra(SCHEMA_AND_TYPE)){
             rs.addSubStatus(new Status(Status.ERROR,0, "schema and type are mutually exclusive",this));
         }
-        this.validateMeta(tr).getErrors().forEach(x=>rs.addSubStatus(x));
+        if (rs.isOk()) {
+            this.validateMeta(tr).getErrors().forEach(x=>rs.addSubStatus(x));
+        }
         //if (this.isPolymorphic()||(this.isUnion())) {
         //    rs.addSubStatus(this.canDoAc());
         //}
@@ -512,9 +515,12 @@ export abstract class AbstractType{
             }
         }
         if (this.isArray()) {
-            var fs=this.familyWithArray();
-           if ((fs.indexOf(this)!=-1)||fs.some(x=>x===UNKNOWN||x===RECURRENT)){
+           const fs=this.familyWithArray();
+           if ((fs.indexOf(this)!=-1)||fs.some(x=>x===RECURRENT)){
                rs.addSubStatus(new Status(Status.ERROR, 0, "recurrent array type definition",this))
+           }
+           else  if (fs.some(x=>x===UNKNOWN)){
+                rs.addSubStatus(new Status(Status.ERROR, 0, "referring to unknown type "+this.oneMeta(ComponentShouldBeOfType).value().name()+" as an array component type",this))
            }
         }
         var supers=this.superTypes();
