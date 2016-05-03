@@ -720,6 +720,14 @@ export class AbstractType extends Described implements ITypeDefinition{
         return result;
     }
 
+    isBuiltIn() {
+        return this.buildIn;
+    }
+
+    setBuiltIn(builtIn : boolean) {
+        this.buildIn = builtIn;
+    }
+
     private isTopLevel() : boolean {
         if(this.getAdapters() && _.find(this.getAdapters(), adapter=>{
             // return adapter.getExtra && adapter.getExtra("topLevel");
