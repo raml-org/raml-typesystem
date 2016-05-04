@@ -113,7 +113,7 @@ function postProcess(result: any, type: ts.AbstractType):any{
 
         expectedElementNames.push(typeName);
 
-        newJson = getArray(rootNode, type, errors);
+        newJson = getArray(rootNode, type, errors, true);
         
         fillExtras(rootNode, errors, expectedAttributeNames, expectedElementNames);
     } else {
@@ -187,7 +187,7 @@ function buildJson(node: any, type: ts.AbstractType, errors: string[]): any {
     return initialRoot;
 }
 
-function fillExtras(node: any, errors: string[], expectedAttributeNames: string[], expectedElementNames: string[]) {
+function fillExtras(node: any, errors: string[], expectedAttributeNames: string[], expectedElementNames: string[], remove: boolean = false) {
     if(typeof node !== "object") {
         return;
     }
@@ -216,6 +216,10 @@ function fillExtras(node: any, errors: string[], expectedAttributeNames: string[
 
     extraElements.forEach(name => {
         errors.push('Unexpected element "' + name + '".');
+
+        if(remove) {
+            delete node[name];
+        }
     });
 }
 
@@ -275,16 +279,28 @@ function getElements(node: any, infos: PropertyIs[], expectedNames: string[], er
     }).filter((info: any) => info);
 }
 
-function getArray(values: any, type: ts.AbstractType, errors: string[]) {
+function getArray(values: any, type: ts.AbstractType, errors: string[], rootNode: boolean = false) {
     var descriptor = xmlDescriptor(type);
     
-    var isWrapped = descriptor.wrapped;
+    var isWrapped = rootNode || descriptor.wrapped;
 
     var componentType = arrayElementType(type);
 
     var typeName = componentType && componentType.name();
 
-    values = isArray(values) ? values : ((Object.keys(values).length === 1 && [values[Object.keys(values)[0]]]) || values);
+    if(isWrapped) {
+        var valuesWrapper = values;
+        
+        values = values && values[typeName];
+
+        fillExtras(valuesWrapper, errors, [], [typeName], true);
+    }
+
+    if(!values) {
+        return [];
+    }
+
+    values = getArrayValues(values);
 
     if(isArray(values)) {
         values = values.map((value: any) => buildJson(value, componentType, errors))
@@ -293,6 +309,18 @@ function getArray(values: any, type: ts.AbstractType, errors: string[]) {
     }
     
     return values;
+}
+
+function getArrayValues(preValues: any) {
+    if(isArray(preValues)) {
+        return preValues;
+    }
+
+    if(typeof preValues === 'object') {
+        return [preValues];
+    }
+
+    return [];
 }
 
 function arrayElementType(arrayType: ts.AbstractType) {
@@ -308,7 +336,7 @@ function arrayElementType(arrayType: ts.AbstractType) {
 function xmlName(property: PropertyIs): string {
     var descriptor: any = xmlDescriptor(property.value());
 
-    var ramlName: string = (property.value() && property.value().isArray() && !descriptor.wrapped) ? arrayElementType(property.value()).name() : property.propId();
+    var ramlName: string = property.propId();
     
     var actualName = descriptor.name || ramlName;
 
@@ -366,7 +394,7 @@ function toPrimitiveValue(type: ts.AbstractType, actual: any): any {
         return null;
     }
 
-    if(!actual) {
+    if(!actual && actual.trim() !== '') {
         return null;
     }
 
@@ -388,7 +416,11 @@ function toPrimitiveValue(type: ts.AbstractType, actual: any): any {
         }
     }
 
-    return (typeof actual === 'string' && (actual || '')) || null;
+    if(typeof actual === 'string') {
+        return actual;
+    }
+
+    return null;
 }
 
 function isArray(instance: any): boolean {
