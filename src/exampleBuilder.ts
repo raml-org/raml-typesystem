@@ -3,62 +3,71 @@ import meta=require("./metainfo")
 import {ComponentShouldBeOfType} from "./restrictions";
 import {PropertyIs} from "./restrictions";
 import nm=require("./nominal-types")
+const exCalcFlag="exampleCalculation";
 export function example(t:rt.AbstractType):any{
     var ms=t.oneMeta(meta.Example);
     if (ms){
         return ms.example();
     }
-    var ms1=t.oneMeta(meta.Examples);
-    if (ms1){
-        var examples=ms1.examples();
-        if (examples&&examples.length>0){
-            return examples[0];
-        }
+    if (t.getExtra(exCalcFlag)){
+        return null;
     }
-    var d=t.oneMeta(meta.Default);
-    if (d){
-        return d.value();
-    }
-    if (t.isObject()){
-        var result:any={};
-        t.meta().forEach(x=>{
-            if (x instanceof PropertyIs){
-                var p:PropertyIs=x;
-                var ex=example(p.value());
-                result[p.propertyName()]=ex;
+    t.putExtra(exCalcFlag,true)
+    try {
+        var ms1 = t.oneMeta(meta.Examples);
+        if (ms1) {
+            var examples = ms1.examples();
+            if (examples && examples.length > 0) {
+                return examples[0];
             }
-        })
-        t.superTypes().forEach(x=>{
-            if (x.oneMeta(meta.Example)|| x.oneMeta(meta.Examples)) {
-                var ex=example(x);
-                if (ex && typeof ex === "object") {
-                    Object.keys(ex).forEach(key=> {
-                        result[key] = ex[key]
-                    })
+        }
+        var d = t.oneMeta(meta.Default);
+        if (d) {
+            return d.value();
+        }
+        if (t.isObject()) {
+            var result:any = {};
+            t.meta().forEach(x=> {
+                if (x instanceof PropertyIs) {
+                    var p:PropertyIs = x;
+                    var ex = example(p.value());
+                    result[p.propertyName()] = ex;
                 }
-            }
-        })
-        return result;
-    }
-    if (t.isArray()){
-        var c=t.oneMeta(ComponentShouldBeOfType);
-        var resultArray:any[]=[];
-        if (c){
-            resultArray.push(example(c.value()));
+            })
+            t.superTypes().forEach(x=> {
+                if (x.oneMeta(meta.Example) || x.oneMeta(meta.Examples)) {
+                    var ex = example(x);
+                    if (ex && typeof ex === "object") {
+                        Object.keys(ex).forEach(key=> {
+                            result[key] = ex[key]
+                        })
+                    }
+                }
+            })
+            return result;
         }
-        return resultArray;
-    }
-    if (t.isUnion()){
-        return example(t.typeFamily()[0]);
-    }
-    if (t.isNumber()){
-        return 1;
-    }
+        if (t.isArray()) {
+            var c = t.oneMeta(ComponentShouldBeOfType);
+            var resultArray:any[] = [];
+            if (c) {
+                resultArray.push(example(c.value()));
+            }
+            return resultArray;
+        }
+        if (t.isUnion()) {
+            return example(t.typeFamily()[0]);
+        }
+        if (t.isNumber()) {
+            return 1;
+        }
 
-    if (t.isBoolean()){
-        return true;
+        if (t.isBoolean()) {
+            return true;
+        }
+        return "some value";
+    } finally{
+        t.putExtra(exCalcFlag,false)
     }
-    return "some value";
 }
 class Example implements nm.IExpandableExample{
 
