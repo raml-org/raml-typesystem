@@ -1814,4 +1814,24 @@ describe("Type validation basics",function() {
         var st= tp.getType("Hello").validate({zz: "null"});
         assert.isTrue(st.isOk());
     })
+    it("validate known properties + array", function () {
+        var tp = ps.parseJSONTypeCollection({
+
+            schemas:{
+                Hello:{
+                    type: "object",
+                    properties:{
+                        "zz" :"Hello | null"
+                    }
+                    ,
+                    example: [1,2]
+                },
+
+            }
+
+        })
+        var st= tp.getType("Hello").validateType();
+        assert.isTrue(!st.isOk());
+        assert.isTrue(st.getErrors().length==1);
+    })
 })

@@ -182,7 +182,7 @@ export class KnownPropertyRestriction extends ts.Constraint{
     check(i:any):ts.Status{
 
         if (this._value) {
-            if (i&&typeof  i == 'object') {
+            if (i&&typeof  i == 'object'&&!Array.isArray(i)) {
                 var nm:{ [name:string]:boolean} = {};
                 Object.getOwnPropertyNames(i).forEach(n=>nm[n] = true);
                 var mp:MatchesProperty[] = <MatchesProperty[]>this.owner().knownProperties();
