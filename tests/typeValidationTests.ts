@@ -1729,5 +1729,89 @@ describe("Type validation basics",function() {
         var st= tp.getType("LLLL").validate([{}]);
         assert.isTrue(!st.isOk());
     })
+    it("validate recursive prop", function () {
+        var tp = ps.parseJSONTypeCollection({
 
+            schemas:{
+                Hello:{
+                    type: "object",
+                    properties:{
+                        "zz" :"Hello"
+                    }
+                },
+
+            }
+
+        })
+        var st= tp.getType("Hello").validateType();
+        assert.isTrue(!st.isOk());
+    })
+    it("validate nullable recursive prop", function () {
+        var tp = ps.parseJSONTypeCollection({
+
+            schemas:{
+                Hello:{
+                    type: "object",
+                    properties:{
+                        "zz" :"Hello | null"
+                    }
+                },
+
+            }
+
+        })
+        var st= tp.getType("Hello").validateType();
+        assert.isTrue(st.isOk());
+    })
+    it("validate  recursive prop + union", function () {
+        var tp = ps.parseJSONTypeCollection({
+
+            schemas:{
+                Hello:{
+                    type: "object",
+                    properties:{
+                        "zz" :"Hello | Hello"
+                    }
+                },
+
+            }
+
+        })
+        var st= tp.getType("Hello").validateType();
+        assert.isTrue(!st.isOk());
+    })
+    it("validate nullable", function () {
+        var tp = ps.parseJSONTypeCollection({
+
+            schemas:{
+                Hello:{
+                    type: "object",
+                    properties:{
+                        "zz" :"Hello | null"
+                    }
+                },
+
+            }
+
+        })
+        var st= tp.getType("Hello").validate({zz: null});
+        assert.isTrue(st.isOk());
+    })
+    it("validate nullable 2", function () {
+        var tp = ps.parseJSONTypeCollection({
+
+            schemas:{
+                Hello:{
+                    type: "object",
+                    properties:{
+                        "zz" :"Hello | null"
+                    }
+                },
+
+            }
+
+        })
+        var st= tp.getType("Hello").validate({zz: "null"});
+        assert.isTrue(st.isOk());
+    })
 })

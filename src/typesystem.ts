@@ -311,6 +311,89 @@ export class TypeRegistry {
         return this.typeList;
     }
 }
+interface PropertyInfoHandle{
+    name:string
+    type: AbstractType;
+}
+
+interface PropertyInfos{
+
+    [name: string]: PropertyInfoHandle;
+}
+
+class PropertyCyclesValidator{
+
+
+    getInfos(t:AbstractType):PropertyInfos{
+        if (t.getExtra("PInfos")){
+            return t.getExtra("PInfos");
+        }
+        var m:PropertyInfos={};
+
+        t.meta().forEach(x=>{
+            if (x instanceof restr.HasProperty){
+                var id=(<restr.HasProperty>x).value();
+                m[id]={ name: id, type: null};
+            }
+        })
+        t.meta().forEach(x=>{
+            if (x instanceof restr.PropertyIs){
+                var id=(<restr.PropertyIs>x).propertyName();
+                if (m[id]){
+                    m[id].type=(<restr.PropertyIs>x).value();
+                }
+            }
+        })
+        t.putExtra("PInfos",m);
+
+        return m;
+    }
+
+
+    validate(t:AbstractType,visited:PropertyInfoHandle[]):boolean{
+        var i=this.getInfos(t);
+        var result=false;
+        Object.keys(i).forEach(x=>{
+            result=result||this.validateInfo(i[x],visited);
+        })
+        return result;
+    }
+
+    validateInfo(t:PropertyInfoHandle,visited:PropertyInfoHandle[]):boolean{
+        if (visited.some(y=>y==t)){
+            return true;
+        }
+        else{
+            if (t.type instanceof UnionType){
+                var ut=<UnionType>t.type;
+                var passing=true;
+                ut.options().forEach(o=>{
+                    if (!this.validate(o, [t].concat(visited))){
+                        passing=false;
+                    }
+                })
+                return passing;
+            }
+            if (t.type.isArray()){
+
+            }
+            else {
+                return this.validate(t.type, [t].concat(visited));
+            }
+        }
+    }
+
+    validateType(t:AbstractType):string[]{
+        var i=this.getInfos(t);
+        var result:string[]=[];
+        Object.keys(i).forEach(x=>{
+            if (this.validateInfo(i[x],[])){
+                result.push(x);
+            }
+        })
+        return result;
+    }
+}
 
 export class RestrictionsConflict extends Status{
     constructor(protected _conflicting:Constraint,protected _stack:RestrictionStackEntry,source:any){
@@ -485,10 +568,23 @@ export abstract class AbstractType{
                     }
                 }
             })
+            var propertyCycles=new PropertyCyclesValidator().validateType(this);
+            if (propertyCycles.length>0){
+                propertyCycles.forEach(p=>{
+                    var st=new Status(Status.ERROR,0,p+"has cyclic dependency",this);
+                    st.setValidationPath({name:p})
+                    rs.addSubStatus(st);
+                })
+
+            }
         }
 
         return rs;
     }
+
+
+
+
 
     public validateHierarchy(rs:Status) {
         if (!this.isAnonymous()) {
@@ -708,6 +804,8 @@ export abstract class AbstractType{
         });
         return _.uniq(rs);
     }
+
+
 
     checkConfluent():Status{
         if (this.computeConfluent){
@@ -1627,7 +1725,7 @@ export class NullRestriction extends GenericTypeOf{
         super();
     }
     check(i:any):Status {
-        if (i===null||i==undefined){
+        if (i===null||i==undefined||i==="null"){
             return OK_STATUS;
         }
         return error("null is expected",this);
