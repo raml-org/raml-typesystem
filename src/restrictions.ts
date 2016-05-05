@@ -70,15 +70,6 @@ export abstract class MatchesProperty extends ts.Constraint{
 
 
     validateSelf(registry:ts.TypeRegistry):ts.Status {
-        if (this._type.isAnonymous()){
-            var st=this._type.validateType(registry);
-            if (!st.isOk()){
-                var p= new Status(Status.ERROR,0,"property "+this.propId()+" range type has error:"+st.getMessage(),this)
-                p.setValidationPath({name: this.propId()})
-                return p;
-            }
-            return st;
-        }
         if (this._type.isExternal()){
             var p= new Status(Status.ERROR,0,"It is not allowed to use external types in property definitions",this)
             p.setValidationPath({name: this.propId()})
@@ -89,6 +80,16 @@ export abstract class MatchesProperty extends ts.Constraint{
             p.setValidationPath({name: this.propId()})
             return p;
         }
+        if (this._type.isAnonymous()){
+            var st=this._type.validateType(registry);
+            if (!st.isOk()){
+                var p= new Status(Status.ERROR,0,"property "+this.propId()+" range type has error:"+st.getMessage(),this)
+                p.setValidationPath({name: this.propId()})
+                return p;
+            }
+            return st;
+        }
+
         if (this._type.isUnion()){
            var ui= _.find(this._type.typeFamily(),x=>x.isSubTypeOf(ts.UNKNOWN));
            if (ui){
