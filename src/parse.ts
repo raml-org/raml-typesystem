@@ -1,4 +1,5 @@
 import  ts=require("./typesystem")
+import  tsInterfaces=require("./typesystem-interfaces")
 import  rs=require("./restrictions")
 import {AbstractType} from "./typesystem";
 import typeExpressions=require("./typeExpressions")
@@ -627,7 +628,7 @@ export function parse(name: string,n:ParseNode,r:ts.TypeRegistry=ts.builtInRegis
         if (r instanceof AccumulatingRegistry){
             r.addType(res);
 
-            res.putExtra("topLevel",true);
+            res.putExtra(tsInterfaces.TOP_LEVEL_EXTRA,true);
         }
         return res;
     }
@@ -639,7 +640,7 @@ export function parse(name: string,n:ParseNode,r:ts.TypeRegistry=ts.builtInRegis
         var res=ts.derive(name,supers);
         if (r instanceof AccumulatingRegistry){
             r.addType(res);
-            res.putExtra("topLevel",true);
+            res.putExtra(tsInterfaces.TOP_LEVEL_EXTRA,true);
         }
         return res;
     }
@@ -695,7 +696,7 @@ export function parse(name: string,n:ParseNode,r:ts.TypeRegistry=ts.builtInRegis
     }
     if (r instanceof AccumulatingRegistry){
         r.addType(actualResult);
-        actualResult.putExtra("topLevel",true);
+        actualResult.putExtra(tsInterfaces.TOP_LEVEL_EXTRA,true);
     }
     n.children().forEach(x=>{
         var key = x.key();

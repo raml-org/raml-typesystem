@@ -1,4 +1,5 @@
 import ts=require("./typesystem")
+import tsInterfaces=require("./typesystem-interfaces")
 import tc=require("./parse")
 import fr=require("./facetRegistry")
 import {KnownPropertyRestriction} from "./restrictions";
@@ -11,11 +12,15 @@ export import nominalTypes=require("./nominal-types")
 
 import schemaUtil = require('./schemaUtil');
 
-export interface IValidationPath{
-    name: string
-    child?:IValidationPath
+export type IValidationPath = tsInterfaces.IValidationPath;
+export type IHasExtra = tsInterfaces.IHasExtra;
+export var TOP_LEVEL_EXTRA = tsInterfaces.TOP_LEVEL_EXTRA;
+export var DEFINED_IN_TYPES_EXTRA = tsInterfaces.DEFINED_IN_TYPES_EXTRA;
+export var USER_DEFINED_EXTRA = tsInterfaces.USER_DEFINED_EXTRA;
 
-}
+// export function instanceOfHasExtra(instance : nominalTypes.ITypeDefinition) : instance is IHasExtra {
+//     returninstance instanceof ts.AbstractType || instance instanceof nominalTypes.AbstractType;
+// }
 
 export function getSchemaUtils(): any {
     return schemaUtil;
@@ -157,7 +162,7 @@ export  interface ITypeRegistry {
  * parsed representation of the type
  * you should not create instances of this interfaces manually
  */
-export interface IParsedType {
+export interface IParsedType extends IHasExtra {
 
     /**
      * returns  list of directly declared sub types of this type

@@ -1,13 +1,10 @@
 /// <reference path="../typings/main.d.ts" />
 import _=require("underscore")
 import su=require("./schemaUtil")
+import tsInterfaces = require("./typesystem-interfaces")
 
-export interface IValidationPath{
+export type IValidationPath = tsInterfaces.IValidationPath;
 
-    name: string
-    child?:IValidationPath
-
-}
 export class Status {
 
     public static CODE_CONFLICTING_TYPE_KIND = 4;
@@ -28,9 +25,9 @@ export class Status {
 
     protected subStatus:Status[] = [];
 
-    protected vp:IValidationPath
+    protected vp:tsInterfaces.IValidationPath
 
-    getValidationPath():IValidationPath{
+    getValidationPath():tsInterfaces.IValidationPath{
         return this.vp;
     }
 
@@ -50,14 +47,14 @@ export class Status {
         return s;
     }
 
-    patchPath(p:IValidationPath):IValidationPath{
+    patchPath(p:tsInterfaces.IValidationPath):tsInterfaces.IValidationPath{
         if (!p){
             return null;
         }
         else{
             var c=p;
-            var r:IValidationPath=null;
-            var cp:IValidationPath=null;
+            var r:tsInterfaces.IValidationPath=null;
+            var cp:tsInterfaces.IValidationPath=null;
             while (c){
                 if (!r){
                     r={name: c.name};
@@ -75,7 +72,7 @@ export class Status {
             return r;
         }
     }
-    setValidationPath(c:IValidationPath){
+    setValidationPath(c:tsInterfaces.IValidationPath){
         if (this.vp){
             c=this.patchPath(c);
             var m=c;
@@ -190,7 +187,7 @@ export abstract class Constraint extends TypeInformation{
 
 
 
-    abstract check(i:any,parentPath:IValidationPath):Status
+    abstract check(i:any,parentPath:tsInterfaces.IValidationPath):Status
 
 
     private static intersections:{ [id:string]:AbstractType}={}
@@ -422,7 +419,7 @@ export class RestrictionsConflict extends Status{
 var globalId=0;
 
 export var VALIDATED_TYPE:AbstractType=null;
-export abstract class AbstractType{
+export abstract class AbstractType implements tsInterfaces.IHasExtra{
 
     protected computeConfluent: boolean
 
@@ -588,7 +585,7 @@ export abstract class AbstractType{
 
     public validateHierarchy(rs:Status) {
         if (!this.isAnonymous()) {
-            if (this.getExtra("topLevel") && builtInRegistry().get(this.name())) {
+            if (this.getExtra(tsInterfaces.TOP_LEVEL_EXTRA) && builtInRegistry().get(this.name())) {
                 rs.addSubStatus(new Status(Status.ERROR, 0, "redefining builtin type:" + this.name(), this))
 
             }
@@ -1008,7 +1005,7 @@ export abstract class AbstractType{
     /**
      * validates object against this type without performing AC
      */
-    validateDirect(i:any,autoClose:boolean=false,nullAllowed:boolean=true,path:IValidationPath=null):Status{
+    validateDirect(i:any,autoClose:boolean=false,nullAllowed:boolean=true,path:tsInterfaces.IValidationPath=null):Status{
         VALIDATED_TYPE=this;
         var result=new Status(Status.OK,0,"",this);
         if (!nullAllowed&&(i===null||i===undefined)){
@@ -1777,7 +1774,7 @@ export class OrRestriction extends Constraint{
         super();
     }
 
-    check(i:any,p:IValidationPath):Status {
+    check(i:any,p:tsInterfaces.IValidationPath):Status {
         var cs=new Status(Status.OK,0,"",this);
         var first:Status=null;
         for (var j=0;j<this.val.length;j++){
@@ -1819,7 +1816,7 @@ export class AndRestriction extends Constraint{
     options(){
         return this.val;
     }
-    check(i:any,p:IValidationPath):Status {
+    check(i:any,p:tsInterfaces.IValidationPath):Status {
         for (var j=0;j<this.val.length;j++){
             var st=this.val[j].check(i,p);
             if (!st.isOk()){

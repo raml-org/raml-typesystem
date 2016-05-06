@@ -1,3 +1,5 @@
+import tsInterfaces = require("./typesystem-interfaces")
+
 export interface INamedEntity{
     nameId():string;
     description():string;
@@ -119,7 +121,7 @@ export class ValueRequirement{
      */
     constructor(public name:string,public value:string){}
 }
-export interface ITypeDefinition extends INamedEntity {
+export interface ITypeDefinition extends INamedEntity,tsInterfaces.IHasExtra {
 
 
     key():NamedId
@@ -332,6 +334,10 @@ export interface ITypeDefinition extends INamedEntity {
 
     validate(x:any):Status[]
 
+    /**
+     * Returns whether this type was defined by a user.
+     */
+    isUserDefined() : boolean;
 }
 export interface FacetValidator{
     (value:any, facetValue:any):string;

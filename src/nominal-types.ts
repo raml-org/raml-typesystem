@@ -1,4 +1,5 @@
 import ti = require("./nominal-interfaces")
+import tsInterfaces = require("./typesystem-interfaces")
 export type IAnnotation=ti.IAnnotation;
 export type ITypeDefinition=ti.ITypeDefinition;
 export type IExpandableExample=ti.IExpandableExample;
@@ -278,11 +279,6 @@ export class AbstractType extends Described implements ITypeDefinition{
     _superTypes:ITypeDefinition[]=[];
     _subTypes:ITypeDefinition[]=[];
     _requirements:ti.ValueRequirement[]=[];
-
-
-    isUserDefined(): boolean{
-        return false;
-    }
 
     private fixedFacets:{ [name:string]:any}={}
 
@@ -728,17 +724,45 @@ export class AbstractType extends Described implements ITypeDefinition{
         this.buildIn = builtIn;
     }
 
-    private isTopLevel() : boolean {
-        if(this.getAdapters() && _.find(this.getAdapters(), adapter=>{
-            // return adapter.getExtra && adapter.getExtra("topLevel");
-            //TODO determine whether "topLevel" actually means a simple top-level type and
-            //this flag is absent due to a bug
-            return adapter.getExtra && (adapter.getExtra("definedInTypes") || adapter.getExtra("topLevel"));
-        })) {
-            return true;
+    isTopLevel() : boolean {
+        //TODO determine whether "topLevel" actually means a simple top-level type and
+        //this flag is absent due to a bug
+        if(this.getExtra(tsInterfaces.DEFINED_IN_TYPES_EXTRA) || this.getExtra(tsInterfaces.TOP_LEVEL_EXTRA)) return true;
+        return false;
+    }
+
+    isUserDefined() : boolean {
+        return this.getExtra(tsInterfaces.USER_DEFINED_EXTRA);
+    }
+
+    putExtra(extraName: string, value : any) : void {
+        var extraAdapter = this.getExtraAdapter();
+        if (!extraAdapter) return;
+
+        extraAdapter.putExtra(extraName, value);
+    }
+
+    getExtra(name:string) : any {
+        var extraAdapter = this.getExtraAdapter();
+        if (!extraAdapter) return null;
+
+        return extraAdapter.getExtra(name);
+    }
+
+    private getExtraAdapter() : tsInterfaces.IHasExtra {
+        if(this.getAdapters()) {
+            var extraAdapter = _.find(this.getAdapters(), adapter=>{
+                //weird duck-typing, but we can touch anything from nominal-types here
+                if ((<any>adapter).getExtra && typeof((<any>adapter).getExtra) == "function"
+                    && (<any>adapter).putExtra && typeof((<any>adapter).putExtra) == "function") {
+                    return true;
+                }
+            });
+
+            return <tsInterfaces.IHasExtra>extraAdapter;
         }
 
-        return false;
+        return null;
     }
 }
 export class ValueType extends AbstractType implements ITypeDefinition{
