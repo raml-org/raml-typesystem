@@ -167,7 +167,7 @@ function buildJson(node: any, type: ts.AbstractType, errors: string[]): any {
     }
 
     if(type.isScalar()) {
-        return toPrimitiveValue(type, node);
+        return toPrimitiveValue(type, node, errors);
     }
 
     if(type.isUnion()) {
@@ -389,9 +389,15 @@ function xmlDescriptor(type: ts.AbstractType): any {
     return result;
 }
 
-function toPrimitiveValue(type: ts.AbstractType, actual: any): any {
+function toPrimitiveValue(type: ts.AbstractType, actual: any, errors: string[] = []): any {
     if(typeof actual === 'object') {
-        return null;
+        var result = toPrimitiveValue(type, actual['_']);
+
+        delete actual['_'];
+
+        fillExtras(actual, errors, [], [], true);
+
+        return result;
     }
 
     if(!actual && actual.trim() !== '') {
