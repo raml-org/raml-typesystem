@@ -623,7 +623,7 @@ export abstract class AbstractType implements tsInterfaces.IHasExtra{
         if (supers.length>1){
             supers.forEach(x=>{
                 if (x.isExternal()){
-                   hasExternal=true;
+                    hasExternal=true;
                 }
                 else{
                     hasNotExternal=true;
@@ -632,6 +632,14 @@ export abstract class AbstractType implements tsInterfaces.IHasExtra{
         }
         if (hasExternal&&hasNotExternal){
             rs.addSubStatus(new Status(Status.ERROR, 0, "It is not allowed to mix RAML types with externals",this))
+        }
+        if (this instanceof UnionType){
+            var ut=<UnionType><any>this;
+            ut.options().forEach(x=>{
+                if (x.isExternal()){
+                    rs.addSubStatus(new Status(Status.ERROR, 0, "It is not allowed to mix RAML types with externals",this))
+                }
+            })
         }
     };
 

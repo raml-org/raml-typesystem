@@ -1834,4 +1834,62 @@ describe("Type validation basics",function() {
         assert.isTrue(!st.isOk());
         assert.isTrue(st.getErrors().length==1);
     })
+    it("External is more important than anonimous", function () {
+        var tp = ps.parseJSONTypeCollection({
+
+            schemas:{
+                Hello:{
+                    type: "object",
+                    properties:{
+                        "zz" : '{ "type": "object"}'
+                    }
+
+                },
+
+            }
+
+        })
+        var st= tp.getType("Hello").validateType();
+        assert.isTrue(!st.isOk());
+        assert.isTrue(st.getErrors().length==1);
+    })
+    it("External is more important than anonimous 2", function () {
+        var tp = ps.parseJSONTypeCollection({
+
+            schemas:{
+                Hello:{
+                    type: "object",
+                    properties:{
+                        "zz" : { type: '{ "type": "object"}'}
+                    }
+
+                },
+
+            }
+
+        })
+        var st= tp.getType("Hello").validateType();
+        assert.isTrue(!st.isOk());
+        assert.isTrue(st.getErrors().length==1);
+    })
+    it("External with union", function () {
+        var tp = ps.parseJSONTypeCollection({
+
+            schemas:{
+                T: '{ "type": "object"}',
+                Hello:{
+                    type: "object",
+                    properties:{
+                        "zz" : { type: "T | number"}
+                    }
+
+                },
+
+            }
+
+        })
+        var st= tp.getType("Hello").validateType();
+        assert.isTrue(!st.isOk());
+        assert.isTrue(st.getErrors().length==1);
+    })
 })
