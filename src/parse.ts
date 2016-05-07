@@ -796,5 +796,6 @@ export function parse(name: string,n:ParseNode,r:ts.TypeRegistry=ts.builtInRegis
         actualResult.putExtra(ts.SCHEMA_AND_TYPE,true);
     }
     actualResult.putExtra(ts.GLOBAL,global);
+    actualResult.putExtra(ts.SOURCE_EXTRA, n);
     return actualResult;
 }

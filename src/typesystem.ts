@@ -150,10 +150,10 @@ export class Status {
 }
 
 export const OK_STATUS=new Status(Status.OK,Status.OK,"",null);
-export const SCHEMA_AND_TYPE="SCHEMA"
-export const GLOBAL="GLOBAL"
-
-export const TOPLEVEL="TOPLEVEL"
+export const SCHEMA_AND_TYPE=tsInterfaces.SCHEMA_AND_TYPE_EXTRA;
+export const GLOBAL=tsInterfaces.GLOBAL_EXTRA;
+export const TOPLEVEL=tsInterfaces.TOP_LEVEL_EXTRA;
+export const SOURCE_EXTRA = tsInterfaces.SOURCE_EXTRA;
 
 export function error(message:string,source:any){
     return new Status(Status.ERROR,0,message,source);

@@ -8,6 +8,9 @@ export interface IHasExtra {
     putExtra(name:string,value:any) : void;
 }
 
-export var TOP_LEVEL_EXTRA = "topLevel";
-export var DEFINED_IN_TYPES_EXTRA = "definedInTypes";
-export var USER_DEFINED_EXTRA = "USER_DEFINED";
+export const TOP_LEVEL_EXTRA = "topLevel";
+export const DEFINED_IN_TYPES_EXTRA = "definedInTypes";
+export const USER_DEFINED_EXTRA = "USER_DEFINED";
+export const SOURCE_EXTRA = "SOURCE";
+export const SCHEMA_AND_TYPE_EXTRA="SCHEMA";
+export const GLOBAL_EXTRA="GLOBAL";
