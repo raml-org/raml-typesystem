@@ -698,7 +698,8 @@ export function parse(name: string,n:ParseNode,r:ts.TypeRegistry=ts.builtInRegis
         r.addType(actualResult);
         actualResult.putExtra(tsInterfaces.TOP_LEVEL_EXTRA,true);
     }
-    var hasfacets=false;
+    var hasfacetsOrOtherStuffDoesNotAllowedInExternals:string=null;
+
     n.children().forEach(x=>{
         var key = x.key();
         if (!key){
@@ -708,9 +709,11 @@ export function parse(name: string,n:ParseNode,r:ts.TypeRegistry=ts.builtInRegis
             return;
         }
         if (key==="repeat"){
+            hasfacetsOrOtherStuffDoesNotAllowedInExternals="repeat";
             return;
         }
         if (key==="uses"){
+
             //FIXME this should be handled depending from parse level
             return;
         }
@@ -731,8 +734,11 @@ export function parse(name: string,n:ParseNode,r:ts.TypeRegistry=ts.builtInRegis
         }
 
         if (key==="facets"){
-            hasfacets=true;
+            hasfacetsOrOtherStuffDoesNotAllowedInExternals=key;
             return;
+        }
+        if (key=="default"||key=="xml"||key=="required"){
+            hasfacetsOrOtherStuffDoesNotAllowedInExternals=key;
         }
         if (key.charAt(0)=='('&& key.charAt(key.length-1)==')'){
             result.addMeta(new meta.Annotation(key.substr(1, key.length-2), x.value()));
@@ -799,6 +805,6 @@ export function parse(name: string,n:ParseNode,r:ts.TypeRegistry=ts.builtInRegis
     }
     actualResult.putExtra(ts.GLOBAL,global);
     actualResult.putExtra(ts.SOURCE_EXTRA, n);
-    actualResult.putExtra(tsInterfaces.HAS_FACETS, hasfacets);
+    actualResult.putExtra(tsInterfaces.HAS_FACETS, hasfacetsOrOtherStuffDoesNotAllowedInExternals);
     return actualResult;
 }
