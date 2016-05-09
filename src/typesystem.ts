@@ -641,6 +641,14 @@ export abstract class AbstractType implements tsInterfaces.IHasExtra{
                 }
             })
         }
+        if (this.isExternal()){
+            if (this.getExtra(tsInterfaces.HAS_FACETS)){
+                var fs=new Status(Status.ERROR, 0, "External types can not declare facets",this);
+                fs.setValidationPath({ name:"facets"});
+                rs.addSubStatus(fs);
+            }
+        }
+
     };
 
     private familyWithArray(){

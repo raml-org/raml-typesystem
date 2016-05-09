@@ -1892,4 +1892,24 @@ describe("Type validation basics",function() {
         assert.isTrue(!st.isOk());
         assert.isTrue(st.getErrors().length==1);
     })
+    it("External with facets", function () {
+        var tp = ps.parseJSONTypeCollection({
+
+            schemas:{
+                T: '{ "type": "object"}',
+                Hello:{
+                    type: "T",
+                    facets:{
+                        "zz" : "number"
+                    }
+
+                },
+
+            }
+
+        })
+        var st= tp.getType("Hello").validateType();
+        assert.isTrue(!st.isOk());
+        assert.isTrue(st.getErrors().length==1);
+    })
 })

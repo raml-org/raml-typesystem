@@ -698,6 +698,7 @@ export function parse(name: string,n:ParseNode,r:ts.TypeRegistry=ts.builtInRegis
         r.addType(actualResult);
         actualResult.putExtra(tsInterfaces.TOP_LEVEL_EXTRA,true);
     }
+    var hasfacets=false;
     n.children().forEach(x=>{
         var key = x.key();
         if (!key){
@@ -730,6 +731,7 @@ export function parse(name: string,n:ParseNode,r:ts.TypeRegistry=ts.builtInRegis
         }
 
         if (key==="facets"){
+            hasfacets=true;
             return;
         }
         if (key.charAt(0)=='('&& key.charAt(key.length-1)==')'){
@@ -797,5 +799,6 @@ export function parse(name: string,n:ParseNode,r:ts.TypeRegistry=ts.builtInRegis
     }
     actualResult.putExtra(ts.GLOBAL,global);
     actualResult.putExtra(ts.SOURCE_EXTRA, n);
+    actualResult.putExtra(tsInterfaces.HAS_FACETS, hasfacets);
     return actualResult;
 }
