@@ -109,6 +109,28 @@ export class ContentProvider {
 
         return path.isAbsolute(uri);
     }
+
+    contentAsync(reference: string): Promise {
+        return {
+            then: arg => arg(this.content(reference)),
+
+            resolve: () => null
+        };
+    }
+
+    promiseResolve(arg: any): Promise {
+        return {
+            then: arg1 => arg1(arg),
+
+            resolve: () => null
+        }
+    }
+}
+
+export interface Promise {
+    then(instance: any): any;
+
+    resolve(arg: any): any;
 }
 
 function isWebPath(str: string):boolean {

@@ -1,13 +1,10 @@
 /// <reference path="../typings/main.d.ts" />
 import _=require("underscore")
 import su=require("./schemaUtil")
+import tsInterfaces = require("./typesystem-interfaces")
 
-export interface IValidationPath{
+export type IValidationPath = tsInterfaces.IValidationPath;
 
-    name: string
-    child?:IValidationPath
-
-}
 export class Status {
 
     public static CODE_CONFLICTING_TYPE_KIND = 4;
@@ -28,9 +25,9 @@ export class Status {
 
     protected subStatus:Status[] = [];
 
-    protected vp:IValidationPath
+    protected vp:tsInterfaces.IValidationPath
 
-    getValidationPath():IValidationPath{
+    getValidationPath():tsInterfaces.IValidationPath{
         return this.vp;
     }
 
@@ -50,14 +47,14 @@ export class Status {
         return s;
     }
 
-    patchPath(p:IValidationPath):IValidationPath{
+    patchPath(p:tsInterfaces.IValidationPath):tsInterfaces.IValidationPath{
         if (!p){
             return null;
         }
         else{
             var c=p;
-            var r:IValidationPath=null;
-            var cp:IValidationPath=null;
+            var r:tsInterfaces.IValidationPath=null;
+            var cp:tsInterfaces.IValidationPath=null;
             while (c){
                 if (!r){
                     r={name: c.name};
@@ -75,7 +72,7 @@ export class Status {
             return r;
         }
     }
-    setValidationPath(c:IValidationPath){
+    setValidationPath(c:tsInterfaces.IValidationPath){
         if (this.vp){
             c=this.patchPath(c);
             var m=c;
@@ -153,8 +150,10 @@ export class Status {
 }
 
 export const OK_STATUS=new Status(Status.OK,Status.OK,"",null);
-export const SCHEMA_AND_TYPE="SCHEMA"
-export const TOPLEVEL="TOPLEVEL"
+export const SCHEMA_AND_TYPE=tsInterfaces.SCHEMA_AND_TYPE_EXTRA;
+export const GLOBAL=tsInterfaces.GLOBAL_EXTRA;
+export const TOPLEVEL=tsInterfaces.TOP_LEVEL_EXTRA;
+export const SOURCE_EXTRA = tsInterfaces.SOURCE_EXTRA;
 
 export function error(message:string,source:any){
     return new Status(Status.ERROR,0,message,source);
@@ -188,7 +187,7 @@ export abstract class Constraint extends TypeInformation{
 
 
 
-    abstract check(i:any,parentPath:IValidationPath):Status
+    abstract check(i:any,parentPath:tsInterfaces.IValidationPath):Status
 
 
     private static intersections:{ [id:string]:AbstractType}={}
@@ -309,6 +308,89 @@ export class TypeRegistry {
         return this.typeList;
     }
 }
+interface PropertyInfoHandle{
+    name:string
+    type: AbstractType;
+}
+
+interface PropertyInfos{
+
+    [name: string]: PropertyInfoHandle;
+}
+
+class PropertyCyclesValidator{
+
+
+    getInfos(t:AbstractType):PropertyInfos{
+        if (t.getExtra("PInfos")){
+            return t.getExtra("PInfos");
+        }
+        var m:PropertyInfos={};
+
+        t.meta().forEach(x=>{
+            if (x instanceof restr.HasProperty){
+                var id=(<restr.HasProperty>x).value();
+                m[id]={ name: id, type: null};
+            }
+        })
+        t.meta().forEach(x=>{
+            if (x instanceof restr.PropertyIs){
+                var id=(<restr.PropertyIs>x).propertyName();
+                if (m[id]){
+                    m[id].type=(<restr.PropertyIs>x).value();
+                }
+            }
+        })
+        t.putExtra("PInfos",m);
+
+        return m;
+    }
+
+
+    validate(t:AbstractType,visited:PropertyInfoHandle[]):boolean{
+        var i=this.getInfos(t);
+        var result=false;
+        Object.keys(i).forEach(x=>{
+            result=result||this.validateInfo(i[x],visited);
+        })
+        return result;
+    }
+
+    validateInfo(t:PropertyInfoHandle,visited:PropertyInfoHandle[]):boolean{
+        if (visited.some(y=>y==t)){
+            return true;
+        }
+        else{
+            if (t.type instanceof UnionType){
+                var ut=<UnionType>t.type;
+                var passing=true;
+                ut.options().forEach(o=>{
+                    if (!this.validate(o, [t].concat(visited))){
+                        passing=false;
+                    }
+                })
+                return passing;
+            }
+            if (t.type.isArray()){
+
+            }
+            else {
+                return this.validate(t.type, [t].concat(visited));
+            }
+        }
+    }
+
+    validateType(t:AbstractType):string[]{
+        var i=this.getInfos(t);
+        var result:string[]=[];
+        Object.keys(i).forEach(x=>{
+            if (this.validateInfo(i[x],[])){
+                result.push(x);
+            }
+        })
+        return result;
+    }
+}
 
 export class RestrictionsConflict extends Status{
     constructor(protected _conflicting:Constraint,protected _stack:RestrictionStackEntry,source:any){
@@ -336,7 +418,8 @@ export class RestrictionsConflict extends Status{
 }
 var globalId=0;
 
-export abstract class AbstractType{
+export var VALIDATED_TYPE:AbstractType=null;
+export abstract class AbstractType implements tsInterfaces.IHasExtra{
 
     protected computeConfluent: boolean
 
@@ -448,10 +531,13 @@ export abstract class AbstractType{
                 })
             }
         }
+
         if (this.getExtra(SCHEMA_AND_TYPE)){
             rs.addSubStatus(new Status(Status.ERROR,0, "schema and type are mutually exclusive",this));
         }
-        this.validateMeta(tr).getErrors().forEach(x=>rs.addSubStatus(x));
+        if (rs.isOk()) {
+            this.validateMeta(tr).getErrors().forEach(x=>rs.addSubStatus(x));
+        }
         //if (this.isPolymorphic()||(this.isUnion())) {
         //    rs.addSubStatus(this.canDoAc());
         //}
@@ -479,15 +565,30 @@ export abstract class AbstractType{
                     }
                 }
             })
+            var propertyCycles=new PropertyCyclesValidator().validateType(this);
+            if (propertyCycles.length>0){
+                propertyCycles.forEach(p=>{
+                    var st=new Status(Status.ERROR,0,p+"has cyclic dependency",this);
+                    st.setValidationPath({name:p})
+                    rs.addSubStatus(st);
+                })
+
+            }
         }
 
         return rs;
     }
 
-    public validateHierarchy(rs:Status) {
-        if (this.getExtra("topLevel")&&builtInRegistry().get(this.name())){
-            rs.addSubStatus(new Status(Status.ERROR, 0, "redefining builtin type:"+this.name(),this))
 
+
+
+
+    public validateHierarchy(rs:Status) {
+        if (!this.isAnonymous()) {
+            if (this.getExtra(tsInterfaces.TOP_LEVEL_EXTRA) && builtInRegistry().get(this.name())) {
+                rs.addSubStatus(new Status(Status.ERROR, 0, "redefining builtin type:" + this.name(), this))
+
+            }
         }
 
         if (this.isSubTypeOf(RECURRENT)) {
@@ -507,9 +608,12 @@ export abstract class AbstractType{
             }
         }
         if (this.isArray()) {
-            var fs=this.familyWithArray();
-           if ((fs.indexOf(this)!=-1)||fs.some(x=>x===UNKNOWN||x===RECURRENT)){
+           const fs=this.familyWithArray();
+           if ((fs.indexOf(this)!=-1)||fs.some(x=>x===RECURRENT)){
                rs.addSubStatus(new Status(Status.ERROR, 0, "recurrent array type definition",this))
+           }
+           else  if (fs.some(x=>x===UNKNOWN)){
+                rs.addSubStatus(new Status(Status.ERROR, 0, "referring to unknown type "+this.oneMeta(ComponentShouldBeOfType).value().name()+" as an array component type",this))
            }
         }
         var supers=this.superTypes();
@@ -519,7 +623,7 @@ export abstract class AbstractType{
         if (supers.length>1){
             supers.forEach(x=>{
                 if (x.isExternal()){
-                   hasExternal=true;
+                    hasExternal=true;
                 }
                 else{
                     hasNotExternal=true;
@@ -529,6 +633,22 @@ export abstract class AbstractType{
         if (hasExternal&&hasNotExternal){
             rs.addSubStatus(new Status(Status.ERROR, 0, "It is not allowed to mix RAML types with externals",this))
         }
+        if (this instanceof UnionType){
+            var ut=<UnionType><any>this;
+            ut.options().forEach(x=>{
+                if (x.isExternal()){
+                    rs.addSubStatus(new Status(Status.ERROR, 0, "It is not allowed to mix RAML types with externals",this))
+                }
+            })
+        }
+        if (this.isExternal()){
+            if (this.getExtra(tsInterfaces.HAS_FACETS)){
+                var fs=new Status(Status.ERROR, 0, "External types can not declare facet '"+this.getExtra(tsInterfaces.HAS_FACETS)+"'",this);
+                fs.setValidationPath({ name:this.getExtra(tsInterfaces.HAS_FACETS)});
+                rs.addSubStatus(fs);
+            }
+        }
+
     };
 
     private familyWithArray(){
@@ -584,7 +704,7 @@ export abstract class AbstractType{
                     }
 
                     var fp=fr.getInstance().facetPrototypeWithName(an);
-                    if (fp&&fp.isApplicable(this)||an=="type"||fd.facetName()=="properties"||an=="schema"||an=="facets"){
+                    if (fp&&fp.isApplicable(this)||an=="type"||fd.facetName()=="properties"||an=="schema"||an=="facets"||an=="uses"){
                         rs.addSubStatus(new Status(Status.ERROR, 0, "built-in facet :" + an+" can not be overriden",this))
                     }
 
@@ -698,6 +818,8 @@ export abstract class AbstractType{
         return _.uniq(rs);
     }
 
+
+
     checkConfluent():Status{
         if (this.computeConfluent){
             return OK_STATUS;
@@ -778,6 +900,40 @@ export abstract class AbstractType{
     isScalar():boolean{
         return this==<AbstractType>SCALAR||this.allSuperTypes().indexOf(SCALAR)!=-1;
     }
+    /**
+     * returns true if this type inherits from one of date related types
+     */
+    isDateTime():boolean{
+        return this==<AbstractType>DATETIME||this.allSuperTypes().indexOf(DATETIME)!=-1;
+    }
+
+
+    /**
+     * returns true if this type inherits from one of date related types
+     */
+    isDateOnly():boolean{
+        return this==<AbstractType>DATE_ONLY||this.allSuperTypes().indexOf(DATE_ONLY)!=-1
+    }
+
+    /**
+     * returns true if this type inherits from one of date related types
+     */
+    isTimeOnly():boolean{
+        return this==<AbstractType>TIME_ONLY||this.allSuperTypes().indexOf(TIME_ONLY)!=-1
+    }
+
+    /**
+     * returns true if this type inherits from one of date related types
+     */
+    isInteger():boolean{
+        return this==<AbstractType>INTEGER||this.allSuperTypes().indexOf(INTEGER)!=-1
+    }
+    /**
+     * returns true if this type inherits from one of date related types
+     */
+    isDateTimeOnly():boolean{
+        return this==<AbstractType>DATETIME_ONLY||this.allSuperTypes().indexOf(DATETIME_ONLY)!=-1
+    }
 
     /**
      *
@@ -855,7 +1011,7 @@ export abstract class AbstractType{
         this.allSuperTypes().forEach(x=>rs=rs|| x instanceof UnionType);
         return rs;
     }
-
+    nullable:boolean
     /**
      * return all type information associated with type
      */
@@ -865,10 +1021,13 @@ export abstract class AbstractType{
     /**
      * validates object against this type without performing AC
      */
-    validateDirect(i:any,autoClose:boolean=false,nullAllowed:boolean=true,path:IValidationPath=null):Status{
+    validateDirect(i:any,autoClose:boolean=false,nullAllowed:boolean=true,path:tsInterfaces.IValidationPath=null):Status{
+        VALIDATED_TYPE=this;
         var result=new Status(Status.OK,0,"",this);
         if (!nullAllowed&&(i===null||i===undefined)){
-            return error("object is expected",this)
+            if (!this.nullable) {
+                return error("object is expected", this)
+            }
         }
         this.restrictions(true).forEach(x=>result.addSubStatus(x.check(i,path)));
         if ((autoClose||autoCloseFlag)&&this.isObject()&&(!this.oneMeta(KnownPropertyRestriction))){
@@ -884,8 +1043,10 @@ export abstract class AbstractType{
     }
     validate(i:any,autoClose:boolean=false,nullAllowed:boolean=true):Status{
         var g=autoCloseFlag;
-        if (!nullAllowed&&(i===null||i===undefined)){
-            return error("object is expected",this)
+        if (!nullAllowed&&(i===null||i===undefined)) {
+            if (!this.nullable) {
+                return error("object is expected", this)
+            }
         }
         if (autoClose){
             autoCloseFlag=true;
@@ -1262,6 +1423,9 @@ export class InheritedType extends AbstractType{
         if (!t.isLocked()) {
             t._subTypes.push(this);
         }
+        if (t.nullable){
+            this.nullable=true;
+        }
     }
 
 }
@@ -1296,6 +1460,14 @@ export class UnionType extends DerivedType{
 
     kind(){
         return "union"
+    }
+    constructor(name: string, _options:AbstractType[]){
+        super(name,_options);
+        this.options().forEach(x=>{
+            if (x.nullable){
+                this.nullable=true;
+            }
+        })
     }
     isSubTypeOf(t:AbstractType):boolean{
         var isSubType=true;
@@ -1384,6 +1556,9 @@ export function intersect(name:string, t:AbstractType[]):IntersectionType{
 export function derive(name: string,t:AbstractType[]):InheritedType{
     var r=new InheritedType(name);
     t.forEach(x=>r.addSuper(x));
+    if (r.isSubTypeOf(NULL)){
+        r.nullable=true;
+    }
     return r;
 }
 /**
@@ -1548,13 +1723,38 @@ export class IntegerRestriction extends GenericTypeOf{
     requiredType(){
         return ANY;
     }
+    value(){
+        return true;
+    }
     facetName(){
         return "should be integer"
     }
 
+    
+}
+export class NullRestriction extends GenericTypeOf{
+
+    constructor(){
+        super();
+    }
+    check(i:any):Status {
+        if (i===null||i==undefined||i==="null"){
+            return OK_STATUS;
+        }
+        return error("null is expected",this);
+    }
+
+    requiredType(){
+        return ANY;
+    }
     value(){
         return true;
     }
+    facetName(){
+        return "should be null"
+    }
+
+
 }
 export class ScalarRestriction extends GenericTypeOf{
 
@@ -1590,7 +1790,7 @@ export class OrRestriction extends Constraint{
         super();
     }
 
-    check(i:any,p:IValidationPath):Status {
+    check(i:any,p:tsInterfaces.IValidationPath):Status {
         var cs=new Status(Status.OK,0,"",this);
         var first:Status=null;
         for (var j=0;j<this.val.length;j++){
@@ -1632,7 +1832,7 @@ export class AndRestriction extends Constraint{
     options(){
         return this.val;
     }
-    check(i:any,p:IValidationPath):Status {
+    check(i:any,p:tsInterfaces.IValidationPath):Status {
         for (var j=0;j<this.val.length;j++){
             var st=this.val[j].check(i,p);
             if (!st.isOk()){
@@ -1660,12 +1860,19 @@ export const OBJECT=ANY.inherit("object");
 //export const POLYMORPHIC=OBJECT.inherit("polymorphic");
 
 export const ARRAY=ANY.inherit("array");
+export const NULL=ANY.inherit("null");
+
 export const EXTERNAL=ANY.inherit("external");
 export const NUMBER=SCALAR.inherit("number");
 export const INTEGER=NUMBER.inherit("integer");
 export const BOOLEAN=SCALAR.inherit("boolean");
 export const STRING=SCALAR.inherit("string");
-export const DATE=SCALAR.inherit("date");
+//export const DATE=SCALAR.inherit("date");
+export const DATE_ONLY=SCALAR.inherit("date-only");
+export const TIME_ONLY=SCALAR.inherit("time-only");
+export const DATETIME_ONLY=SCALAR.inherit("datetime-only");
+export const DATETIME=SCALAR.inherit("datetime");
+
 export const FILE=SCALAR.inherit("file");
 export const NOTHING=new RootType("nothing");
 export const UNION=ANY.inherit("union");
@@ -1676,6 +1883,7 @@ export const RECURRENT=NOTHING.inherit("recurrent");
 ///
 //POLYMORPHIC.addMeta(new Polymorphic())
 ANY.addMeta(BUILT_IN);
+NULL.addMeta(BUILT_IN);
 UNION.addMeta(BUILT_IN);
 SCALAR.addMeta(BUILT_IN);
 OBJECT.addMeta(BUILT_IN);
@@ -1684,7 +1892,12 @@ NUMBER.addMeta(BUILT_IN);
 INTEGER.addMeta(BUILT_IN);
 BOOLEAN.addMeta(BUILT_IN);
 STRING.addMeta(BUILT_IN);
-DATE.addMeta(BUILT_IN);
+DATE_ONLY.addMeta(BUILT_IN);
+TIME_ONLY.addMeta(BUILT_IN);
+DATETIME_ONLY.addMeta(BUILT_IN);
+DATETIME.addMeta(BUILT_IN);
+
+
 FILE.addMeta(BUILT_IN);
 //POLYMORPHIC.addMeta(BUILT_IN);
 UNKNOWN.addMeta(BUILT_IN);
@@ -1703,8 +1916,14 @@ registry.addType(ARRAY);
 registry.addType(NUMBER);
 registry.addType(INTEGER);
 registry.addType(BOOLEAN);
+registry.addType(NULL);
+
 registry.addType(STRING);
-registry.addType(DATE);
+registry.addType(DATE_ONLY);
+registry.addType(TIME_ONLY);
+registry.addType(DATETIME_ONLY);
+registry.addType(DATETIME);
+
 registry.addType(FILE);
 //registry.addType(POLYMORPHIC);
 
@@ -1716,16 +1935,26 @@ OBJECT.addMeta(new TypeOfRestriction("object"));
 ARRAY.addMeta(new TypeOfRestriction("array"));
 STRING.addMeta(new TypeOfRestriction("string"));
 INTEGER.addMeta(new IntegerRestriction());
-DATE.addMeta(new TypeOfRestriction("string"));
+NULL.addMeta(new NullRestriction());
+
+import dt=require("./datetime")
+
+DATE_ONLY.addMeta(new dt.DateOnlyR())
+TIME_ONLY.addMeta(new dt.TimeOnlyR())
+DATETIME_ONLY.addMeta(new dt.DateTimeOnlyR());
+DATETIME.addMeta(new dt.DateTimeR());
+
 FILE.addMeta(new TypeOfRestriction("string"));
 var arrayOfString=ARRAY.inherit("");
 arrayOfString.addMeta(new ComponentShouldBeOfType(STRING))
 FILE.addMeta(new FacetDeclaration("fileTypes",arrayOfString,true));
 FILE.addMeta(new FacetDeclaration("minLength",INTEGER,true));
 FILE.addMeta(new FacetDeclaration("maxLength",INTEGER,true));
-
+DATETIME.addMeta(new FacetDeclaration("format",STRING,true));
+NULL.nullable=true;
 SCALAR.addMeta(new ScalarRestriction());
 registry.types().forEach(x=>x.lock())
+
 
 export class ExternalType extends InheritedType{
     constructor( name: string,private _content:string,private json:boolean, private provider: su.IContentProvider){

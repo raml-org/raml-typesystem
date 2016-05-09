@@ -100,10 +100,10 @@ export class CustomFacet extends MetaInfo{
 }
 function parseExampleIfNeeded(val:any,type:ts.AbstractType):any{
     if (typeof val==='string'){
-        if (type.isObject()||type.isArray()||type.isExternal()){
+        if (type.isObject() || type.isArray() || type.isExternal() || type.isUnion()){
             var exampleString:string=val;
             var firstChar = exampleString.trim().charAt(0);
-            if (firstChar=="{"||firstChar=="[") {
+            if ((firstChar=="{" || firstChar=="[") && !type.isUnion()) {
                 try {
                     return JSON.parse(exampleString);
                 } catch (e) {
@@ -115,7 +115,19 @@ function parseExampleIfNeeded(val:any,type:ts.AbstractType):any{
             }
             if (firstChar=="<") {
                 try {
-                    return xmlio.readObject(exampleString,type);
+                    var jsonFromXml = xmlio.readObject(exampleString,type);
+
+                    var errors: Status[] = xmlio.getXmlErrors(jsonFromXml);
+
+                    if(errors) {
+                        var error = new Status(Status.ERROR, 0, 'Invalid XML.', {});
+
+                        errors.forEach(child => error.addSubStatus(child));
+                        
+                        return error;
+                    }
+
+                    return jsonFromXml;
                 } catch (e) {
 
                 }
@@ -130,7 +142,24 @@ export class Example extends MetaInfo{
     }
 
     validateSelf(registry:ts.TypeRegistry):ts.Status {
-        var rr=parseExampleIfNeeded(this.value(),this.owner());
+        var val=this.value();
+        var isVal=false;
+        if (typeof val==="object"&&val){
+            if (val.value){
+                if (val.strict===false){
+                    return ts.OK_STATUS;
+                }
+                if (val.strict&&typeof val.strict!="boolean"){
+                    var s= new Status(Status.ERROR,0,"strict should be boolean",this);
+                    s.setValidationPath({name: "example", child: {name: "strict"}})
+                    return s;
+                }
+                val=val.value;
+                isVal=true;
+
+            }
+        }
+        var rr=parseExampleIfNeeded(val,this.owner());
         if (rr instanceof ts.Status){
             rr.setValidationPath({name: "example"})
             return rr;
@@ -141,15 +170,28 @@ export class Example extends MetaInfo{
 
             }
             var c= new Status(Status.ERROR,0,"using invalid `example`:"+valOwner.getMessage(),this);
-            valOwner.getErrors().forEach(x=>c.addSubStatus(x));
-            c.setValidationPath({name: "example"})
+            valOwner.getErrors().forEach(x=>{c.addSubStatus(x);
+                if (isVal) {
+                    x.setValidationPath({name: "example", child: {name: "value"}});
+                }
+                else{
+                    x.setValidationPath({name: "example"});
+                }
+            });
+
             return c;
         }
         return ts.OK_STATUS;
     }
 
     example():any{
-        return parseExampleIfNeeded(this.value(),this.owner());
+        var val=this.value();
+        if (typeof val==="object"&&val){
+            if (val.value){
+                val=val.value;
+            }
+        }
+        return parseExampleIfNeeded(val,this.owner());
     }
 }
 export class Required extends MetaInfo{
@@ -184,8 +226,12 @@ export class Examples extends MetaInfo{
         var v=this.value();
         var result:any[]=[];
         Object.keys(v).forEach(x=>{
-            if (typeof v[x]=='object') {
-                var example = parseExampleIfNeeded(v[x].content, this.owner());
+            if (typeof v[x]=='object'&&v[x]) {
+                var val=v[x].value;
+                if (!val){
+                    val=v[x];
+                }
+                var example = parseExampleIfNeeded(val, this.owner());
                 result.push(example);
             }
         });
@@ -196,32 +242,59 @@ export class Examples extends MetaInfo{
         if (typeof this.value()==='object'){
             var rs=new Status(Status.OK,0,"",this);
             var v=this.value();
-            Object.keys(v).forEach(x=>{
-                if (typeof v[x]=='object') {
-                    var example = parseExampleIfNeeded(v[x].content, this.owner());
-                    if (example instanceof ts.Status){
-                        example.setValidationPath({name: x })
-                        rs.addSubStatus(example);
-                        return;
-                    }
-                    var res=this.owner().validateDirect(example,true,false);
-                    res.getErrors().forEach(ex=>{
-                        rs.addSubStatus(ex);
-                        ex.setValidationPath({name:x,child:{name: "content"}});
-                    });
-                    Object.keys(v[x]).forEach(key=>{
-                        if (key.charAt(0)=='('&&key.charAt(key.length-1)==')'){
-                            var a=new Annotation(key.substring(1,key.length-1),v[x][key]);
-                            rs.addSubStatus(a.validateSelf(registry));
+            if (v) {
+                Object.keys(v).forEach(x=> {
+                    if (v[x]) {
+                        var val=v[x].value;
+                        var noVal=!val;
+                        if (noVal){
+                            val=v[x];
                         }
-                    });
-                }
-            });
+                        else{
+                            if (v[x].strict===false){
+                                return ;
+                            }
+                            if (v[x].strict&&typeof v[x].strict!="boolean"){
+                                var s= new Status(Status.ERROR,0,"strict should be boolean",this);
+                                s.setValidationPath({name: x, child: {name: "strict", child: {name: "strict"}}});
+                                return s;
+                            }
+                        }
+                        var example = parseExampleIfNeeded(val, this.owner());
+                        if (example instanceof ts.Status) {
+                            examplesPatchPath(example,noVal,x)
+                            rs.addSubStatus(example);
+                            return;
+                        }
+                        var res = this.owner().validateDirect(example, true, false);
+                        res.getErrors().forEach(ex=> {
+                            rs.addSubStatus(ex);
+                            examplesPatchPath(ex,noVal,x)
+                        });
+                        if (typeof v[x]=="object"&&v[x].value) {
+                            Object.keys(v[x]).forEach(key=> {
+                                if (key.charAt(0) == '(' && key.charAt(key.length - 1) == ')') {
+                                    var a = new Annotation(key.substring(1, key.length - 1), v[x][key]);
+                                    rs.addSubStatus(a.validateSelf(registry));
+                                }
+                            });
+                        }
+                    }
+                });
+            }
             return rs;
         }
         else{
             return new Status(Status.ERROR,0,"examples should be a map",this);
         }
+    }
+}
+function examplesPatchPath(example:ts.Status,noVal:boolean,x: string):void{
+    if (noVal){
+        example.setValidationPath({ name: "examples",child:{name: x}});
+    }
+    else {
+        example.setValidationPath({ name: "examples",child:{name: x, child: {name: "value"}}});
     }
 }
 
@@ -265,7 +338,9 @@ export class Discriminator extends ts.TypeInformation{
         if (!this.owner().isSubTypeOf(ts.OBJECT)){
             return new Status(Status.ERROR,0,"you only can use `discriminator` with object types",this)
         }
-        
+        if (this.owner().getExtra(ts.GLOBAL)===false){
+            return new Status(Status.ERROR,0,"you only can use `discriminator` with top level type definitions",this)
+        }
         var prop=_.find(this.owner().meta(),x=>x instanceof PropertyIs&& (<PropertyIs>x).propertyName()==this.value());
         if (!prop){
             return new Status(Status.ERROR,0,"Using unknown property: "+this.value()+" as discriminator",this);
@@ -286,6 +361,9 @@ export class DiscriminatorValue extends ts.TypeInformation{
     validateSelf(registry:ts.TypeRegistry):ts.Status {
         if (!this.owner().isSubTypeOf(ts.OBJECT)){
             return new Status(Status.ERROR,0,"you only can use `discriminator` with object types",this)
+        }
+        if (this.owner().getExtra(ts.GLOBAL)===false){
+            return new Status(Status.ERROR,0,"you only can use `discriminator` with top level type definitions",this)
         }
         var ds=this.owner().oneMeta(Discriminator);
         if (!ds){

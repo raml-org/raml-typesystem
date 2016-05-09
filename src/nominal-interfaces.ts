@@ -1,3 +1,5 @@
+import tsInterfaces = require("./typesystem-interfaces")
+
 export interface INamedEntity{
     nameId():string;
     description():string;
@@ -30,6 +32,14 @@ export interface IPrintDetailsSettings {
     hideProperties?: boolean
     hideSuperTypeProperties? : boolean
     printStandardSuperclasses? : boolean
+}
+
+export interface Status{
+    getValidationPathAsString(): string
+    getSeverity(): number
+    isError():boolean
+    getMessage():string
+
 }
 
 
@@ -90,6 +100,18 @@ export interface IExpandableExample {
      * Returns null or expansion result as JSON object.
      */
     expandAsJSON() : any;
+
+    isSingle():boolean
+    
+    strict():boolean
+    
+    description():string
+    
+    displayName():string
+    
+    annotations():any
+    
+    name():string
 }
 export class ValueRequirement{
     /**
@@ -99,7 +121,7 @@ export class ValueRequirement{
      */
     constructor(public name:string,public value:string){}
 }
-export interface ITypeDefinition extends INamedEntity {
+export interface ITypeDefinition extends INamedEntity,tsInterfaces.IHasExtra {
 
 
     key():NamedId
@@ -288,21 +310,34 @@ export interface ITypeDefinition extends INamedEntity {
     examples() : IExpandableExample[];
 
     /**
-     * Returns whether this type contain genuine user defined type in its hierarchy.
+     * Returns whether this type is genuine user defined type.
      * Genuine user defined type is a type user intentionally defined and filled with
      * properties or facets, or having user-defined name as opposed to a synthetic user-defined type.
      */
     isGenuineUserDefinedType() : boolean;
 
     /**
+     * Returns whether this type contain genuine user defined type in its hierarchy.
+     * Genuine user defined type is a type user intentionally defined and filled with
+     * properties or facets, or having user-defined name as opposed to a synthetic user-defined type.
+     */
+    hasGenuineUserDefinedTypeInHierarchy() : boolean;
+
+    /**
      * Returns nearest genuine user-define type in the hierarchy.
      * Genuine user defined type is a type user intentionally defined and filled with
      * properties or facets, or having user-defined name as opposed to a synthetic user-defined type.
      */
-    genuineUserDefinedType() : ITypeDefinition;
+    genuineUserDefinedTypeInHierarchy() : ITypeDefinition;
 
     kind():string[];
 
+    validate(x:any):Status[]
+
+    /**
+     * Returns whether this type was defined by a user.
+     */
+    isUserDefined() : boolean;
 }
 export interface FacetValidator{
     (value:any, facetValue:any):string;

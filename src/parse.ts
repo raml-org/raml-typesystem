@@ -1,4 +1,5 @@
 import  ts=require("./typesystem")
+import  tsInterfaces=require("./typesystem-interfaces")
 import  rs=require("./restrictions")
 import {AbstractType} from "./typesystem";
 import typeExpressions=require("./typeExpressions")
@@ -33,6 +34,8 @@ export interface ParseNode {
     childWithKey(k:string):ParseNode;
 
     kind(): NodeKind
+
+    anchor?():any
 }
 
 class JSObjectNode implements ParseNode{
@@ -292,6 +295,13 @@ function  transformToArray(n:ParseNode):ParseNode{
 
 export function parseTypeCollection(n:ParseNode,tr:ts.TypeRegistry):TypeCollection{
     var result=new TypeCollection();
+    if (n.anchor){
+        if (n.anchor().__$$){
+            return n.anchor().__$$;
+        }
+        n.anchor().__$$=result;
+    }
+
     var uses=n.childWithKey("uses");
     if (uses&&uses.kind()===NodeKind.ARRAY){
         uses=transformToArray(uses);
@@ -331,7 +341,7 @@ export function parseTypeCollection(n:ParseNode,tr:ts.TypeRegistry):TypeCollecti
     }
     if (tpes!=null&&tpes.kind()===NodeKind.MAP){
         tpes.children().forEach(x=>{
-           result.addAnnotationType(parse(x.key(),x,reg,false,true))
+           result.addAnnotationType(parse(x.key(),x,reg,false,true,false))
         });
     }
     
@@ -357,7 +367,7 @@ export function parsePropertyBean(n:ParseNode,tr:ts.TypeRegistry):PropertyBean{
         name=name.substring(1,name.length-1);
         result.regExp=true;
     }
-    result.type=parse(null, n,tr);
+    result.type=parse(null, n,tr,false,false,false);
     result.id=name;
     var rs=n.childWithKey("required");
     if (rs){
@@ -604,7 +614,7 @@ function typeToSignature(t:ts.AbstractType):string{
  * @param r
  * @returns {any}
  */
-export function parse(name: string,n:ParseNode,r:ts.TypeRegistry=ts.builtInRegistry(),defaultsToAny:boolean=false,annotation:boolean=false):ts.AbstractType{
+export function parse(name: string,n:ParseNode,r:ts.TypeRegistry=ts.builtInRegistry(),defaultsToAny:boolean=false,annotation:boolean=false,global:boolean=true):ts.AbstractType{
     //Build super types.
 
     var provider: su.IContentProvider = (<any>n).contentProvider ? (<any>n).contentProvider() : null;
@@ -618,7 +628,7 @@ export function parse(name: string,n:ParseNode,r:ts.TypeRegistry=ts.builtInRegis
         if (r instanceof AccumulatingRegistry){
             r.addType(res);
 
-            res.putExtra("topLevel",true);
+            res.putExtra(tsInterfaces.TOP_LEVEL_EXTRA,true);
         }
         return res;
     }
@@ -630,10 +640,11 @@ export function parse(name: string,n:ParseNode,r:ts.TypeRegistry=ts.builtInRegis
         var res=ts.derive(name,supers);
         if (r instanceof AccumulatingRegistry){
             r.addType(res);
-            res.putExtra("topLevel",true);
+            res.putExtra(tsInterfaces.TOP_LEVEL_EXTRA,true);
         }
         return res;
     }
+
     var superTypes:AbstractType[]=[];
     var tp=n.childWithKey("type");
     var shAndType:boolean=false;
@@ -670,6 +681,9 @@ export function parse(name: string,n:ParseNode,r:ts.TypeRegistry=ts.builtInRegis
         else if (tp.kind()==NodeKind.ARRAY){
             superTypes=tp.children().map(x=>x.value()).map(y=>typeExpressions.parseToType(""+y,r, provider));
         }
+        else if (tp.kind()==NodeKind.MAP){
+            superTypes=[parse("",tp,r,false,false,false)];
+        }
     }
     var result=ts.derive(name,superTypes);
 
@@ -682,8 +696,10 @@ export function parse(name: string,n:ParseNode,r:ts.TypeRegistry=ts.builtInRegis
     }
     if (r instanceof AccumulatingRegistry){
         r.addType(actualResult);
-        actualResult.putExtra("topLevel",true);
+        actualResult.putExtra(tsInterfaces.TOP_LEVEL_EXTRA,true);
     }
+    var hasfacetsOrOtherStuffDoesNotAllowedInExternals:string=null;
+
     n.children().forEach(x=>{
         var key = x.key();
         if (!key){
@@ -693,6 +709,12 @@ export function parse(name: string,n:ParseNode,r:ts.TypeRegistry=ts.builtInRegis
             return;
         }
         if (key==="repeat"){
+            hasfacetsOrOtherStuffDoesNotAllowedInExternals="repeat";
+            return;
+        }
+        if (key==="uses"){
+
+            //FIXME this should be handled depending from parse level
             return;
         }
         if (key==="schema"){
@@ -705,14 +727,18 @@ export function parse(name: string,n:ParseNode,r:ts.TypeRegistry=ts.builtInRegis
         }
         if (key=="items"){
             if (result.isSubTypeOf(ts.ARRAY)){
-                var tp=parse(null, x,r);
+                var tp=parse(null, x,r,false,false,false);
                 actualResult.addMeta(new ComponentShouldBeOfType(tp));
                 return;
             }
         }
 
         if (key==="facets"){
+            hasfacetsOrOtherStuffDoesNotAllowedInExternals=key;
             return;
+        }
+        if (key=="default"||key=="xml"||key=="required"){
+            hasfacetsOrOtherStuffDoesNotAllowedInExternals=key;
         }
         if (key.charAt(0)=='('&& key.charAt(key.length-1)==')'){
             result.addMeta(new meta.Annotation(key.substr(1, key.length-2), x.value()));
@@ -777,5 +803,8 @@ export function parse(name: string,n:ParseNode,r:ts.TypeRegistry=ts.builtInRegis
     if (shAndType){
         actualResult.putExtra(ts.SCHEMA_AND_TYPE,true);
     }
+    actualResult.putExtra(ts.GLOBAL,global);
+    actualResult.putExtra(ts.SOURCE_EXTRA, n);
+    actualResult.putExtra(tsInterfaces.HAS_FACETS, hasfacetsOrOtherStuffDoesNotAllowedInExternals);
     return actualResult;
 }

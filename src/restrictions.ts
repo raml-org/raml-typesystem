@@ -6,7 +6,6 @@ import {AndRestriction} from "./typesystem";
 import {Constraint} from "./typesystem";
 import {AbstractType} from "./typesystem";
 import {Status} from "./typesystem";
-import {autoCloseFlag} from "./typesystem";
 export type IValidationPath=ts.IValidationPath;
 /**
  * this class is an abstract super type for every constraint that can select properties from objects
@@ -71,15 +70,6 @@ export abstract class MatchesProperty extends ts.Constraint{
 
 
     validateSelf(registry:ts.TypeRegistry):ts.Status {
-        if (this._type.isAnonymous()){
-            var st=this._type.validateType(registry);
-            if (!st.isOk()){
-                var p= new Status(Status.ERROR,0,"property "+this.propId()+" range type has error:"+st.getMessage(),this)
-                p.setValidationPath({name: this.propId()})
-                return p;
-            }
-            return st;
-        }
         if (this._type.isExternal()){
             var p= new Status(Status.ERROR,0,"It is not allowed to use external types in property definitions",this)
             p.setValidationPath({name: this.propId()})
@@ -90,6 +80,16 @@ export abstract class MatchesProperty extends ts.Constraint{
             p.setValidationPath({name: this.propId()})
             return p;
         }
+        if (this._type.isAnonymous()){
+            var st=this._type.validateType(registry);
+            if (!st.isOk()){
+                var p= new Status(Status.ERROR,0,"property "+this.propId()+" range type has error:"+st.getMessage(),this)
+                p.setValidationPath({name: this.propId()})
+                return p;
+            }
+            return st;
+        }
+
         if (this._type.isUnion()){
            var ui= _.find(this._type.typeFamily(),x=>x.isSubTypeOf(ts.UNKNOWN));
            if (ui){
@@ -183,7 +183,7 @@ export class KnownPropertyRestriction extends ts.Constraint{
     check(i:any):ts.Status{
 
         if (this._value) {
-            if (i&&typeof  i == 'object') {
+            if (i&&typeof  i == 'object'&&!Array.isArray(i)) {
                 var nm:{ [name:string]:boolean} = {};
                 Object.getOwnPropertyNames(i).forEach(n=>nm[n] = true);
                 var mp:MatchesProperty[] = <MatchesProperty[]>this.owner().knownProperties();
@@ -650,6 +650,45 @@ export abstract class MinMaxRestriction extends FacetRestriction<Number>{
             }
         }
         return null;
+    }
+}
+
+export class MultipleOf extends FacetRestriction<Number>{
+
+    constructor(private _value:number){
+        super()
+    }
+    value(){
+        return this._value;
+    }
+    check(o:any):ts.Status{
+        if (typeof  o=='number'){
+            var q=o/this.value();
+            if (!is_int(q)){
+                return new ts.Status(ts.Status.ERROR,0,"result of division of "+o+" on "+this.value()+" should be integer",this);
+            }
+
+        }
+        return ts.OK_STATUS;
+    }
+
+    composeWith(t:ts.Constraint):ts.Constraint{
+        return null;
+    }
+    facetName(){
+        return "multipleOf"
+    }
+
+    checkValue():string{
+        if (typeof this._value !="number"){
+            return this.facetName()+" should be a number";
+        }
+        return null;
+    }
+
+
+    requiredType():ts.AbstractType{
+        return ts.NUMBER;
     }
 }
 /**

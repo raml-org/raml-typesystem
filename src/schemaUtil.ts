@@ -1,8 +1,11 @@
 /// <reference path="../typings/main.d.ts" />
 declare function require(s:string):any;
 
-import _ = require("underscore")
+import _ = require("underscore");
 
+import xmlValidator = require('./xmlUtil');
+
+var DOMParser = require('xmldom').DOMParser;
 var ZSchema=require("z-schema");
 
 export class ValidationResult{
@@ -26,6 +29,12 @@ class ErrorsCache {
 
 var globalCache = new ErrorsCache();
 
+export interface Promise {
+    then(instance: any): any;
+
+    resolve(arg: any): any;
+}
+
 export interface IContentProvider {
     contextPath(): string;
 
@@ -38,6 +47,10 @@ export interface IContentProvider {
     resolvePath(context: string, relativePath: string): string;
 
     isAbsolutePath(uri: string): boolean;
+
+    contentAsync(arg: any): Promise;
+
+    promiseResolve(arg: any): Promise;
 }
 
 class DummyProvider implements  IContentProvider {
@@ -63,6 +76,22 @@ class DummyProvider implements  IContentProvider {
 
     isAbsolutePath(uri: string): boolean {
         return false;
+    }
+
+    contentAsync(reference: string): Promise {
+        return {
+            then: arg => arg(this.content(reference)),
+
+            resolve: () => null
+        };
+    }
+
+    promiseResolve(arg: any): Promise {
+        return {
+            then: arg1 => arg1(arg),
+
+            resolve: () => null
+        }
     }
 }
 
@@ -124,7 +153,12 @@ export class JSONSchemaObject {
 
         references.forEach(references => validator.setRemoteReference(references.reference, references.content || {}));
 
-        validator.validateSchema(this.jsonSchema);
+        try {
+            validator.validateSchema(this.jsonSchema);
+        } catch (Error) {
+            //we should never be exploding here, instead we'll report this error later
+            return []
+        }
 
         var result = <any[]>validator.getMissingRemoteReferences();
 
@@ -322,6 +356,44 @@ export class JSONSchemaObject {
 
         globalCache.setValue(key, 1);
     }
+
+    contentAsync(reference: any): Promise {
+        var remoteSchemeContent: any;
+
+        var api: any = require('json-schema-compatibility');
+
+        var contentPromise = this.provider.contentAsync(reference);
+
+        if(!contentPromise) {
+            return this.provider.promiseResolve({
+                reference: reference,
+                content: null,
+                error: new Error('Reference not found: ' + reference)
+            });
+        }
+
+        var result = contentPromise.then((cnt: any) => {
+            var content: any = {reference: reference};
+
+            try {
+                var jsonObject = JSON.parse(cnt);
+
+                this.setupId(jsonObject, this.provider.normalizePath(reference));
+
+                remoteSchemeContent = api.v4(jsonObject);
+
+                delete remoteSchemeContent['$schema'];
+
+                content.content = remoteSchemeContent;
+            } catch(exception) {
+                content.error = exception;
+            }
+
+            return content;
+        });
+
+        return result;
+    }
 }
 export interface ValidationError{
     code:string
@@ -330,26 +402,104 @@ export interface ValidationError{
     path:string
 }
 
-export class XMLSchemaObject{
+export class XMLSchemaObject {
+    private schemaObj: xmlValidator.XMLValidator;
+
+    private extraElementData: any = null;
+
     constructor(private schema:string){
-        if (schema.charAt(0)!='<'){
+        if(schema.charAt(0)!='<'){
             throw new Error("Invalid JSON schema")
         }
-        //xmlutil(schema);
+
+        this.schemaObj = new xmlValidator.XMLValidator(this.handleReferenceElement(schema));
     }
 
     getType() : string {
         return "text.xml";
     }
 
-    validate (content:string){
+    validateObject(object:any): any {
+        if(this.extraElementData) {
+            var objectName = Object.keys(object)[0];
 
-        //xmlutil(content);
+            if(!this.extraElementData.type && !this.extraElementData.originalName) {
+                this.acceptErrors("key", [new Error('Referenced type "' + this.extraElementData.requestedName + '" is not match with "' + objectName + '" root node')], true);
+
+                return;
+            }
+
+            if(this.extraElementData.originalName && objectName !== this.extraElementData.originalName) {
+                this.acceptErrors("key", [new Error('Referenced type "' + this.extraElementData.requestedName + '" is not match with "' + objectName + '" root node')], true);
+
+                return;
+            }
+
+            if(this.extraElementData.type) {
+                var root = object[objectName];
+
+                delete object[objectName];
+
+                object[this.extraElementData.name] = root;
+            }
+        }
+        
+        this.validate(xmlValidator.jsonToXml(object));
     }
 
-    validateObject (object:any){
-        //TODO Validation of objects
-        //xmlutil(content);
+    validate(xml: any) {
+        var validationErrors = this.schemaObj.validate(xml);
+        
+        this.acceptErrors("key", validationErrors, true);
+    }
+
+    private handleReferenceElement(content: string): string {
+        var doc = new DOMParser().parseFromString(content);
+
+        var schema = elementChildrenByName(doc, 'xs:schema')[0];
+
+        var elements:any[] = elementChildrenByName(schema, 'xs:element');
+
+        var element = _.find(elements, (element:any) => element.getAttribute('extraelement') === 'true');
+
+        if(!element) {
+            return content;
+        }
+
+        var extraElementData: any = {};
+
+        extraElementData.name = element.getAttribute('name');
+        extraElementData.type = element.getAttribute('type');
+        extraElementData.originalName = element.getAttribute('originalname');
+        extraElementData.requestedName = element.getAttribute('requestedname');
+
+        if(!extraElementData.type) {
+            schema.removeChild(element);
+        }
+
+        element.removeAttribute('originalname');
+        element.removeAttribute('requestedname');
+        element.removeAttribute('extraelement');
+
+        this.extraElementData = extraElementData;
+
+        return doc.toString();
+    }
+    
+    private acceptErrors(key: any, errors: any[], throwImmediately = false): void {
+        if(errors && errors.length>0){
+            var res= new Error("Content is not valid according to schema:"+errors.map(x=>x.message).join(", "));
+
+            (<any>res).errors=errors;
+
+            globalCache.setValue(key, res);
+
+            if(throwImmediately) {
+                throw res;
+            }
+
+            return;
+        }
     }
 }
 export interface Schema {
@@ -373,9 +523,12 @@ export function getXMLSchema(content: string) {
         return rs;
     }
     var res = new XMLSchemaObject(content);
+
     if (useLint) {
         globalCache.setValue(content, res);
     }
+
+    return res;
 }
 
 export function createSchema(content: string, provider: IContentProvider): Schema {
@@ -406,4 +559,20 @@ export function createSchema(content: string, provider: IContentProvider): Schem
             return null;
         }
     }
+}
+
+function elementChildrenByName(parent: any, tagName: string): any[] {
+    var elements = parent.getElementsByTagName(tagName);
+
+    var result: any[] = [];
+
+    for(var i: number = 0; i < elements.length; i++) {
+        var child = elements[i];
+
+        if(child.parentNode === parent) {
+            result.push(child);
+        }
+    }
+
+    return result;
 }

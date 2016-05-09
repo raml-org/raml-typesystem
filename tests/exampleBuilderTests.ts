@@ -75,7 +75,7 @@ describe("Simple validation testing",function() {
                     },
                     examples:{
                         R: {
-                            content: {
+                            value: {
                                 c: "A",
                                 vv: 3
                             }
@@ -101,7 +101,7 @@ describe("Simple validation testing",function() {
                     },
                     examples:{
                         R: {
-                            content: {
+                            value: {
                                 c: "A",
                                 vv: 3
                             }
@@ -135,7 +135,7 @@ describe("Simple validation testing",function() {
                     },
                     examples:{
                         R: {
-                            content: {
+                            value: {
                                 c: "A",
                                 vv: 3
                             }
@@ -185,7 +185,7 @@ describe("Simple validation testing",function() {
                     },
                     examples:{
                         R: {
-                            content: {
+                            value: {
                                 c: "A",
                                 vv: 3
                             }
@@ -279,5 +279,28 @@ describe("Simple validation testing",function() {
         var p=nt.examples()[0];
         assert.isTrue(p.isEmpty())
         assert.deepEqual(p.asString(),"4");
+    });
+    it("example object ", function () {
+        var tp = ps.parseJSONTypeCollection({
+
+            types:{
+                XX:{
+                    type:"object",
+                    properties:
+                    {
+                        name: {
+                            type: "string",
+                            example: "Pavel"
+                        },
+                        fr:"XX"
+                    }
+                }
+            }
+        });
+        var t=tp.getType("XX");
+        var nt=nm.toNominal(t,x=>null);
+        var p=nt.examples()[0];
+        assert.isTrue(p.isEmpty())
+        assert.deepEqual(p.asJSON(),{ name: "Pavel",fr: null});
     });
 })

@@ -1,4 +1,5 @@
 import ti = require("./nominal-interfaces")
+import tsInterfaces = require("./typesystem-interfaces")
 export type IAnnotation=ti.IAnnotation;
 export type ITypeDefinition=ti.ITypeDefinition;
 export type IExpandableExample=ti.IExpandableExample;
@@ -47,6 +48,10 @@ export class Adaptable{
             }
         })
         return result;
+    }
+
+    getAdapters() : any[] {
+        return this.adapters;
     }
 }
 export class Described extends Adaptable{
@@ -160,6 +165,15 @@ export class AbstractType extends Described implements ITypeDefinition{
         this._facets.push(q);
     }
 
+    _validator:(x:any)=>ti.Status[]
+
+    validate(x:any):ti.Status[]{
+        if (!this._validator){
+            throw new Error("Validate can be used only on runtime types instances")
+        }
+        return this._validator(x)
+    }
+
     allFacets(ps:{[name:string]:ITypeDefinition}={}):IProperty[]{
         if (this._allFacets){
             return this._allFacets;
@@ -265,11 +279,6 @@ export class AbstractType extends Described implements ITypeDefinition{
     _superTypes:ITypeDefinition[]=[];
     _subTypes:ITypeDefinition[]=[];
     _requirements:ti.ValueRequirement[]=[];
-
-
-    isUserDefined(): boolean{
-        return false;
-    }
 
     private fixedFacets:{ [name:string]:any}={}
 
@@ -539,6 +548,7 @@ export class AbstractType extends Described implements ITypeDefinition{
     private getTypeClassName() : string {
         return this.constructor.toString().match(/\w+/g)[1];
     }
+    buildIn:boolean;
 
     private isStandardSuperclass(nameId : string, className : string) {
 
@@ -563,7 +573,13 @@ export class AbstractType extends Described implements ITypeDefinition{
      * properties or facets, or having user-defined name as opposed to a synthetic user-defined type.
      */
     isGenuineUserDefinedType() : boolean {
-        return this.nameId()&&this.nameId().length>0;
+        if (this.buildIn) return false;
+
+        if (this.properties() && this.properties().length > 0) return true;
+
+        if (this.getFixedFacets() && Object.keys(this.getFixedFacets()).length > 0) return true;
+
+        return this.isTopLevel()&&this.nameId()&&this.nameId().length>0;
     }
 
     /**
@@ -571,13 +587,40 @@ export class AbstractType extends Described implements ITypeDefinition{
      * Genuine user defined type is a type user intentionally defined and filled with
      * properties or facets, or having user-defined name as opposed to a synthetic user-defined type.
      */
-    genuineUserDefinedType() : ITypeDefinition {
-        if (this.getAdapter(Empty)){
-            if (this.superTypes().length==1){
-                return this.superTypes()[0];
+    genuineUserDefinedTypeInHierarchy() : ITypeDefinition {
+        if (this.isGenuineUserDefinedType()) return this;
+
+        var result:ITypeDefinition=null;
+
+        var allSuperTypes=this.allSuperTypes();
+        allSuperTypes.forEach(currentSuperType=>{
+            if (!result && currentSuperType.isGenuineUserDefinedType()){
+                result = currentSuperType;
             }
-        }
-        return this;
+        });
+
+        return result;
+    }
+
+    /**
+     * Returns whether this type contain genuine user defined type in its hierarchy.
+     * Genuine user defined type is a type user intentionally defined and filled with
+     * properties or facets, or having user-defined name as opposed to a synthetic user-defined type.
+     */
+    hasGenuineUserDefinedTypeInHierarchy() : boolean {
+        return _.find(this.allSuperTypes(),x=>{
+                var mm=<any>x;
+                if (mm.uc){
+                    return false;
+                }
+                mm.uc=true;
+                try{
+                    return x.isGenuineUserDefinedType()
+                }finally{
+                    mm.uc=false
+                }
+
+            })!=null;
     }
 
     customProperties():IProperty[]{
@@ -671,6 +714,55 @@ export class AbstractType extends Described implements ITypeDefinition{
             result.push("external");
         }
         return result;
+    }
+
+    isBuiltIn() {
+        return this.buildIn;
+    }
+
+    setBuiltIn(builtIn : boolean) {
+        this.buildIn = builtIn;
+    }
+
+    isTopLevel() : boolean {
+        //TODO determine whether "topLevel" actually means a simple top-level type and
+        //this flag is absent due to a bug
+        if(this.getExtra(tsInterfaces.DEFINED_IN_TYPES_EXTRA) || this.getExtra(tsInterfaces.TOP_LEVEL_EXTRA)) return true;
+        return false;
+    }
+
+    isUserDefined() : boolean {
+        return this.getExtra(tsInterfaces.USER_DEFINED_EXTRA);
+    }
+
+    putExtra(extraName: string, value : any) : void {
+        var extraAdapter = this.getExtraAdapter();
+        if (!extraAdapter) return;
+
+        extraAdapter.putExtra(extraName, value);
+    }
+
+    getExtra(name:string) : any {
+        var extraAdapter = this.getExtraAdapter();
+        if (!extraAdapter) return null;
+
+        return extraAdapter.getExtra(name);
+    }
+
+    private getExtraAdapter() : tsInterfaces.IHasExtra {
+        if(this.getAdapters()) {
+            var extraAdapter = _.find(this.getAdapters(), adapter=>{
+                //weird duck-typing, but we can touch anything from nominal-types here
+                if ((<any>adapter).getExtra && typeof((<any>adapter).getExtra) == "function"
+                    && (<any>adapter).putExtra && typeof((<any>adapter).putExtra) == "function") {
+                    return true;
+                }
+            });
+
+            return <tsInterfaces.IHasExtra>extraAdapter;
+        }
+
+        return null;
     }
 }
 export class ValueType extends AbstractType implements ITypeDefinition{

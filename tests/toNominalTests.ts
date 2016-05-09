@@ -193,4 +193,46 @@ describe("To nominals",function() {
         assert.isTrue(st[0].nameId()=="object");
         assert.isTrue(st[1].nameId()=="any");
     });
+
+    it("nominal validate", function () {
+        var tps = ps.parseJSONTypeCollection({
+            types:{
+                A: { type: "string"}
+            }
+        },ts.builtInRegistry())
+        var tp=tps.getType("A")
+        var nt=nm.toNominal(tp,x=>null);
+
+        assert.isTrue(nt.validate(2).length==1);
+        assert.isTrue(nt.validate("2").length==0);
+
+    });
+
+    it("genuine user defined type", function () {
+        var tps = ps.parseJSONTypeCollection({
+            types:{
+                A: { type: "object",properties:{ "x":"string"}}
+            }
+        },ts.builtInRegistry())
+        var tp=tps.getType("A")
+        var nt=nm.toNominal(tp,x=>null);
+
+        var range=nt.properties()[0].range();
+        assert.isTrue(!range.isGenuineUserDefinedType())
+        assert.isTrue(nt.isGenuineUserDefinedType())
+    });
+
+    it("sub types information exists", function () {
+        var tps = ps.parseJSONTypeCollection({
+            types:{
+                A: { type: "object",properties:{ "x":"string"}},
+                B: { type: "A"}
+            }
+        },ts.builtInRegistry())
+        var tp=tps.getType("A")
+        var nt=nm.toNominal(tp,x=>null);
+        assert.isTrue(nt.subTypes().length==1);
+        assert.isTrue(nt.subTypes()[0].nameId()=="B");
+
+    });
 });

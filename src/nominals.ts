@@ -22,8 +22,7 @@ export function setPropertyConstructor(p:PropertyConstructor){
     pc=p;
 }
 
-export interface TypeCustomizer{
-
+export interface TypeCustomizer {
     constructProperty(n:string):nt.Property;
     findCustomizer(t:ts.AbstractType):TypeCustomizer;
 }
@@ -155,6 +154,14 @@ export function toNominal(t:ts.AbstractType,callback:StringToBuiltIn,customizer:
     if (t.isEmpty()){
         vs.addAdapter(new nt.Empty());
     }
+    vs._validator=(x)=>t.validate(x,false).getErrors();
+    if (t.isBuiltin()){
+        vs.buildIn=true;
+    }
+    t.subTypes().forEach(x=>{
+        var ns=toNominal(x,callback,customizer);
+    })
+
     return vs;
 }
 

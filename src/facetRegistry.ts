@@ -14,6 +14,7 @@ import {AbstractType} from "./typesystem";
 import {XMLInfo} from "./metainfo";
 import {Required} from "./metainfo";
 import {Usage} from "./metainfo";
+import {MultipleOf} from "./restrictions";
 
 
 
@@ -61,6 +62,7 @@ export class Registry {
         new FacetPrototype(()=>new MinLength(1), (x) =>new MinLength(x)),//X
         new FacetPrototype(()=>new MaxLength(1), (x)=> new MaxLength(x)),//X
         new FacetPrototype(()=>new Minimum(1), (x)=>new Minimum(x)),//X
+        new FacetPrototype(()=>new MultipleOf(1), (x)=>new MultipleOf(x)),//X
         new FacetPrototype(()=>new Maximum(1), (x)=>new Maximum(x)),//X
         new FacetPrototype(()=>new Enum([""]), (x)=>new Enum(x)),//X
         new FacetPrototype(()=>new Pattern("."), (x)=>new Pattern(x)),//X

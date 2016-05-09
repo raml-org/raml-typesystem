@@ -1,4 +1,5 @@
 import ts=require("./typesystem")
+import tsInterfaces=require("./typesystem-interfaces")
 import tc=require("./parse")
 import fr=require("./facetRegistry")
 import {KnownPropertyRestriction} from "./restrictions";
@@ -9,12 +10,23 @@ import {Status} from "./typesystem";
 import nm=require("./nominals")
 export import nominalTypes=require("./nominal-types")
 
-export interface IValidationPath{
+import schemaUtil = require('./schemaUtil');
 
-    name: string
-    child?:IValidationPath
+export type IValidationPath = tsInterfaces.IValidationPath;
+export type IHasExtra = tsInterfaces.IHasExtra;
+export var TOP_LEVEL_EXTRA = tsInterfaces.TOP_LEVEL_EXTRA;
+export var DEFINED_IN_TYPES_EXTRA = tsInterfaces.DEFINED_IN_TYPES_EXTRA;
+export var USER_DEFINED_EXTRA = tsInterfaces.USER_DEFINED_EXTRA;
+export var SOURCE_EXTRA = tsInterfaces.SOURCE_EXTRA;
 
+// export function instanceOfHasExtra(instance : nominalTypes.ITypeDefinition) : instance is IHasExtra {
+//     returninstance instanceof ts.AbstractType || instance instanceof nominalTypes.AbstractType;
+// }
+
+export function getSchemaUtils(): any {
+    return schemaUtil;
 }
+
 export interface IStatus {
 
 
@@ -151,7 +163,7 @@ export  interface ITypeRegistry {
  * parsed representation of the type
  * you should not create instances of this interfaces manually
  */
-export interface IParsedType {
+export interface IParsedType extends IHasExtra {
 
     /**
      * returns  list of directly declared sub types of this type
@@ -226,6 +238,34 @@ export interface IParsedType {
      * returns true if this type inherits from number type
      */
     isNumber():boolean
+
+    /**
+     * returns true if this type inherits from boolean type
+     */
+    isBoolean():boolean
+    /**
+     * returns true if this type inherits from integer type
+     */
+    isInteger():boolean
+    /**
+     * returns true if this type inherits from one of date related types
+     */
+    isDateTime():boolean
+
+    /**
+     * returns true if this type inherits from one of date related types
+     */
+    isDateOnly():boolean
+
+    /**
+     * returns true if this type inherits from one of date related types
+     */
+    isTimeOnly():boolean
+
+    /**
+     * returns true if this type inherits from one of date related types
+     */
+    isDateTimeOnly():boolean
     /**
      * returns true if this type inherits from array type
      */
@@ -524,8 +564,8 @@ export function parseFromAST(data:IParseNode):IParsedTypeCollection {
  * @param data
  * @returns {any}
  */
-export function parseTypeFromAST(name:string,data:IParseNode,collection:IParsedTypeCollection,defaultsToAny:boolean=false,annotation:boolean=false):IParsedType {
-    return tc.parse(name,<any>data,collection? <ts.TypeRegistry>collection.getTypeRegistry():ts.builtInRegistry(),defaultsToAny,annotation);
+export function parseTypeFromAST(name:string,data:IParseNode,collection:IParsedTypeCollection,defaultsToAny:boolean=false,annotation:boolean=false,global:boolean=true):IParsedType {
+    return tc.parse(name,<any>data,collection? <ts.TypeRegistry>collection.getTypeRegistry():ts.builtInRegistry(),defaultsToAny,annotation,global);
 }
 /**
  * dumps type or type collection to JSON
