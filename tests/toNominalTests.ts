@@ -221,4 +221,18 @@ describe("To nominals",function() {
         assert.isTrue(!range.isGenuineUserDefinedType())
         assert.isTrue(nt.isGenuineUserDefinedType())
     });
+
+    it("sub types information exists", function () {
+        var tps = ps.parseJSONTypeCollection({
+            types:{
+                A: { type: "object",properties:{ "x":"string"}},
+                B: { type: "A"}
+            }
+        },ts.builtInRegistry())
+        var tp=tps.getType("A")
+        var nt=nm.toNominal(tp,x=>null);
+        assert.isTrue(nt.subTypes().length==1);
+        assert.isTrue(nt.subTypes()[0].nameId()=="B");
+
+    });
 });
