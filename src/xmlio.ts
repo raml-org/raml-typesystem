@@ -16,6 +16,206 @@ var bodyNames: string[] = [
     'multipart/form-data'
 ];
 
+function xmlOpen(tagname: string, attributes: any, level: number = 0, newLine: boolean = true) {
+    var result: string = '<' + tagname;
+    
+    for(var i = 0; i < level; i++) {
+        result = '    ' + result;
+    }
+    
+    if(attributes && Object.keys(attributes).length > 0) {
+        Object.keys(attributes).forEach((key: string) => {
+            if(typeof attributes[key] !== 'string') {
+                return;
+            }
+            
+            result = result + ' ' + key + '="' + attributes[key] + '"';
+        });
+    }
+    
+    result = result + '>' + (newLine ? '\n' : '');
+    
+    return result ;
+};
+
+function xmlClose(tagname: string, level: number = 0): string {
+    var result: string = '</' + tagname;
+
+    for(var i = 0; i < level && i > -1; i++) {
+        result = '    ' + result;
+    }
+
+    var result = (level > -1 ? '\n' : '') + result + '>\n';
+
+    return result;
+}
+
+export function serializeToXML(object: any, type: ts.AbstractType) {
+    type = actualType(type);
+
+    var expectedRootNodeName = rootXmlName(type);
+
+    var infos: PropertyIs[] = getInfos(type);
+
+    var result = xmlOpen(expectedRootNodeName, getAttributesFromJson(object, infos));
+
+    var valueWrapper: any = {};
+
+    valueWrapper[expectedRootNodeName] = object;
+
+    if(type.isArray()) {
+        var componentMeta = type.meta().filter((metaInfo: any) => metaInfo instanceof ComponentShouldBeOfType)[0];
+
+        result = result + getArrayFromJson(valueWrapper, type, 1, true);
+    } else {
+        result = result + getElementsFromJson(object, infos, 1);
+    }
+    
+    var result = result + xmlClose(expectedRootNodeName);
+
+    return result;
+}
+
+function getAttributesFromJson(node: any, infos: PropertyIs[]): any[] {
+    var nodeAttributes: any = {};
+
+    var attributeInfos: PropertyIs[] = _.filter(infos, info => xmlDescriptor(info.value()).attribute);
+
+    attributeInfos.forEach(info => {
+        var key = info.propId();
+
+        var xmlKey = xmlName(info);
+
+        if(node[key]) {
+            nodeAttributes[xmlKey] = node[key].toString();
+        }
+    });
+
+    return nodeAttributes;
+}
+
+function getElementFromJson(node: any, type: ts.AbstractType, level: number): string {
+    var jsonKey = Object.keys(node)[0];
+
+    var jsonValue = node[jsonKey];
+    
+    var result: string = null;
+    
+    if(type.isScalar()) {
+        var infos: PropertyIs[] = getInfos(type);
+
+        result = xmlOpen(jsonKey, getAttributesFromJson(jsonValue, infos), level, !type.isScalar()) + jsonValue.toString();
+    } else if(type.isUnion()) {
+        return getElementFromJson(node, selectTypeFromJson(jsonValue, type), level);
+    } else {
+        var infos: PropertyIs[] = getInfos(type);
+
+        result = xmlOpen(jsonKey, getAttributesFromJson(jsonValue, infos), level, !type.isScalar()) + getElementsFromJson(jsonValue, infos, level + 1);
+    }
+    
+    result = result + xmlClose(jsonKey, type.isScalar() ? -1 : level);
+
+    return result;
+}
+
+function selectTypeFromJson(value: any, unionType: ts.AbstractType): ts.AbstractType {
+    var canBeTypes: ts.AbstractType[] = unionType.typeFamily();
+    
+    var results: any[] = [];
+    
+    var result: any = null;
+    
+    canBeTypes.forEach((type: ts.AbstractType) => {
+        var xmlValue = serializeToXML(value, type);
+        
+        if(!xmlValue) {
+            return;
+        }
+        
+        var jsonValue = readObject(xmlValue, type);
+        
+        if(jsonValue) {
+            var errors = getXmlErrors(jsonValue);
+
+            results.push({type: type, errors: (errors && errors.length) || 0});
+        }
+    });
+    
+    result = results.length > 0 ? results[0] : {type: canBeTypes[0]};
+
+    results.forEach((canBe: any) => {
+        if(canBe.errors < result.errors) {
+            result = canBe;
+        }
+    });
+    
+    return result.type;
+}
+
+function getElementsFromJson(node: any, infos: PropertyIs[], level: number): string {
+    var elementInfos: PropertyIs[] = _.filter(infos, info => !xmlDescriptor(info.value()).attribute);
+    
+    var result = '';
+    
+    elementInfos.forEach(info => {
+        var xmlKey = xmlName(info);
+
+        var key = info.propId();
+
+        var value: any = {};
+        
+        value[xmlKey] = node[key];
+
+        if(info.value().isArray()) {
+            result = result + getArrayFromJson(value, info.value(), level);
+        } else {
+            result = result + ((node[key] || node[key] === '') ? getElementFromJson(value, info.value(), level) : '');
+        }        
+    });
+    
+    return result;
+}
+
+function getArrayFromJson(values: any, type: ts.AbstractType, level: number, rootNode: boolean = false): string {
+    var jsonKey = Object.keys(values)[0];
+
+    var jsonValue = values[jsonKey];
+
+    var descriptor = xmlDescriptor(type);
+
+    var isWrapped = rootNode || descriptor.wrapped;
+    
+    var result = '';
+
+    var componentType = arrayElementType(type);
+    
+    var typeName = componentType && componentType.name();
+    
+    var elementsLevel = level;
+    
+    if(isWrapped && !rootNode) {
+        result = xmlOpen(jsonKey, null, level);
+
+        elementsLevel = elementsLevel + 1;
+    }
+    
+    if(jsonValue && isArray(jsonValue)) {
+        jsonValue.forEach((item: any) => {
+            var itemWrapper: any = {};
+
+            itemWrapper[isWrapped ? typeName : jsonKey] = item;
+            
+            result = result + getElementFromJson(itemWrapper, componentType, elementsLevel);
+        });
+    }
+    
+    if(isWrapped) {
+        result = result + xmlClose(jsonKey, level);
+    }
+    
+    return result;
+}
+
 export function readObject(content:string,t:ts.AbstractType):any{
     var result:any=null;
     var opts:xml2js.Options={};

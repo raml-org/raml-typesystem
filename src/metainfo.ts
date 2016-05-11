@@ -98,6 +98,11 @@ export class CustomFacet extends MetaInfo{
         super(name,value,true)
     }
 }
+
+function serializeToXml(value: any, type: ts.AbstractType): string {
+    return xmlio.serializeToXML(value, type);
+}
+
 function parseExampleIfNeeded(val:any,type:ts.AbstractType):any{
     if (typeof val==='string'){
         if (type.isObject() || type.isArray() || type.isExternal() || type.isUnion()){
@@ -191,7 +196,19 @@ export class Example extends MetaInfo{
                 val=val.value;
             }
         }
-        return parseExampleIfNeeded(val,this.owner());
+        return parseExampleIfNeeded(val, this.owner());
+    }
+
+    asXMLString(): string {
+        var value = this.value();
+
+        if(typeof value === 'string' && value.trim().indexOf('<') === 0) {
+            return value;
+        }
+
+        var parsedValue: any = parseExampleIfNeeded(value, this.owner());
+
+        return serializeToXml(parsedValue, this.owner());
     }
 }
 export class Required extends MetaInfo{
@@ -235,6 +252,28 @@ export class Examples extends MetaInfo{
                 result.push(example);
             }
         });
+        return result;
+    }
+
+    asXMLStrings(): string[] {
+        var value = this.value();
+
+        var result: any = {};
+
+        Object.keys(value).forEach(key => {
+            var childValue: any = value[key];
+
+            if(typeof childValue === 'string' && childValue.trim().indexOf('<') === 0) {
+                result[key] = childValue;
+
+                return;
+            }
+
+            var parsedValue: any = parseExampleIfNeeded(childValue, this.owner());
+
+            result[key] = serializeToXml(parsedValue, this.owner());
+        });
+
         return result;
     }
 

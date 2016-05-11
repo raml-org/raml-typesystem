@@ -70,6 +70,7 @@ export function example(t:rt.AbstractType):any{
     }
 }
 class Example implements nm.IExpandableExample{
+    _owner: any;
 
     constructor(
         private _value:any,
@@ -93,6 +94,18 @@ class Example implements nm.IExpandableExample{
 
     isXMLString():boolean {
         return typeof this._value==="string"&&(this._value+"").trim().indexOf("<")==0;
+    }
+    
+    asXMLString(): string {
+        if(this.isXMLString()) {
+            return this._value;
+        }
+        
+        if(this._owner) {
+            return (<any>this)._owner.asXMLString();
+        }
+
+        return null;
     }
 
     isYAML():boolean {
@@ -160,7 +173,7 @@ class Example implements nm.IExpandableExample{
     }
 
 }
-var toExample = function (exampleObj:any, name:string=null,isSingle:boolean=false) {
+var toExample = function (owner: any, exampleObj:any, name:string=null,isSingle:boolean=false) {
     var example:Example;
     if (exampleObj) {
         var val = exampleObj.value;
@@ -185,6 +198,11 @@ var toExample = function (exampleObj:any, name:string=null,isSingle:boolean=fals
             example = new Example(val, name, displayName, description, strict, aObj, isSingle);
         }
     }
+    
+    if(example) {
+        example._owner = owner;
+    }
+    
     return example;
 };
 export function exampleFromNominal(n:nm.ITypeDefinition):nm.IExpandableExample[]{
@@ -195,10 +213,18 @@ export function exampleFromNominal(n:nm.ITypeDefinition):nm.IExpandableExample[]
         if (ms1){
             var vl=ms1.value();
             if (vl && typeof vl === "object") {
+                var xmlValues: any;
+                
                 Object.keys(vl).forEach(key=> {
                     var name = Array.isArray(vl) ? null : key;
                     var exampleObj = vl[key];
-                    var example = toExample(exampleObj, name);
+                    var example = toExample({asXMLString: () => {
+                        if(!xmlValues) {
+                            xmlValues = ms1.asXMLStrings();
+                        }
+                        
+                        return xmlValues[key];
+                    }}, exampleObj, name);
                     result.push(example);
                 })
             }
@@ -209,7 +235,7 @@ export function exampleFromNominal(n:nm.ITypeDefinition):nm.IExpandableExample[]
 
             var exampleV=ms.example();
             if (exampleV){
-                result.push(toExample(ms.value(),undefined,true));
+                result.push(toExample(ms, ms.value(), undefined, true));
             }
         }
         if(result.length>0) {
