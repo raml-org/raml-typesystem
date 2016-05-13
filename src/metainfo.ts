@@ -70,7 +70,7 @@ export class Annotation extends MetaInfo{
             res.addSubStatus(valOwner);
             return res;
         }
-        return ts.OK_STATUS;
+        return ts.ok();
     }
 }
 export class FacetDeclaration extends MetaInfo{
@@ -152,7 +152,7 @@ export class Example extends MetaInfo{
         if (typeof val==="object"&&val){
             if (val.value){
                 if (val.strict===false){
-                    return ts.OK_STATUS;
+                    return ts.ok();
                 }
                 if (val.strict&&typeof val.strict!="boolean"){
                     var s= new Status(Status.ERROR,0,"strict should be boolean",this);
@@ -186,7 +186,7 @@ export class Example extends MetaInfo{
 
             return c;
         }
-        return ts.OK_STATUS;
+        return ts.ok();
     }
 
     example():any{
@@ -220,7 +220,7 @@ export class Required extends MetaInfo{
         if (typeof this.value()!=="boolean"){
             return new Status(Status.ERROR,0,"value of required facet should be boolean",this);
         }
-        return ts.OK_STATUS;
+        return ts.ok();
     }
 }
 export class AllowedTargets extends MetaInfo{
@@ -230,7 +230,7 @@ export class AllowedTargets extends MetaInfo{
 
     validateSelf(registry:ts.TypeRegistry):ts.Status {
 
-        return ts.OK_STATUS;
+        return ts.ok();
     }
 }
 
@@ -354,7 +354,7 @@ export class Default extends MetaInfo{
         if (!valOwner.isOk()){
             return new Status(Status.ERROR,0,"using invalid `defaultValue`:"+valOwner.getMessage(),this);
         }
-        return ts.OK_STATUS;
+        return ts.ok();
     }
 
 }
@@ -387,7 +387,7 @@ export class Discriminator extends ts.TypeInformation{
         if (!prop.value().isScalar()){
             return new Status(Status.ERROR,0,"It is only allowed to use scalar properties as discriminators",this);
         }
-        return ts.OK_STATUS;
+        return ts.ok();
     }
 }
 
@@ -415,7 +415,7 @@ export class DiscriminatorValue extends ts.TypeInformation{
                 return new Status(Status.ERROR,0,"using invalid `disciminatorValue`:"+sm.getMessage(),this);
             }
         }
-        return ts.OK_STATUS;
+        return ts.ok();
     }
 
     requiredType(){
