@@ -11,7 +11,7 @@ export class DateOnlyR extends ts.GenericTypeOf{
             if (!date.isValid(i,"YYYY-MM-DD")){
                 return new ts.Status(ts.Status.ERROR,0,"date-only should match to yyyy-mm-dd pattern",this)
             }
-            return ts.OK_STATUS;
+            return ts.ok();
         }
         return new ts.Status(ts.Status.ERROR,0,"date-only should be string matching to  yyyy-mm-dd pattern ",this)
     }
@@ -36,7 +36,7 @@ export class TimeOnlyR extends ts.GenericTypeOf{
             if (!i.match("[0-9][0-9]:[0-9][0-9]:[0-9][0-9]")||!date.isValid("11 "+i.trim(),"YY HH:mm:ss")){
                 return new ts.Status(ts.Status.ERROR,0,"time-only should match to hh:mm:ss[.ff...] pattern",this)
             }
-            return ts.OK_STATUS;
+            return ts.ok();
         }
         return new ts.Status(ts.Status.ERROR,0,"time-only should be string matching to  hh:mm:ss[.ff...] pattern ",this)
     }
@@ -60,7 +60,7 @@ export class DateTimeOnlyR extends ts.GenericTypeOf{
             if (!i.match("^\\d{4}-\\d{2}-\\d{2}T"+"[0-9][0-9]:[0-9][0-9]:[0-9][0-9]$")){
                 return new ts.Status(ts.Status.ERROR,0,"datetime-only should match to yyyy-mm-ddThh:mm:ss[.ff...] pattern",this)
             }
-            return ts.OK_STATUS;
+            return ts.ok();
         }
         return new ts.Status(ts.Status.ERROR,0,"datetime-only should be string matching to  yyyy-mm-ddThh:mm:ss[.ff...] pattern ",this)
     }
@@ -99,14 +99,14 @@ export class DateTimeR extends ts.GenericTypeOf{
                 if (!i.match(r0)){
                     return new ts.Status(ts.Status.ERROR,0,"valid rfc3339 formatted string is expected",this)
                 }
-                return ts.OK_STATUS;
+                return ts.ok();
             }
             else{
                 if (!(i.match(r1)||i.match(r2)||i.match(r3))){
                     return new ts.Status(ts.Status.ERROR,0,"valid rfc2616 formatted string is expected",this)
                 }
             }
-            return ts.OK_STATUS;
+            return ts.ok();
         }
         return new ts.Status(ts.Status.ERROR,0,"valid datetime formatted string is expected",this)
     }

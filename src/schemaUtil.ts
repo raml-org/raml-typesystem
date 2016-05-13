@@ -1,4 +1,5 @@
 /// <reference path="../typings/main.d.ts" />
+declare var global:any;
 declare function require(s:string):any;
 
 import _ = require("underscore");
@@ -28,6 +29,10 @@ class ErrorsCache {
 }
 
 var globalCache = new ErrorsCache();
+
+global.cleanCache=function (){
+    globalCache=new ErrorsCache();
+}
 
 export interface Promise {
     then(instance: any): any;
