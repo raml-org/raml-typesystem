@@ -419,7 +419,7 @@ export class RestrictionsConflict extends Status{
 var globalId=0;
 
 export var VALIDATED_TYPE:AbstractType=null;
-export abstract class AbstractType implements tsInterfaces.IHasExtra{
+export abstract class AbstractType implements tsInterfaces.IHasExtra, tsInterfaces.IType{
 
     protected computeConfluent: boolean
 

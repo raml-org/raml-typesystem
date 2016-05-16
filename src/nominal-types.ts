@@ -14,6 +14,7 @@ export type IPrintDetailsSettings=ti.IPrintDetailsSettings;
 export type IAnnotationType=ti.IAnnotationType;
 export type INamedEntity=ti.INamedEntity;
 import _=require("./utils")
+import {ICloningContext} from "./typesystem-interfaces";
 declare var global:any;
 global["extraInjectors"]=[];
 
@@ -53,6 +54,10 @@ export class Adaptable{
     getAdapters() : any[] {
         return this.adapters;
     }
+
+    fillClonedInstanceFields(clone : Adaptable, context : tsInterfaces.ICloningContext) {
+        clone.adapters = this.adapters?[].concat(this.adapters):[];
+    }
 }
 export class Described extends Adaptable{
     constructor(private _name:string,private _description=""){super()}
@@ -88,6 +93,16 @@ export class Described extends Adaptable{
 
     setName(name:string){
         this._name = name;
+    }
+
+    fillClonedInstanceFields(clone : Described, context : tsInterfaces.ICloningContext) {
+        super.fillClonedInstanceFields(clone, context);
+
+        clone._name = this._name;
+        clone._tags = this._tags?[].concat(this._tags):[];
+        clone._version = this._version;
+        clone._description = this._description;
+        clone._annotations = this._annotations?[].concat(this._annotations):[];
     }
 }
 
@@ -132,13 +147,40 @@ class EmptyUniverse implements  IUniverse{
 var emptyUniverse:IUniverse =new EmptyUniverse();
 
 var ebuilder=require("./exampleBuilder")
+
+export class TypeCachingCloningContext implements ICloningContext {
+
+    private nameIdToTypes : {[nameId:string]: any[]} = {};
+
+    /**
+     * Returns cached clone by original.
+     * @param original
+     */
+    getCachedClone(original : any) : any {
+
+    }
+
+    /**
+     * Caches clone.
+     * @param original
+     * @param clone
+     */
+    cacheClone(original : any, clone : any) {
+        clone
+    }
+
+    private getTypeByNominal(type : ITypeDefinition) : tsInterfaces.IType {
+        if (!(type instanceof AbstractType)) {
+            return null;
+        }
+
+        return (<AbstractType>type).getTypeAdapter();
+    }
+}
+
 export class AbstractType extends Described implements ITypeDefinition{
 
-
     _key: NamedId;
-
-
-
 
     _isCustom:boolean
 
@@ -160,6 +202,88 @@ export class AbstractType extends Described implements ITypeDefinition{
     private _props:IProperty[];
     protected _allFacets:IProperty[]
     protected _facets: IProperty[]=[];
+
+    clone(context : tsInterfaces.ICloningContext) : AbstractType {
+        var cached = context != null ? context.getCachedClone(this) : null;
+
+        if (cached) {
+            return <AbstractType>cached;
+        }
+        var result = this.createClonedInstance();
+        this.fillClonedInstanceFields(result, context);
+
+        if(context) context.cacheClone(this, result);
+
+        return result;
+    }
+
+    createClonedInstance() : AbstractType {
+        return new AbstractType(this.nameId(), this._universe, this._path);
+    }
+
+    fillClonedInstanceFields(clone : AbstractType, context : tsInterfaces.ICloningContext) {
+        super.fillClonedInstanceFields(clone, context);
+
+        clone._key = this._key;
+        clone._isCustom = this._isCustom;
+
+        clone._customProperties = []
+        if (this._customProperties) {
+            this._customProperties.forEach(customProperty=>{
+                clone._customProperties.push(customProperty.clone(context));
+            })
+        }
+
+        clone._props = [];
+        if (this._props) {
+            this._props.forEach(property=>{
+                clone._props.push(property.clone(context));
+            })
+        }
+
+        clone._allFacets = [];
+        if (this._allFacets) {
+            this._allFacets.forEach(property=>{
+                clone._allFacets.push(property.clone(context));
+            })
+        }
+
+        clone._facets = [];
+        if (this._facets) {
+            this._facets.forEach(property=>{
+                clone._facets.push(property.clone(context));
+            })
+        }
+
+        clone._validator = this._validator;
+
+        clone._superTypes = [];
+        if (this._superTypes) {
+            this._superTypes.forEach(property=>{
+                clone._superTypes.push(property.clone(context));
+            })
+        }
+
+        clone._subTypes = []
+        //we are intentionally not cloning subtypes as they will most probably be never
+        //actually needed, and cloning them requires additional efforts and cycle handling
+
+        clone._requirements = this._requirements;
+
+        clone.fixedFacets = this.fixedFacets;
+
+        clone.uc = this.uc;
+
+        clone._af = this._af;
+
+        clone._nameAtRuntime = this._nameAtRuntime;
+
+        clone._universe = this._universe;
+
+        clone._path = this._path;
+
+        clone.buildIn = this.buildIn;
+    }
 
     addFacet(q:IProperty){
         this._facets.push(q);
@@ -752,7 +876,7 @@ export class AbstractType extends Described implements ITypeDefinition{
     private getExtraAdapter() : tsInterfaces.IHasExtra {
         if(this.getAdapters()) {
             var extraAdapter = _.find(this.getAdapters(), adapter=>{
-                //weird duck-typing, but we can touch anything from nominal-types here
+                //weird duck-typing, but we cant touch anything from ts types here
                 if ((<any>adapter).getExtra && typeof((<any>adapter).getExtra) == "function"
                     && (<any>adapter).putExtra && typeof((<any>adapter).putExtra) == "function") {
                     return true;
@@ -763,6 +887,40 @@ export class AbstractType extends Described implements ITypeDefinition{
         }
 
         return null;
+    }
+
+    getTypeAdapter() : tsInterfaces.IType {
+        if(this.getAdapters()) {
+            var extraAdapter = _.find(this.getAdapters(), adapter=>{
+                //weird duck-typing, but we cant touch anything from ts types here
+                if ((<any>adapter).id && typeof((<any>adapter).id) == "function"
+                    && (<any>adapter).kind && typeof((<any>adapter).kind) == "function"
+                    && (<any>adapter).name && typeof((<any>adapter).name) == "function"
+                    && (<any>adapter).superTypes && typeof((<any>adapter).superTypes) == "function") {
+                    return true;
+                }
+            });
+
+            return <tsInterfaces.IType>extraAdapter;
+        }
+
+        return null;
+    }
+
+    visit(visitor : ti.IHierarchyVisitor) : void {
+        visitor.typeEncountered(this);
+
+        if (this.superTypes()) {
+            this.subTypes().forEach(superType=>superType.visit(visitor));
+        }
+
+        if (this.properties()) {
+            this.properties().forEach(property=>property.visit(visitor));
+        }
+
+        if (this._facets) {
+            this._facets.forEach(property=>property.visit(visitor));
+        }
     }
 }
 export class ValueType extends AbstractType implements ITypeDefinition{
@@ -787,6 +945,10 @@ export class ValueType extends AbstractType implements ITypeDefinition{
 
     isObject() {
         return false;
+    }
+
+    createClonedInstance() : AbstractType {
+        return new ValueType(this.nameId(), this._universe, this.getPath());
     }
 }
 
@@ -830,6 +992,23 @@ export class StructuredType extends AbstractType implements ITypeDefinition{
             throw new Error("Already included");
         }
         this._properties.push(p);
+    }
+
+    createClonedInstance() : AbstractType {
+        return new StructuredType(this.nameId(), this._universe, this.getPath());
+    }
+
+    fillClonedInstanceFields(clone : AbstractType, context : tsInterfaces.ICloningContext) {
+        super.fillClonedInstanceFields(clone, context);
+
+        var _clone = <StructuredType> clone;
+
+        _clone._properties = [];
+        if (this._properties) {
+            this._properties.forEach(property=>{
+                _clone._properties.push(property.clone());
+            })
+        }
     }
 }
 export class Property extends Described implements IProperty{
@@ -994,6 +1173,64 @@ export class Property extends Described implements IProperty{
         return this._descriminates;
     }
 
+    clone(context : tsInterfaces.ICloningContext) : Property {
+        var cached  = context != null? context.getCachedClone(this) : null;
+
+        if (cached) return <Property>cached;
+
+        var result = this.createClonedInstance();
+        this.fillClonedInstanceFields(result, context);
+
+        if (context) context.cacheClone(this, result);
+
+        return result;
+    }
+
+    createClonedInstance() : Property {
+        return new Property(this.nameId(), this.description());
+    }
+
+    fillClonedInstanceFields(clone : Property, context : tsInterfaces.ICloningContext) {
+        super.fillClonedInstanceFields(clone, context);
+
+        if (this._ownerClass) {
+            clone._ownerClass = <StructuredType>this._ownerClass.clone(context);
+        }
+
+        if (this._nodeRange) {
+            clone._nodeRange = this._nodeRange.clone(context);
+        }
+
+        clone._groupName = this._groupName;
+
+        clone._keyShouldStartFrom = this._keyShouldStartFrom;
+
+        clone._enumOptions = this._enumOptions;
+
+        clone._isRequired = this._isRequired;
+
+        clone._isMultiValue = this._isMultiValue;
+
+        clone._defaultValue = this._defaultValue;
+
+        clone._descriminates = this._descriminates;
+
+        clone._defaultBooleanValue = this._defaultBooleanValue;
+
+        clone._defaultIntegerValue = this._defaultIntegerValue;
+
+        clone._keyRegexp = this._keyRegexp;
+
+        clone.facetValidator = this.facetValidator;
+    }
+
+    visit(visitor : ti.IHierarchyVisitor) : void {
+        visitor.propertyEncountered(this, this.domain());
+
+        if (this.range()) {
+            this.range().visit(visitor);
+        }
+    }
 }
 export class Union extends AbstractType implements IUnionType{
 
@@ -1047,6 +1284,30 @@ export class Union extends AbstractType implements IUnionType{
             return this.right.hasArrayInHierarchy()
         }
     }
+
+    createClonedInstance() : AbstractType {
+        return new Union(this.nameId(), this._universe, this.getPath());
+    }
+
+    fillClonedInstanceFields(clone : AbstractType, context : tsInterfaces.ICloningContext) {
+        super.fillClonedInstanceFields(clone, context);
+
+        var _clone = <Union>clone;
+        if (this.left) {
+            _clone.left = this.left.clone(context);
+        }
+
+        if (this.right) {
+            _clone.right = this.right.clone(context);
+        }
+    }
+
+    visit(visitor : ti.IHierarchyVisitor) : void {
+        super.visit(visitor);
+
+        if (this.left) this.left.visit(visitor);
+        if (this.right) this.right.visit(visitor);
+    }
 }
 export class Array extends AbstractType implements IArrayType{
     dimensions: number
@@ -1088,6 +1349,27 @@ export class Array extends AbstractType implements IArrayType{
         return null;
     }
 
+    createClonedInstance() : AbstractType {
+        return new Array(this.nameId(), this._universe, this.getPath());
+    }
+
+    fillClonedInstanceFields(clone : AbstractType, context : tsInterfaces.ICloningContext) {
+        super.fillClonedInstanceFields(clone, context);
+
+        var _clone = <Array> clone;
+
+        _clone.dimensions = this.dimensions;
+
+        if (this.component) {
+            _clone.component = this.component.clone(context);
+        }
+    }
+
+    visit(visitor : ti.IHierarchyVisitor) : void {
+        super.visit(visitor);
+
+        if (this.component) this.component.visit(visitor);
+    }
 }
 
 export class ExternalType extends StructuredType implements IExternalType{
@@ -1118,6 +1400,18 @@ export class ExternalType extends StructuredType implements IExternalType{
 
     external() {
         return this;
+    }
+
+    createClonedInstance() : AbstractType {
+        return new ExternalType(this.nameId(), this._universe, this.getPath());
+    }
+
+    fillClonedInstanceFields(clone : AbstractType, context : tsInterfaces.ICloningContext) {
+        super.fillClonedInstanceFields(clone, context);
+
+        var _clone = <ExternalType> clone;
+
+        _clone.schemaString = this.schemaString;
     }
 }
 

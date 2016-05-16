@@ -1,4 +1,5 @@
 import tsInterfaces = require("./typesystem-interfaces")
+import {ICloneable} from "./typesystem-interfaces";
 
 export interface INamedEntity{
     nameId():string;
@@ -42,6 +43,22 @@ export interface Status{
 
 }
 
+export interface IHierarchyVisitor {
+    /**
+     * Reports type encountered
+     * @param type
+     * @return whether to continue visit inside the type
+     */
+    typeEncountered(type: ITypeDefinition) : boolean;
+
+    /**
+     * Reports property encountered
+     * @param property - encountered property.
+     * @param type - type owning the property
+     * @return whether to continue visit inside the property
+     */
+    propertyEncountered(property : IProperty, type: ITypeDefinition) : boolean;
+}
 
 
 export interface IExpandableExample {
@@ -121,7 +138,7 @@ export class ValueRequirement{
      */
     constructor(public name:string,public value:string){}
 }
-export interface ITypeDefinition extends INamedEntity,tsInterfaces.IHasExtra {
+export interface ITypeDefinition extends INamedEntity,tsInterfaces.IHasExtra, tsInterfaces.ICloneable<ITypeDefinition> {
 
 
     key():NamedId
@@ -338,6 +355,12 @@ export interface ITypeDefinition extends INamedEntity,tsInterfaces.IHasExtra {
      * Returns whether this type was defined by a user.
      */
     isUserDefined() : boolean;
+
+    /**
+     * Visit type hierarchy.
+     * @param visitor
+     */
+    visit(visitor: IHierarchyVisitor) : void;
 }
 export interface FacetValidator{
     (value:any, facetValue:any):string;
@@ -349,17 +372,17 @@ export interface IValueDocProvider{
 /**
  * represent array types
  */
-export interface IArrayType extends ITypeDefinition{
+export interface IArrayType extends ITypeDefinition, tsInterfaces.ICloneable<ITypeDefinition>{
     componentType():ITypeDefinition
 }
 
-export interface IExternalType extends ITypeDefinition{
+export interface IExternalType extends ITypeDefinition, tsInterfaces.ICloneable<ITypeDefinition>{
     schema(): string
 }
 /**
  * represent union types
  */
-export interface IUnionType extends ITypeDefinition{
+export interface IUnionType extends ITypeDefinition, tsInterfaces.ICloneable<ITypeDefinition>{
     leftType():ITypeDefinition
     rightType():ITypeDefinition
 }
@@ -391,7 +414,7 @@ export interface IUniverse {
 
 }
 
-export interface IProperty extends INamedEntity{
+export interface IProperty extends INamedEntity, ICloneable<IProperty>{
 
     /**
      * name of the property
@@ -450,8 +473,10 @@ export interface IProperty extends INamedEntity{
      * true if this property is a discriminator
      */
     isDescriminator():boolean;
+
+    visit(visitor: IHierarchyVisitor) : void;
 }
-export interface IAnnotationType extends  ITypeDefinition{
+export interface IAnnotationType extends  ITypeDefinition, tsInterfaces.ICloneable<ITypeDefinition>{
     parameters(): ITypeDefinition[]
     allowedTargets():any
 }
