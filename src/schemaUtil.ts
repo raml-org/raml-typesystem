@@ -1,7 +1,7 @@
 /// <reference path="../typings/main.d.ts" />
 declare function require(s:string):any;
 
-import _ = require("underscore");
+import _ = require("./utils");
 
 import xmlValidator = require('./xmlUtil');
 

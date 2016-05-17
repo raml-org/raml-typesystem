@@ -9,7 +9,7 @@ import {FacetDeclaration} from "./metainfo";
 import {Status} from "./typesystem";
 import nm=require("./nominals")
 export import nominalTypes=require("./nominal-types")
-
+export import typeExpressions=require("./typeExpressionUtil");
 import schemaUtil = require('./schemaUtil');
 
 export type IValidationPath = tsInterfaces.IValidationPath;

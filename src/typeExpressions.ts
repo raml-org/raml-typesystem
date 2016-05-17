@@ -3,23 +3,13 @@ import ts=require("./typesystem")
 import schemaUtil = require('./schemaUtil')
 import {ComponentShouldBeOfType} from "./restrictions";
 import {AdditionalPropertyIs} from "./restrictions";
-export interface BaseNode{
-    type:string
-}
-export interface Union extends BaseNode{
-    first: BaseNode
-    rest: BaseNode
-}
+import typeExpressionDefs = require("./typeExpressionUtil")
 
-export interface Parens extends BaseNode{
-    expr:  BaseNode
-    arr: number
-}
-export interface Literal extends BaseNode{
-    value: string
-    arr?: number
-    params?:BaseNode[];
-}
+export type BaseNode = typeExpressionDefs.BaseNode;
+export type Union = typeExpressionDefs.Union;
+export type Literal = typeExpressionDefs.Literal;
+export type Parens = typeExpressionDefs.Parens;
+
 
 export function parseToType(val:string,t:ts.TypeRegistry, contentProvider: schemaUtil.IContentProvider = null):ts.AbstractType{
     try {
@@ -103,3 +93,41 @@ export function storeToString(t:ts.AbstractType):string{
     return t.name();
 }
 
+export function visit(node:BaseNode,action:(n:BaseNode)=>void){
+    action(node);
+    if(node.type=="union"){
+        var union = <Union>node;
+        visit(union.first,action);
+        visit(union.rest,action);
+    }
+    else if(node.type=="parens"){
+        var parens = <Parens>node;
+        visit(parens.expr,action);
+    }
+}
+export function serializeToString(node:BaseNode):string{
+    var arr = 0;
+    var str:string;
+    if(node.type=="name"){
+        var literal = <Literal>node;
+        str = literal.value;
+        arr = literal.arr;
+    }
+    else if(node.type=="union"){
+        var union = <Union>node;
+        str = serializeToString(union.first) + " | " + serializeToString(union.rest);
+    }
+    else if(node.type=="parens"){
+        var parens = <Parens>node;
+        str = "("+serializeToString(parens.expr)+")";
+        arr = parens.arr;
+    }
+    while(--arr>=0){
+        str += "[]";
+    }
+    return str;
+}
+
+export function parse(str:string):BaseNode{
+    return typeExpression.parse(str);
+}
