@@ -252,12 +252,10 @@ describe("Simple validation testing",function() {
                 a: {
                     "type":`
                     {
-                "required": "message",
                 "$schema": "http://json-schema.org/draft-04/schema",
                 "type": "object",
                 "properties": {
                   "message": {
-                    "required": true,
                     "type": "string"
                   }
                 },

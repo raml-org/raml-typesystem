@@ -130,8 +130,13 @@ export class JSONSchemaObject {
             var api: any = require('json-schema-compatibility');
 
             this.setupId(jsonSchemaObject, this.provider.contextPath());
-
-            jsonSchemaObject =api.v4(jsonSchemaObject);
+            var schemaVer=""+jsonSchemaObject["$schema"];
+            if (schemaVer.indexOf("http://json-schema.org/draft-04/")==-1){
+                jsonSchemaObject =api.v4(jsonSchemaObject);
+            }
+            else{
+                this.fixRequired(jsonSchemaObject);
+            }
         } catch (e){
             throw new Error('Can not parse schema'+schema)
         }
@@ -139,6 +144,20 @@ export class JSONSchemaObject {
         delete jsonSchemaObject['$schema']
 
         this.jsonSchema=jsonSchemaObject;
+    }
+    fixRequired(obj:any){
+        // Object.keys(obj).forEach(x=>{
+        //     var val=obj[x];
+        //     if (x==="required"){
+        //         if (typeof val==="string"){
+        //             obj[x]=[val];
+        //         }
+        //     }
+        //     if (x==="properties"||x==="items"||x==="additionalItems"||x==="patternProperties"){
+        //         this.fixRequired(val);
+        //     }
+        //
+        // })
     }
 
     getType() : string {

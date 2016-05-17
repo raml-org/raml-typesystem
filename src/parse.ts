@@ -310,7 +310,7 @@ export function parseTypeCollection(n:ParseNode,tr:ts.TypeRegistry):TypeCollecti
         uses.children().forEach(c=>{
             result.addLibrary(c.key(),parseTypeCollection(c,tr));
         })
-    }3
+    }
 
     var tpes=n.childWithKey("types");
     if (tpes&&tpes.kind()===NodeKind.ARRAY){
@@ -321,7 +321,7 @@ export function parseTypeCollection(n:ParseNode,tr:ts.TypeRegistry):TypeCollecti
     if (schemas&&schemas.kind()===NodeKind.ARRAY){
         schemas=transformToArray(schemas);
     }
-
+    
     var reg=new AccumulatingRegistry(tpes,schemas,tr,result);
     if (tpes&&tpes.kind()!==NodeKind.SCALAR){
         tpes.children().forEach(x=>{

@@ -71,7 +71,7 @@ export function toNominal(t:ts.AbstractType,callback:StringToBuiltIn,customizer:
             var r = cm ? cm.value() : ts.ANY;
             ar.setComponent(toNominal(r, callback));
         }
-        else if (t.isUnion()) {
+        else if (t instanceof ts.UnionType) {
             var ut = new nt.Union(t.name(), null);
             if (t.superTypes().length==0) {
                 ut._superTypes.push(toNominal(ts.UNION, callback, customizer));
