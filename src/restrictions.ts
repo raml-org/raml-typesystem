@@ -63,7 +63,7 @@ export abstract class MatchesProperty extends ts.Constraint{
                 return s;
             }
         }
-        return ts.OK_STATUS;
+        return ts.ok();
     }
 
     abstract propId():string
@@ -98,7 +98,7 @@ export abstract class MatchesProperty extends ts.Constraint{
                return p;
            }
         }
-        return ts.OK_STATUS;
+        return ts.ok();
     }
 }
 
@@ -124,7 +124,7 @@ export class MatchToSchema extends  ts.Constraint{
             try {
                 so = su.getXMLSchema(strVal);
             } catch (e){
-                return ts.OK_STATUS;
+                return ts.ok();
             }
         }
         if(so){
@@ -132,16 +132,16 @@ export class MatchToSchema extends  ts.Constraint{
                 so.validateObject(i);
             }catch(e){
                 if (e.message=="Cannot assign to read only property '__$validated' of object"){
-                    return ts.OK_STATUS;
+                    return ts.ok();
                 }
                 if (e.message=="Object.keys called on non-object"){
-                    return ts.OK_STATUS;
+                    return ts.ok();
                 }
                 return new ts.Status(ts.Status.ERROR,0,"Example does not conform to schema:"+e.message,this);
             }
             //validate using classical schema;
         }
-        return ts.OK_STATUS;
+        return ts.ok();
     }
 
 
@@ -206,7 +206,7 @@ export class KnownPropertyRestriction extends ts.Constraint{
                 }
             }
         }
-        return ts.OK_STATUS;
+        return ts.ok();
     }
     composeWith(restriction:Constraint):Constraint{
         if (!this._value){
@@ -239,11 +239,11 @@ export class HasProperty extends ts.Constraint{
     check(i:any):ts.Status{
         if (i&&typeof i=='object'&&!Array.isArray(i)) {
             if (i.hasOwnProperty(this.name)) {
-                return ts.OK_STATUS;
+                return ts.ok();
             }
             return ts.error("Required property: " + this.name+" is missed",this);
         }
-        return ts.OK_STATUS;
+        return ts.ok();
     }
 
     requiredType(){
@@ -288,7 +288,7 @@ export class PropertyIs extends MatchesProperty{
                 return st;
             }
         }
-        return ts.OK_STATUS;
+        return ts.ok();
     }
     requiredType(){
         return ts.OBJECT;
@@ -423,7 +423,7 @@ export class MapPropertyIs extends MatchesProperty{
                 return rs;
             }
         }
-        return ts.OK_STATUS;
+        return ts.ok();
     }
 }
 /**
@@ -532,7 +532,7 @@ export abstract class FacetRestriction<T> extends ts.Constraint{
             rs.setValidationPath({name:this.facetName()});
             return rs;
         }
-        return ts.OK_STATUS;
+        return ts.ok();
     }
 
 }
@@ -583,7 +583,7 @@ export abstract class MinMaxRestriction extends FacetRestriction<Number>{
                 }
             }
         }
-        return ts.OK_STATUS;
+        return ts.ok();
     }
     createError():ts.Status{
         return ts.error(this.toString(),this);
@@ -669,7 +669,7 @@ export class MultipleOf extends FacetRestriction<Number>{
             }
 
         }
-        return ts.OK_STATUS;
+        return ts.ok();
     }
 
     composeWith(t:ts.Constraint):ts.Constraint{
@@ -855,7 +855,7 @@ export class UniqueItems extends FacetRestriction<boolean>{
                 return ts.error(this.toString(),this);
             }
         }
-        return ts.OK_STATUS
+        return ts.ok()
     }
 
 
@@ -927,7 +927,7 @@ export class ComponentShouldBeOfType extends FacetRestriction<ts.AbstractType>{
                 return new Status(Status.ERROR, 0, "component refers to unknown type " + ui.name(),this)
             }
         }
-        return ts.OK_STATUS;
+        return ts.ok();
     }
     composeWith(t:ts.Constraint):ts.Constraint{
         if (t instanceof ComponentShouldBeOfType){
@@ -987,7 +987,7 @@ export class Pattern extends FacetRestriction<string>{
 
             }
         }
-        return ts.OK_STATUS
+        return ts.ok()
     }
 
 
@@ -1041,7 +1041,7 @@ export class Enum extends FacetRestriction<string[]>{
                 return ts.error(this.toString(),this);
             }
         }
-        return ts.OK_STATUS
+        return ts.ok()
     }
 
 

@@ -149,7 +149,7 @@ export class Status {
     }
 }
 
-export const OK_STATUS=new Status(Status.OK,Status.OK,"",null);
+export function ok(){ return new Status(Status.OK,Status.OK,"",null)};
 export const SCHEMA_AND_TYPE=tsInterfaces.SCHEMA_AND_TYPE_EXTRA;
 export const GLOBAL=tsInterfaces.GLOBAL_EXTRA;
 export const TOPLEVEL=tsInterfaces.TOP_LEVEL_EXTRA;
@@ -174,7 +174,7 @@ export abstract class TypeInformation {
     }
 
     validateSelf(registry:TypeRegistry):Status{
-        return OK_STATUS;
+        return ok();
     }
     abstract facetName():string
     abstract value():any;
@@ -394,7 +394,7 @@ class PropertyCyclesValidator{
 
 export class RestrictionsConflict extends Status{
     constructor(protected _conflicting:Constraint,protected _stack:RestrictionStackEntry,source:any){
-        super(Status.ERROR,0,"Restrictions conflict "+_conflicting+" and "+_stack.getRestriction().toString(),source);
+        super(Status.ERROR,0,"Restrictions conflict "+_conflicting+" and "+(_stack!=null?_stack.getRestriction().toString():""),source);
     }
     getConflictDescription():string{
         var rs="";
@@ -822,7 +822,7 @@ export abstract class AbstractType implements tsInterfaces.IHasExtra{
 
     checkConfluent():Status{
         if (this.computeConfluent){
-            return OK_STATUS;
+            return ok();
         }
         this.computeConfluent=true;
         try {
@@ -839,7 +839,7 @@ export abstract class AbstractType implements tsInterfaces.IHasExtra{
                 var status=new RestrictionsConflict(another,lstack,this);
                 return status;
             }
-            return OK_STATUS;
+            return ok();
         }finally {
             this.computeConfluent=false;
         }
@@ -1022,22 +1022,27 @@ export abstract class AbstractType implements tsInterfaces.IHasExtra{
      * validates object against this type without performing AC
      */
     validateDirect(i:any,autoClose:boolean=false,nullAllowed:boolean=true,path:tsInterfaces.IValidationPath=null):Status{
-        VALIDATED_TYPE=this;
-        var result=new Status(Status.OK,0,"",this);
-        if (!nullAllowed&&(i===null||i===undefined)){
-            if (!this.nullable) {
-                return error("object is expected", this)
+        var prevValidated=VALIDATED_TYPE;
+        try {
+            VALIDATED_TYPE = this;
+            var result = new Status(Status.OK, 0, "", this);
+            if (!nullAllowed && (i === null || i === undefined)) {
+                if (!this.nullable) {
+                    return error("object is expected", this)
+                }
             }
-        }
-        this.restrictions(true).forEach(x=>result.addSubStatus(x.check(i,path)));
-        if ((autoClose||autoCloseFlag)&&this.isObject()&&(!this.oneMeta(KnownPropertyRestriction))){
-            var cp=new KnownPropertyRestriction(true);
-            cp.patchOwner(this);
-            cp.check(i).getErrors().forEach(x=>{
-                var rs=new Status(Status.WARNING,0,x.getMessage(),this);
-                rs.setValidationPath(x.getValidationPath())
-                result.addSubStatus(rs);
-            });
+            this.restrictions(true).forEach(x=>result.addSubStatus(x.check(i, path)));
+            if ((autoClose || autoCloseFlag) && this.isObject() && (!this.oneMeta(KnownPropertyRestriction))) {
+                var cp = new KnownPropertyRestriction(true);
+                cp.patchOwner(this);
+                cp.check(i).getErrors().forEach(x=> {
+                    var rs = new Status(Status.WARNING, 0, x.getMessage(), this);
+                    rs.setValidationPath(x.getValidationPath())
+                    result.addSubStatus(rs);
+                });
+            }
+        } finally{
+            VALIDATED_TYPE=prevValidated;
         }
         return  result;
     }
@@ -1100,10 +1105,10 @@ export abstract class AbstractType implements tsInterfaces.IHasExtra{
 
     private emptyIntersectionOrDiscriminator(t0:AbstractType, t1:AbstractType):Status {
         if (t1 === t0) {
-            return OK_STATUS;
+            return ok();
         }
         if (t1.isScalar()&&t0.isScalar()){
-            return OK_STATUS;
+            return ok();
         }
         var it = intersect("", [t0, t1]);
         var innerCheckConfluent = it.checkConfluent();
@@ -1111,7 +1116,7 @@ export abstract class AbstractType implements tsInterfaces.IHasExtra{
             return this.checkDiscriminator(t0, t1);
 
         }
-        return OK_STATUS;
+        return ok();
     }
 
     checkDiscriminator(t1:AbstractType, t2:AbstractType):Status {
@@ -1131,7 +1136,7 @@ export abstract class AbstractType implements tsInterfaces.IHasExtra{
                 d2 = dv2.value();
             }
             if (d1 !== d2) {
-                return OK_STATUS;
+                return ok();
             }
             found = new Status(Status.ERROR, 0,
                 "types" + t1.name() + " and " + t2.name() + " have same discriminator value",this);
@@ -1603,7 +1608,7 @@ function select(obj:any,t0:AbstractType,t1:AbstractType):AbstractType{
 export class NothingRestriction extends Constraint{
     check(i:any):Status {
         if (i===null||i===undefined){
-            return OK_STATUS;
+            return ok();
         }
         return error("nothing ",this);
     }
@@ -1661,13 +1666,13 @@ export class TypeOfRestriction extends GenericTypeOf{
 
             var to = typeof i;
             if (i===null||i===undefined){
-                return OK_STATUS;
+                return ok();
             }
             if (Array.isArray(i)) {
                 to = "array";
             }
             if (to === this.val) {
-                return OK_STATUS;
+                return ok();
             }
             return error(this.val+" is expected",this);
 
@@ -1715,7 +1720,7 @@ export class IntegerRestriction extends GenericTypeOf{
     }
     check(i:any):Status {
         if (typeof i=="number"&&is_int(i)){
-            return OK_STATUS;
+            return ok();
         }
         return error("integer is expected",this);
     }
@@ -1739,7 +1744,7 @@ export class NullRestriction extends GenericTypeOf{
     }
     check(i:any):Status {
         if (i===null||i==undefined||i==="null"){
-            return OK_STATUS;
+            return ok();
         }
         return error("null is expected",this);
     }
@@ -1763,10 +1768,10 @@ export class ScalarRestriction extends GenericTypeOf{
     }
     check(i:any):Status {
         if (!i){
-            return OK_STATUS;
+            return ok();
         }
         if (typeof i==='number'||typeof i==='boolean'||typeof i==='string'){
-            return OK_STATUS;
+            return ok();
         }
         return error("scalar is expected",this);
     }
@@ -1796,7 +1801,7 @@ export class OrRestriction extends Constraint{
         for (var j=0;j<this.val.length;j++){
             var m=this.val[j].check(i,p);
             if (m.isOk()){
-                return OK_STATUS;
+                return ok();
             }
             if (!first){
                 first=m;
@@ -1839,7 +1844,7 @@ export class AndRestriction extends Constraint{
                 return st;
             }
         }
-        return OK_STATUS;
+        return ok();
     }
     requiredType(){
         return ANY;
@@ -1892,6 +1897,10 @@ NUMBER.addMeta(BUILT_IN);
 INTEGER.addMeta(BUILT_IN);
 BOOLEAN.addMeta(BUILT_IN);
 STRING.addMeta(BUILT_IN);
+EXTERNAL.addMeta(BUILT_IN);
+UNKNOWN.addMeta(BUILT_IN);
+RECURRENT.addMeta(BUILT_IN);
+
 DATE_ONLY.addMeta(BUILT_IN);
 TIME_ONLY.addMeta(BUILT_IN);
 DATETIME_ONLY.addMeta(BUILT_IN);
