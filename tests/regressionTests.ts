@@ -465,4 +465,20 @@ describe("Simple validation testing",function() {
         var st=t.validateType(ts.builtInRegistry());
         assert.isTrue(st.getErrors().length===0);
     });
+    it("properties is map", function () {
+        var tp = ps.parseJSONTypeCollection({
+
+            types:{
+                a: {
+                    "type":"object",
+                    properties:[],
+
+                }
+
+            }
+        });
+        var t=tp.getType("a");
+        var st=t.validateType(ts.builtInRegistry());
+        assert.isTrue(st.getErrors().length===1);
+    });
 });

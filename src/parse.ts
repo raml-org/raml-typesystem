@@ -769,6 +769,11 @@ export function parse(name: string,n:ParseNode,r:ts.TypeRegistry=ts.builtInRegis
                     parsePropertyBean(x, r).add(result);
                 });
             }
+            else{
+                var err=new ts.Status(ts.Status.ERROR,2,"properties should be a map",actualResult);
+                err.setValidationPath({ name:"properties"})
+                result.putExtra(tsInterfaces.PARSE_ERROR,err);
+            }
         }
         var ap= n.childWithKey("additionalProperties");
         if (ap){
@@ -782,6 +787,11 @@ export function parse(name: string,n:ParseNode,r:ts.TypeRegistry=ts.builtInRegis
                     result.declareMapProperty(pb.id,pb.type);
                 });
             }
+            else{
+                var err=new ts.Status(ts.Status.ERROR,2,"pattern properties should be a map",actualResult);
+                err.setValidationPath({ name:"patternProperties"})
+                result.putExtra(tsInterfaces.PARSE_ERROR,err);
+            }
         }
     }
 
@@ -792,6 +802,11 @@ export function parse(name: string,n:ParseNode,r:ts.TypeRegistry=ts.builtInRegis
                 var bean=parsePropertyBean(x,r);
                 result.addMeta(new meta.FacetDeclaration(bean.id,bean.type,bean.optional));
             });
+        }
+        else{
+            var err=new ts.Status(ts.Status.ERROR,2,"facets should be a map",actualResult);
+            err.setValidationPath({ name:"facets"})
+            result.putExtra(tsInterfaces.PARSE_ERROR,err);
         }
     }
     if (result.isAnonymous()&&result.isEmpty()){
