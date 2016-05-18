@@ -235,4 +235,16 @@ describe("To nominals",function() {
         assert.isTrue(nt.subTypes()[0].nameId()=="B");
 
     });
+    it("to nominal passes with intersting union types", function () {
+        var tps = ps.parseJSONTypeCollection({
+            types:{
+                A: { type: "string"},
+                B: { type: "string | A"},
+                C: { type: ["B" ,"A"]}
+            }
+        },ts.builtInRegistry());
+        var tp=tps.getType("C")
+        var nt=nm.toNominal(tp,x=>null);
+        assert.isTrue(nt.superTypes().length==2);
+    });
 });
