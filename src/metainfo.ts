@@ -4,6 +4,8 @@ import {Status} from "./typesystem";
 import {PropertyIs} from "./restrictions";
 import _=require("underscore")
 import xmlio=require("./xmlio")
+import int=require("./typesystem-interfaces")
+
 export class MetaInfo extends ts.TypeInformation{
 
 
@@ -138,6 +140,9 @@ function parseExampleIfNeeded(val:any,type:ts.AbstractType):any{
                 }
             }
         }
+    }
+    if (type.getExtra(int.REPEAT)){
+        val=[val];
     }
     return val;
 }
