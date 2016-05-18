@@ -76,7 +76,8 @@ export function toNominal(t:ts.AbstractType,callback:StringToBuiltIn,customizer:
             if (t.superTypes().length==0) {
                 ut._superTypes.push(toNominal(ts.UNION, callback, customizer));
             }
-            t.typeFamily().forEach(x=>{
+            t.putExtra(NOMINAL, ut);
+            t.options().forEach(x=>{
                 if (ut.left==null){
                     ut.left=toNominal(x,callback);
                 }
