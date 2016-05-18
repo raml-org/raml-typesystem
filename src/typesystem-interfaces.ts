@@ -15,7 +15,7 @@ export interface IType {
 
     name():string;
 
-    superTypes():IType;
+    superTypes():IType[];
 }
 
 export interface ICloningContext {
@@ -31,7 +31,7 @@ export interface ICloningContext {
      * @param original
      * @param clone
      */
-    cacheClone(original : any, clone : any);
+    cacheClone(original : any, clone : any) : void;
 }
 
 export interface ICloneable<Clazz> {

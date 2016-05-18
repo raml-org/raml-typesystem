@@ -150,14 +150,20 @@ var ebuilder=require("./exampleBuilder")
 
 export class TypeCachingCloningContext implements ICloningContext {
 
-    private nameIdToTypes : {[nameId:string]: any[]} = {};
+    private nameIdToTypes : {[nameId:string]: AbstractType[]} = {};
 
     /**
      * Returns cached clone by original.
      * @param original
      */
     getCachedClone(original : any) : any {
+        if (!(original instanceof AbstractType)) return null;
+        var _original = <AbstractType> original;
 
+        var nameId = _original.nameId();
+        var cachedTypes = this.getCachedTypesByNameId(nameId);
+
+        return this.findAlreadyCachedType(cachedTypes, _original);
     }
 
     /**
@@ -165,8 +171,38 @@ export class TypeCachingCloningContext implements ICloningContext {
      * @param original
      * @param clone
      */
-    cacheClone(original : any, clone : any) {
-        clone
+    cacheClone(original : any, clone : any) : void {
+        if (!(clone instanceof AbstractType)) return null;
+        var _clone = <AbstractType> clone;
+
+        var nameId = _clone.nameId();
+        var cachedTypes = this.getCachedTypesByNameId(nameId);
+
+        var alreadyCachedType = this.findAlreadyCachedType(cachedTypes, _clone);
+        if (!alreadyCachedType) {
+            cachedTypes.push(_clone);
+        }
+    }
+
+    private findAlreadyCachedType(alreadyCachedTypes : AbstractType[],
+                                  typeToFind : AbstractType) : AbstractType {
+        return _.find(alreadyCachedTypes, cachedType=>{
+            var rTypeToFind = this.getTypeByNominal(typeToFind);
+
+            var rCurrentCachedType = this.getTypeByNominal(typeToFind);
+
+            return rTypeToFind != null && rTypeToFind === rCurrentCachedType;
+        })
+    }
+
+    private getCachedTypesByNameId(nameId : string) : AbstractType[] {
+        var cachedTypes = this.nameIdToTypes[nameId];
+        if (!cachedTypes) {
+            cachedTypes = []
+            this.nameIdToTypes[nameId] = cachedTypes;
+        }
+
+        return cachedTypes;
     }
 
     private getTypeByNominal(type : ITypeDefinition) : tsInterfaces.IType {
@@ -204,15 +240,19 @@ export class AbstractType extends Described implements ITypeDefinition{
     protected _facets: IProperty[]=[];
 
     clone(context : tsInterfaces.ICloningContext) : AbstractType {
+        console.log("Cloning " + this.nameId());
         var cached = context != null ? context.getCachedClone(this) : null;
 
         if (cached) {
+            console.log("Cached version found");
             return <AbstractType>cached;
         }
         var result = this.createClonedInstance();
+        if(context) context.cacheClone(this, result);
+        
         this.fillClonedInstanceFields(result, context);
 
-        if(context) context.cacheClone(this, result);
+
 
         return result;
     }
@@ -1006,7 +1046,8 @@ export class StructuredType extends AbstractType implements ITypeDefinition{
         _clone._properties = [];
         if (this._properties) {
             this._properties.forEach(property=>{
-                _clone._properties.push(property.clone());
+                var clonedProperty = property.clone(context);
+                _clone._properties.push(clonedProperty);
             })
         }
     }

@@ -1,5 +1,5 @@
 import ts=require("./typesystem")
-import tsInterfaces=require("./typesystem-interfaces")
+export import tsInterfaces=require("./typesystem-interfaces")
 import tc=require("./parse")
 import fr=require("./facetRegistry")
 import {KnownPropertyRestriction} from "./restrictions";
