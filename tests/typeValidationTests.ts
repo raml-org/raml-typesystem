@@ -1965,4 +1965,46 @@ describe("Type validation basics",function() {
         assert.isTrue(st.isOk());
         assert.isTrue(st.getErrors().length==0);
     })
+    it("datetime all facets", function () {
+        var tp = ps.parseJSONTypeCollection({
+
+            schemas:{
+                T:{
+                    type: "datetime",
+                    format: "rfc2616",
+
+                },
+                Q:{
+                    type: "T",
+                    example:"Mon, 31 Oct 2016 00:00:00 GMT"
+                }
+
+            }
+
+        })
+        var st= tp.getType("Q").validateType();
+        assert.isTrue(st.isOk());
+        assert.isTrue(st.getErrors().length==0);
+    })
+    it("datetime all facets (negative)", function () {
+        var tp = ps.parseJSONTypeCollection({
+
+            schemas:{
+                T:{
+                    type: "datetime",
+
+
+                },
+                Q:{
+                    type: "T",
+                    example:"Mon, 31 Oct 2016 00:00:00 GMT"
+                }
+
+            }
+
+        })
+        var st= tp.getType("Q").validateType();
+        assert.isTrue(!st.isOk());
+        assert.isTrue(st.getErrors().length==1);
+    })
 })

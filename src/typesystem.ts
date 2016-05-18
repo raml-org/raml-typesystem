@@ -1002,6 +1002,9 @@ export abstract class AbstractType implements tsInterfaces.IHasExtra{
     customFacets():TypeInformation[]{
         return this.declaredMeta().filter(x=>x instanceof metaInfo.CustomFacet)
     }
+    allCustomFacets():TypeInformation[]{
+        return this.meta().filter(x=>x instanceof metaInfo.CustomFacet)
+    }
 
     isUnion():boolean{
         var rs=false;
