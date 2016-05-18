@@ -738,7 +738,7 @@ export class AbstractType extends Described implements ITypeDefinition{
     }
 
     isUserDefined() : boolean {
-        return this.getExtra(tsInterfaces.USER_DEFINED_EXTRA);
+        return this.getExtra(tsInterfaces.USER_DEFINED_EXTRA)&&!this.buildIn;
     }
 
     putExtra(extraName: string, value : any) : void {
