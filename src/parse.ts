@@ -5,7 +5,7 @@ import {AbstractType} from "./typesystem";
 import typeExpressions=require("./typeExpressions")
 import facetR=require("./facetRegistry")
 import meta=require("./metainfo")
-import {Annotation} from "./metainfo";
+import {Annotation, Example, Examples} from "./metainfo";
 import {Type} from "typescript";
 import {FacetDeclaration} from "./metainfo";
 import {HasProperty} from "./restrictions";
@@ -310,7 +310,7 @@ export function parseTypeCollection(n:ParseNode,tr:ts.TypeRegistry):TypeCollecti
         uses.children().forEach(c=>{
             result.addLibrary(c.key(),parseTypeCollection(c,tr));
         })
-    }3
+    }
 
     var tpes=n.childWithKey("types");
     if (tpes&&tpes.kind()===NodeKind.ARRAY){
@@ -692,6 +692,8 @@ export function parse(name: string,n:ParseNode,r:ts.TypeRegistry=ts.builtInRegis
     var repeat= n.childWithKey("repeat");
     if (repeat&&repeat.value()==true){
         actualResult=ts.derive(name,[ts.ARRAY]);
+
+        actualResult.putExtra(tsInterfaces.REPEAT,true)
         actualResult.addMeta(new ComponentShouldBeOfType(result));
     }
     if (r instanceof AccumulatingRegistry){
@@ -767,6 +769,11 @@ export function parse(name: string,n:ParseNode,r:ts.TypeRegistry=ts.builtInRegis
                     parsePropertyBean(x, r).add(result);
                 });
             }
+            else{
+                var err=new ts.Status(ts.Status.ERROR,2,"properties should be a map",actualResult);
+                err.setValidationPath({ name:"properties"})
+                result.putExtra(tsInterfaces.PARSE_ERROR,err);
+            }
         }
         var ap= n.childWithKey("additionalProperties");
         if (ap){
@@ -780,6 +787,11 @@ export function parse(name: string,n:ParseNode,r:ts.TypeRegistry=ts.builtInRegis
                     result.declareMapProperty(pb.id,pb.type);
                 });
             }
+            else{
+                var err=new ts.Status(ts.Status.ERROR,2,"pattern properties should be a map",actualResult);
+                err.setValidationPath({ name:"patternProperties"})
+                result.putExtra(tsInterfaces.PARSE_ERROR,err);
+            }
         }
     }
 
@@ -790,6 +802,11 @@ export function parse(name: string,n:ParseNode,r:ts.TypeRegistry=ts.builtInRegis
                 var bean=parsePropertyBean(x,r);
                 result.addMeta(new meta.FacetDeclaration(bean.id,bean.type,bean.optional));
             });
+        }
+        else{
+            var err=new ts.Status(ts.Status.ERROR,2,"facets should be a map",actualResult);
+            err.setValidationPath({ name:"facets"})
+            result.putExtra(tsInterfaces.PARSE_ERROR,err);
         }
     }
     if (result.isAnonymous()&&result.isEmpty()){
@@ -806,5 +823,15 @@ export function parse(name: string,n:ParseNode,r:ts.TypeRegistry=ts.builtInRegis
     actualResult.putExtra(ts.GLOBAL,global);
     actualResult.putExtra(ts.SOURCE_EXTRA, n);
     actualResult.putExtra(tsInterfaces.HAS_FACETS, hasfacetsOrOtherStuffDoesNotAllowedInExternals);
+    if (repeat){
+        result.meta().forEach(x=>{
+            if (x instanceof Example){
+                actualResult.addMeta(x);
+            }
+            if (x instanceof Examples){
+                actualResult.addMeta(x);
+            }
+        })
+    }
     return actualResult;
 }

@@ -252,12 +252,10 @@ describe("Simple validation testing",function() {
                 a: {
                     "type":`
                     {
-                "required": "message",
                 "$schema": "http://json-schema.org/draft-04/schema",
                 "type": "object",
                 "properties": {
                   "message": {
-                    "required": true,
                     "type": "string"
                   }
                 },
@@ -466,5 +464,21 @@ describe("Simple validation testing",function() {
         var t=tp.getType("a");
         var st=t.validateType(ts.builtInRegistry());
         assert.isTrue(st.getErrors().length===0);
+    });
+    it("properties is map", function () {
+        var tp = ps.parseJSONTypeCollection({
+
+            types:{
+                a: {
+                    "type":"object",
+                    properties:[],
+
+                }
+
+            }
+        });
+        var t=tp.getType("a");
+        var st=t.validateType(ts.builtInRegistry());
+        assert.isTrue(st.getErrors().length===1);
     });
 });

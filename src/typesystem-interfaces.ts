@@ -43,6 +43,8 @@ export interface ICloneable<Clazz> {
     clone(context : ICloningContext) : Clazz;
 }
 
+export const REPEAT = "repeat";
+export const PARSE_ERROR = "parseError";
 export const TOP_LEVEL_EXTRA = "topLevel";
 export const DEFINED_IN_TYPES_EXTRA = "definedInTypes";
 export const USER_DEFINED_EXTRA = "USER_DEFINED";
