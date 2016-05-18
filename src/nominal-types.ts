@@ -163,7 +163,8 @@ export class TypeCachingCloningContext implements ICloningContext {
         var nameId = _original.nameId();
         var cachedTypes = this.getCachedTypesByNameId(nameId);
 
-        return this.findAlreadyCachedType(cachedTypes, _original);
+        var result = this.findAlreadyCachedType(cachedTypes, _original);
+        return result;
     }
 
     /**
@@ -190,6 +191,13 @@ export class TypeCachingCloningContext implements ICloningContext {
             var rTypeToFind = this.getTypeByNominal(typeToFind);
 
             var rCurrentCachedType = this.getTypeByNominal(typeToFind);
+
+            if (rTypeToFind == null && rCurrentCachedType == null) {
+                var path1 = typeToFind.getPath();
+                var path2 = cachedType.getPath();
+
+                return path1 != null && path1 == path2;
+            }
 
             return rTypeToFind != null && rTypeToFind === rCurrentCachedType;
         })
@@ -240,11 +248,9 @@ export class AbstractType extends Described implements ITypeDefinition{
     protected _facets: IProperty[]=[];
 
     clone(context : tsInterfaces.ICloningContext) : AbstractType {
-        console.log("Cloning " + this.nameId());
         var cached = context != null ? context.getCachedClone(this) : null;
 
         if (cached) {
-            console.log("Cached version found");
             return <AbstractType>cached;
         }
         var result = this.createClonedInstance();
