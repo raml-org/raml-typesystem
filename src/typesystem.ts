@@ -502,6 +502,9 @@ export abstract class AbstractType implements tsInterfaces.IHasExtra{
     validateType(tr:TypeRegistry=builtInRegistry()):Status{
         var rs=new Status(Status.OK,0,"",this);
         this.validateHierarchy(rs);
+        if (this.getExtra(tsInterfaces.PARSE_ERROR)){
+            rs.addSubStatus(this.getExtra(tsInterfaces.PARSE_ERROR));
+        }
         if (rs.isOk()) {
             rs.addSubStatus(this.checkConfluent());
 
