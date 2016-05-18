@@ -1931,4 +1931,38 @@ describe("Type validation basics",function() {
         assert.isTrue(!st.isOk());
         assert.isTrue(st.getErrors().length==1);
     })
+    it("repeat facets", function () {
+        var tp = ps.parseJSONTypeCollection({
+
+            schemas:{
+                T:{
+                    type: "string",
+                    repeat: true,
+                    example: ["A"]
+                }
+
+            }
+
+        })
+        var st= tp.getType("T").validateType();
+        assert.isTrue(!st.isOk());
+        assert.isTrue(st.getErrors().length==1);
+    })
+    it("repeat facets 2", function () {
+        var tp = ps.parseJSONTypeCollection({
+
+            schemas:{
+                T:{
+                    type: "string",
+                    repeat: true,
+                    example: "A"
+                }
+
+            }
+
+        })
+        var st= tp.getType("T").validateType();
+        assert.isTrue(st.isOk());
+        assert.isTrue(st.getErrors().length==0);
+    })
 })

@@ -5,7 +5,7 @@ import {AbstractType} from "./typesystem";
 import typeExpressions=require("./typeExpressions")
 import facetR=require("./facetRegistry")
 import meta=require("./metainfo")
-import {Annotation} from "./metainfo";
+import {Annotation, Example, Examples} from "./metainfo";
 import {Type} from "typescript";
 import {FacetDeclaration} from "./metainfo";
 import {HasProperty} from "./restrictions";
@@ -321,7 +321,7 @@ export function parseTypeCollection(n:ParseNode,tr:ts.TypeRegistry):TypeCollecti
     if (schemas&&schemas.kind()===NodeKind.ARRAY){
         schemas=transformToArray(schemas);
     }
-    
+
     var reg=new AccumulatingRegistry(tpes,schemas,tr,result);
     if (tpes&&tpes.kind()!==NodeKind.SCALAR){
         tpes.children().forEach(x=>{
@@ -692,6 +692,8 @@ export function parse(name: string,n:ParseNode,r:ts.TypeRegistry=ts.builtInRegis
     var repeat= n.childWithKey("repeat");
     if (repeat&&repeat.value()==true){
         actualResult=ts.derive(name,[ts.ARRAY]);
+
+        actualResult.putExtra(tsInterfaces.REPEAT,true)
         actualResult.addMeta(new ComponentShouldBeOfType(result));
     }
     if (r instanceof AccumulatingRegistry){
@@ -806,5 +808,15 @@ export function parse(name: string,n:ParseNode,r:ts.TypeRegistry=ts.builtInRegis
     actualResult.putExtra(ts.GLOBAL,global);
     actualResult.putExtra(ts.SOURCE_EXTRA, n);
     actualResult.putExtra(tsInterfaces.HAS_FACETS, hasfacetsOrOtherStuffDoesNotAllowedInExternals);
+    if (repeat){
+        result.meta().forEach(x=>{
+            if (x instanceof Example){
+                actualResult.addMeta(x);
+            }
+            if (x instanceof Examples){
+                actualResult.addMeta(x);
+            }
+        })
+    }
     return actualResult;
 }
