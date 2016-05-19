@@ -425,7 +425,7 @@ export interface ValidationError{
     message:string
     path:string
 }
-
+var MAX_EXAMPLES_TRESHOLD=10;
 export class XMLSchemaObject {
     private schemaObj: xmlValidator.XMLValidator;
 
@@ -442,6 +442,8 @@ export class XMLSchemaObject {
     getType() : string {
         return "text.xml";
     }
+
+    private contentToResult:{[content:string]:Error|boolean}={}
 
     validateObject(object:any): any {
         if(this.extraElementData) {
@@ -472,9 +474,25 @@ export class XMLSchemaObject {
     }
 
     validate(xml: any) {
-        var validationErrors = this.schemaObj.validate(xml);
-        
-        this.acceptErrors("key", validationErrors, true);
+        try {
+            var rs=this.contentToResult[xml];
+            if (rs===false){
+                return;
+            }
+            if (rs){
+                throw rs;
+            }
+            var validationErrors = this.schemaObj.validate(xml);
+
+            this.acceptErrors("key", validationErrors, true);
+            this.contentToResult[xml]=false;
+            if (Object.keys(this.contentToResult).length>MAX_EXAMPLES_TRESHOLD){
+                this.contentToResult={}
+            }
+        } catch (e){
+            this.contentToResult[xml]=e;
+            throw e;
+        }
     }
 
     private handleReferenceElement(content: string): string {

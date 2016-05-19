@@ -131,6 +131,9 @@ export class MatchToSchema extends  ts.Constraint{
             try {
                 so.validateObject(i);
             }catch(e){
+                if (e.message=="!_PERF_!"){
+                    return new ts.Status(ts.Status.WARNING,0,"Unable to validate example against schema (xmllint)",this);
+                }
                 if (e.message=="Cannot assign to read only property '__$validated' of object"){
                     return ts.ok();
                 }
