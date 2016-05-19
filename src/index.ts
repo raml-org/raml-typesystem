@@ -777,7 +777,8 @@ export class TypeConstructor {
 export function setPropertyConstructor(c:any){
     nm.setPropertyConstructor(c);
 }
-export function toNominal(t:IParsedType,bt: (name:string)=>nominalTypes.ITypeDefinition) :nominalTypes.ITypeDefinition{
-     return nm.toNominal(<ts.AbstractType>t,bt);
+export function toNominal(t:IParsedType,bt: (name:string)=>nominalTypes.ITypeDefinition,
+                          saveNominal=true) :nominalTypes.ITypeDefinition{
+     return nm.toNominal(<ts.AbstractType>t, bt, null, saveNominal);
 }
 

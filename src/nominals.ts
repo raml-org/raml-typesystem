@@ -27,7 +27,8 @@ export interface TypeCustomizer {
     findCustomizer(t:ts.AbstractType):TypeCustomizer;
 }
 
-export function toNominal(t:ts.AbstractType,callback:StringToBuiltIn,customizer:TypeCustomizer=null): nt.ITypeDefinition{
+export function toNominal(t:ts.AbstractType,callback:StringToBuiltIn,customizer:TypeCustomizer=null,
+    saveNominal=true): nt.ITypeDefinition{
     var vs:nt.AbstractType=null;
     if (t.getExtra(NOMINAL)){
         return t.getExtra(NOMINAL);
@@ -66,28 +67,28 @@ export function toNominal(t:ts.AbstractType,callback:StringToBuiltIn,customizer:
         else if (t.isArray()) {
             var ar = new nt.Array(t.name(), null);
             vs = ar;
-            t.putExtra(NOMINAL, vs);
+            if (saveNominal) t.putExtra(NOMINAL, vs);
             var cm = t.oneMeta(ComponentShouldBeOfType);
             var r = cm ? cm.value() : ts.ANY;
-            ar.setComponent(toNominal(r, callback));
+            ar.setComponent(toNominal(r, callback, null, saveNominal));
         }
         else if (t instanceof ts.UnionType) {
             var ut = new nt.Union(t.name(), null);
             if (t.superTypes().length==0) {
-                ut._superTypes.push(toNominal(ts.UNION, callback, customizer));
+                ut._superTypes.push(toNominal(ts.UNION, callback, customizer, saveNominal));
             }
-            t.putExtra(NOMINAL, ut);
+            if (saveNominal) t.putExtra(NOMINAL, ut);
             t.options().forEach(x=>{
                 if (ut.left==null){
-                    ut.left=toNominal(x,callback);
+                    ut.left=toNominal(x,callback, null, saveNominal);
                 }
                 else if (ut.right==null){
-                    ut.right=toNominal(x,callback);
+                    ut.right=toNominal(x,callback, null, saveNominal);
                 }
                 else{
                     var nu=new nt.Union(t.name(),null);
                     nu.left=ut.right;
-                    nu.right=toNominal(x,callback);
+                    nu.right=toNominal(x,callback, null, saveNominal);
                     ut.right=nu;
                 }
             })
@@ -109,7 +110,7 @@ export function toNominal(t:ts.AbstractType,callback:StringToBuiltIn,customizer:
     }
 
     t.superTypes().forEach(x=>{
-        var mn=<nt.AbstractType>toNominal(x,callback);
+        var mn=<nt.AbstractType>toNominal(x,callback, null, saveNominal);
         if (x.isBuiltin()){
             vs._superTypes.push(mn);
         }
@@ -131,20 +132,20 @@ export function toNominal(t:ts.AbstractType,callback:StringToBuiltIn,customizer:
             vs=q;
         }
     }
-    t.putExtra(NOMINAL, vs);
+    if (saveNominal) t.putExtra(NOMINAL, vs);
 
     var proto=parse.toProto(t);
     proto.properties.forEach(x=>{
         var prop=pc?pc(x.id):new nt.Property(x.id);
         prop.withDomain(<nt.StructuredType>vs);
-        prop.withRange(toNominal(x.type,callback));
+        prop.withRange(toNominal(x.type,callback, null, saveNominal));
         if (!x.optional){
             prop.withRequired(true);
         }
     });
     proto.facetDeclarations.forEach(x=>{
         var prop=pc?pc(x.facetName()):new nt.Property(x.facetName());
-        prop.withRange(toNominal(x.type(),callback));
+        prop.withRange(toNominal(x.type(),callback, null, saveNominal));
         vs.addFacet(prop);
 
     })
@@ -161,7 +162,7 @@ export function toNominal(t:ts.AbstractType,callback:StringToBuiltIn,customizer:
     }
     else {
         t.subTypes().forEach(x=> {
-            var ns = toNominal(x, callback, customizer);
+            var ns = toNominal(x, callback, customizer, saveNominal);
         })
     }
     return vs;
