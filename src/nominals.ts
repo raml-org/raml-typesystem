@@ -160,7 +160,7 @@ export function toNominal(t:ts.AbstractType,callback:StringToBuiltIn,customizer:
     if (t.isBuiltin()){
         vs.buildIn=true;
     }
-    else {
+    else if (saveNominal){
         t.subTypes().forEach(x=> {
             var ns = toNominal(x, callback, customizer, saveNominal);
         })
