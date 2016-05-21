@@ -243,7 +243,7 @@ export class AbstractType extends Described implements ITypeDefinition{
         });
         return res;
     }
-    private _props:IProperty[];
+    _props:IProperty[];
     protected _allFacets:IProperty[]
     protected _facets: IProperty[]=[];
 
@@ -963,7 +963,7 @@ export class AbstractType extends Described implements ITypeDefinition{
         visitor.typeEncountered(this);
 
         if (this.superTypes()) {
-            this.subTypes().forEach(superType=>superType.visit(visitor));
+            this.superTypes().forEach(superType=>superType.visit(visitor));
         }
 
         if (this.properties()) {
