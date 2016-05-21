@@ -305,8 +305,9 @@ export class AbstractType extends Described implements ITypeDefinition{
 
         clone._superTypes = [];
         if (this._superTypes) {
-            this._superTypes.forEach(property=>{
-                clone._superTypes.push(property.clone(context));
+            this._superTypes.forEach(superType=>{
+                var superTypeClone = superType.clone(context)
+                clone._superTypes.push(superTypeClone);
             })
         }
 

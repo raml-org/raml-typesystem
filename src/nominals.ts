@@ -75,7 +75,8 @@ export function toNominal(t:ts.AbstractType,callback:StringToBuiltIn,customizer:
         else if (t instanceof ts.UnionType) {
             var ut = new nt.Union(t.name(), null);
             if (t.superTypes().length==0) {
-                ut._superTypes.push(toNominal(ts.UNION, callback, customizer, saveNominal));
+                var nominalSuperType = toNominal(ts.UNION, callback, customizer, saveNominal)
+                ut._superTypes.push(nominalSuperType);
             }
             if (saveNominal) t.putExtra(NOMINAL, ut);
             t.options().forEach(x=>{
