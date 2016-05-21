@@ -1,7 +1,7 @@
 /// <reference path="../typings/main.d.ts" />
 declare function require(s:string):any;
 
-var validator = require('xmllint-hack');
+var validator = require('xmllint-hack2');
 
 export class XMLValidator {
     private schemaObject: any;

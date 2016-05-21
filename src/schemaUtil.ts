@@ -130,8 +130,13 @@ export class JSONSchemaObject {
             var api: any = require('json-schema-compatibility');
 
             this.setupId(jsonSchemaObject, this.provider.contextPath());
-
-            jsonSchemaObject =api.v4(jsonSchemaObject);
+            var schemaVer=""+jsonSchemaObject["$schema"];
+            if (schemaVer.indexOf("http://json-schema.org/draft-04/")==-1){
+                jsonSchemaObject =api.v4(jsonSchemaObject);
+            }
+            else{
+                this.fixRequired(jsonSchemaObject);
+            }
         } catch (e){
             throw new Error('Can not parse schema'+schema)
         }
@@ -139,6 +144,20 @@ export class JSONSchemaObject {
         delete jsonSchemaObject['$schema']
 
         this.jsonSchema=jsonSchemaObject;
+    }
+    fixRequired(obj:any){
+        // Object.keys(obj).forEach(x=>{
+        //     var val=obj[x];
+        //     if (x==="required"){
+        //         if (typeof val==="string"){
+        //             obj[x]=[val];
+        //         }
+        //     }
+        //     if (x==="properties"||x==="items"||x==="additionalItems"||x==="patternProperties"){
+        //         this.fixRequired(val);
+        //     }
+        //
+        // })
     }
 
     getType() : string {
@@ -406,7 +425,7 @@ export interface ValidationError{
     message:string
     path:string
 }
-
+var MAX_EXAMPLES_TRESHOLD=10;
 export class XMLSchemaObject {
     private schemaObj: xmlValidator.XMLValidator;
 
@@ -423,6 +442,8 @@ export class XMLSchemaObject {
     getType() : string {
         return "text.xml";
     }
+
+    private contentToResult:{[content:string]:Error|boolean}={}
 
     validateObject(object:any): any {
         if(this.extraElementData) {
@@ -453,9 +474,25 @@ export class XMLSchemaObject {
     }
 
     validate(xml: any) {
-        var validationErrors = this.schemaObj.validate(xml);
-        
-        this.acceptErrors("key", validationErrors, true);
+        try {
+            var rs=this.contentToResult[xml];
+            if (rs===false){
+                return;
+            }
+            if (rs){
+                throw rs;
+            }
+            var validationErrors = this.schemaObj.validate(xml);
+
+            this.acceptErrors("key", validationErrors, true);
+            this.contentToResult[xml]=false;
+            if (Object.keys(this.contentToResult).length>MAX_EXAMPLES_TRESHOLD){
+                this.contentToResult={}
+            }
+        } catch (e){
+            this.contentToResult[xml]=e;
+            throw e;
+        }
     }
 
     private handleReferenceElement(content: string): string {

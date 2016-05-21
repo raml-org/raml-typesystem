@@ -440,10 +440,16 @@ export class AbstractType extends Described implements ITypeDefinition{
         })
         return _.unique(rs);
     }
+    _allSupers:ITypeDefinition[];
+
     allSuperTypes():ITypeDefinition[]{
+        if (this._allSupers){
+            return this._allSupers;
+        }
         var rs:ITypeDefinition[]=[];
         this.allSuperTypesRecurrent(<any>this,{},rs);
-        return _.unique(rs);
+        this._allSupers= _.unique(rs);
+        return this._allSupers;
     }
     private allSuperTypesRecurrent(t:ITypeDefinition,m:{[name:string]:ITypeDefinition},result:ITypeDefinition[]){
         t.superTypes().forEach(x=>{
@@ -732,7 +738,7 @@ export class AbstractType extends Described implements ITypeDefinition{
     }
 
     isUserDefined() : boolean {
-        return this.getExtra(tsInterfaces.USER_DEFINED_EXTRA);
+        return this.getExtra(tsInterfaces.USER_DEFINED_EXTRA)&&!this.buildIn;
     }
 
     putExtra(extraName: string, value : any) : void {
