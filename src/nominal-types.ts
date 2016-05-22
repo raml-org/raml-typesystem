@@ -190,7 +190,7 @@ export class TypeCachingCloningContext implements ICloningContext {
         return _.find(alreadyCachedTypes, cachedType=>{
             var rTypeToFind = this.getTypeByNominal(typeToFind);
 
-            var rCurrentCachedType = this.getTypeByNominal(typeToFind);
+            var rCurrentCachedType = this.getTypeByNominal(cachedType);
 
             if (rTypeToFind == null && rCurrentCachedType == null) {
                 var path1 = typeToFind.getPath();
