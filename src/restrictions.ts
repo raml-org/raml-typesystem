@@ -903,6 +903,13 @@ export class ComponentShouldBeOfType extends FacetRestriction<ts.AbstractType>{
             var ar:any[]=i;
             for (var j=0;j<ar.length;j++){
                 var ss=this.type.validate(ar[j],true);
+                if (!ss.isOk()){
+                    var t=this.type;
+                    if (t.isUnknown()|| t.isRecurrent()){
+                        var s=new Status(Status.ERROR,0,"array instance is validated against unknown type:"+ t.name(),this);
+                        return s;
+                    }
+                }
                 ss.setValidationPath({ name:""+j})
                 rs.addSubStatus(ss);
             }

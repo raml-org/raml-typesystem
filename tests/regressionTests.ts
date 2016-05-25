@@ -146,6 +146,34 @@ describe("Simple validation testing",function() {
         })
         assert.isTrue(err)
     });
+    it("Validating array against  unknown type", function () {
+        var tp = ps.parseJSONTypeCollection({
+
+            types:{
+                XX:{
+                    type:"object",
+                    properties:{
+                        "x":"Likes[]"
+                    },
+                    example:{
+                        x:[{z:2}]
+                    }
+                }
+            }
+        });
+        var t=tp.getType("XX");
+        var st:ts.Status=t.validateType(ts.builtInRegistry());
+        var f=false;
+
+        assert.isTrue(st.getErrors().length===2);
+        var err=false;
+        st.getErrors().forEach(x=>{
+            if (x.getMessage().indexOf("against")!=-1){
+                err=true;
+            }
+        })
+        assert.isTrue(err)
+    });
     it("Validating recurrent types error count", function () {
         var tp = ps.parseJSONTypeCollection({
 
