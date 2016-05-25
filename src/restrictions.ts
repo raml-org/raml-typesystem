@@ -77,13 +77,15 @@ export abstract class MatchesProperty extends ts.Constraint{
         }
         if (this._type.isSubTypeOf(ts.UNKNOWN)||this._type.isSubTypeOf(ts.RECURRENT)){
             var p= new Status(Status.ERROR,0,"property "+this.propId()+" refers to unknown type "+this._type.name(),this)
-            p.setValidationPath({name: this.propId()})
+            p.setValidationPath({name: this.propId(), child: { name: "type"}})
             return p;
         }
         if (this._type.isAnonymous()){
             var st=this._type.validateType(registry);
             if (!st.isOk()){
                 var p= new Status(Status.ERROR,0,"property "+this.propId()+" range type has error:"+st.getMessage(),this)
+                st.getErrors().forEach(y=>{p.addSubStatus(y)})
+
                 p.setValidationPath({name: this.propId()})
                 return p;
             }

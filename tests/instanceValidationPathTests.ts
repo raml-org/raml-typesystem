@@ -203,4 +203,23 @@ describe("Simple validation testing",function() {
         var path=errors[0].getValidationPathAsString();
         assert.equal(path,"examples/z/value/mm");
     });
+    it("validatation (unknown type path)", function () {
+        var tp = ps.parseJSONTypeCollection({
+
+            types:{
+                z: {
+                    type: "object",
+                    properties:{
+                        mm: "number2"
+                    }
+                },
+
+            }
+        });
+        var t=tp.getType("z");
+        var errors=t.validateType().getErrors();
+        assert.isTrue(errors.length===1);
+        var path=errors[0].getValidationPathAsString();
+        assert.equal(path,"mm/type");
+    });
 });
