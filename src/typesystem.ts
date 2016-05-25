@@ -98,7 +98,10 @@ export class Status {
 
     }
 
-    addSubStatus(st:Status) {
+    addSubStatus(st:Status,pathName:string=null) {
+        if (pathName){
+            st.setValidationPath({name: pathName})
+        }
         this.subStatus.push(st);
         if (this.severity < st.severity) {
             this.severity = st.severity;
@@ -595,28 +598,31 @@ export abstract class AbstractType implements tsInterfaces.IHasExtra{
         }
 
         if (this.isSubTypeOf(RECURRENT)) {
-            rs.addSubStatus(new Status(Status.ERROR, 0, "recurrent type definition",this))
+            rs.addSubStatus(new Status(Status.ERROR, 0, "recurrent type definition",this),"type")
         }
 
         if (this.isSubTypeOf(UNKNOWN)) {
-            rs.addSubStatus(new Status(Status.ERROR, 0, "inheriting from unknown type",this))
+            rs.addSubStatus(new Status(Status.ERROR, 0, "inheriting from unknown type",this),"type")
         }
         if (this.isUnion()) {
             var tf = this.typeFamily();
             if (tf.some(x=>x.isSubTypeOf(RECURRENT))) {
-                rs.addSubStatus(new Status(Status.ERROR, 0, "recurrent type as an option of union type",this))
+                rs.addSubStatus(new Status(Status.ERROR, 0, "recurrent type as an option of union type",this),"type")
             }
             if (tf.some(x=>x.isSubTypeOf(UNKNOWN))) {
-                rs.addSubStatus(new Status(Status.ERROR, 0, "unknown type as an option of union type",this))
+                rs.addSubStatus(new Status(Status.ERROR, 0, "unknown type as an option of union type",this),"type")
             }
         }
         if (this.isArray()) {
            const fs=this.familyWithArray();
-           if ((fs.indexOf(this)!=-1)||fs.some(x=>x===RECURRENT)){
-               rs.addSubStatus(new Status(Status.ERROR, 0, "recurrent array type definition",this))
+            var ps= this.getExtra(tsInterfaces.HAS_ITEMS)?"items":"type";
+            if ((fs.indexOf(this)!=-1)||fs.some(x=>x===RECURRENT)){
+
+               rs.addSubStatus(new Status(Status.ERROR, 0, "recurrent array type definition",this),ps)
            }
            else  if (fs.some(x=>x===UNKNOWN)){
-                rs.addSubStatus(new Status(Status.ERROR, 0, "referring to unknown type "+this.oneMeta(ComponentShouldBeOfType).value().name()+" as an array component type",this))
+
+                rs.addSubStatus(new Status(Status.ERROR, 0, "referring to unknown type "+this.oneMeta(ComponentShouldBeOfType).value().name()+" as an array component type",this),ps)
            }
         }
         var supers=this.superTypes();
@@ -634,13 +640,13 @@ export abstract class AbstractType implements tsInterfaces.IHasExtra{
             })
         }
         if (hasExternal&&hasNotExternal){
-            rs.addSubStatus(new Status(Status.ERROR, 0, "It is not allowed to mix RAML types with externals",this))
+            rs.addSubStatus(new Status(Status.ERROR, 0, "It is not allowed to mix RAML types with externals",this),"type")
         }
         if (this instanceof UnionType){
             var ut=<UnionType><any>this;
             ut.options().forEach(x=>{
                 if (x.isExternal()){
-                    rs.addSubStatus(new Status(Status.ERROR, 0, "It is not allowed to mix RAML types with externals",this))
+                    rs.addSubStatus(new Status(Status.ERROR, 0, "It is not allowed to mix RAML types with externals",this),"type")
                 }
             })
         }

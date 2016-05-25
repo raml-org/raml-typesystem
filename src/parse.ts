@@ -731,6 +731,7 @@ export function parse(name: string,n:ParseNode,r:ts.TypeRegistry=ts.builtInRegis
             if (result.isSubTypeOf(ts.ARRAY)){
                 var tp=parse(null, x,r,false,false,false);
                 actualResult.addMeta(new ComponentShouldBeOfType(tp));
+                actualResult.putExtra(tsInterfaces.HAS_ITEMS,true)
                 return;
             }
         }
