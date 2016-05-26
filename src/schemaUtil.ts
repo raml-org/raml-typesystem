@@ -177,6 +177,18 @@ export class JSONSchemaObject {
 
         references.forEach(references => validator.setRemoteReference(references.reference, references.content || {}));
 
+        var schemaUrl : string = null;
+        if (this.jsonSchema.id && typeof(this.jsonSchema.id)==="string") {
+            schemaUrl = this.jsonSchema.id;
+            var innerPos = schemaUrl.indexOf("#");
+            if (innerPos != -1) {
+                schemaUrl = schemaUrl.substr(0, innerPos);
+            }
+
+            //adding reference to the schema itself
+            // validator.setRemoteReference(innerPos, this.jsonSchema);
+        }
+
         try {
             validator.validateSchema(this.jsonSchema);
         } catch (Error) {
@@ -185,8 +197,12 @@ export class JSONSchemaObject {
         }
 
         var result = <any[]>validator.getMissingRemoteReferences();
+        var filteredReferences : string[] = [];
+        if (result) filteredReferences = _.filter(result, referenceUrl=>{
+            return validator.cache[referenceUrl] == null && referenceUrl != schemaUrl;
+        })
 
-        return normalize ? result.map(reference => this.provider.normalizePath(reference)) : result;
+        return normalize ? filteredReferences.map(reference => this.provider.normalizePath(reference)) : filteredReferences;
     }
 
     private getSchemaPath(schema: any, normalize: boolean = false): string {
