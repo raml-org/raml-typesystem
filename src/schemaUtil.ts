@@ -100,6 +100,9 @@ class DummyProvider implements  IContentProvider {
     }
 }
 
+var exampleKey = function (content:any, schema:string, contextPath:string) {
+    return "__EXAMPLE_" + content + schema + contextPath;
+};
 export class JSONSchemaObject {
     jsonSchema: any;
 
@@ -298,7 +301,7 @@ export class JSONSchemaObject {
     }
 
     validate(content: any, alreadyAccepted: any[] = []): void {
-        var key = content + this.schema + this.provider.contextPath();
+        var key = exampleKey(content,this.schema,this.provider.contextPath());
 
         var error = globalCache.getValue(key);
 
@@ -566,16 +569,26 @@ export interface Schema {
     validateObject(object:any):void;
 }
 export function getJSONSchema(content: string, provider: IContentProvider) {
-    var rs = useLint ? globalCache.getValue(content) : false;
+    var key = schemaKey(provider, content);
+    var rs = useLint ? globalCache.getValue(key) : false;
     if (rs && rs.provider) {
         return rs;
     }
     var res = new JSONSchemaObject(content, provider);
-    globalCache.setValue(content, res);
+    globalCache.setValue(key, res);
     return res;
 }
 
-export function getXMLSchema(content: string) {
+var schemaKey = function (provider:IContentProvider, content:string) {
+    var contextPath = "";
+    if (provider) {
+        contextPath = provider.contextPath();
+    }
+    var key = "__SCHEMA_" + content + contextPath;
+    return key;
+};
+export function getXMLSchema(content: string, provider: IContentProvider) {
+    var key = schemaKey(provider, content);
     var rs = useLint ? globalCache.getValue(content) : false;
     if (rs) {
         return rs;
@@ -591,14 +604,15 @@ export function getXMLSchema(content: string) {
 
 export function createSchema(content: string, provider: IContentProvider): Schema {
 
-    var rs = useLint ? globalCache.getValue(content) : false;
+    var key = schemaKey(provider, content);
+    var rs = useLint ? globalCache.getValue(key) : false;
     if (rs) {
         return rs;
     }
     try {
         var res: Schema = new JSONSchemaObject(content, provider);
         if (useLint) {
-            globalCache.setValue(content, res);
+            globalCache.setValue(key, res);
         }
         return res;
     }
@@ -606,13 +620,13 @@ export function createSchema(content: string, provider: IContentProvider): Schem
         try {
             var res: Schema = new XMLSchemaObject(content);
             if (useLint) {
-                globalCache.setValue(content, res);
+                globalCache.setValue(key, res);
             }
             return res;
         }
         catch (e) {
             if (useLint) {
-                globalCache.setValue(content, new Error("Can not parse schema"))
+                globalCache.setValue(key, new Error("Can not parse schema"))
             }
             return null;
         }

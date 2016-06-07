@@ -124,7 +124,7 @@ export class MatchToSchema extends  ts.Constraint{
         }
         if (strVal.charAt(0)=="<"){
             try {
-                so = su.getXMLSchema(strVal);
+                so = su.getXMLSchema(strVal, this.provider);
             } catch (e){
                 return ts.ok();
             }
@@ -141,6 +141,9 @@ export class MatchToSchema extends  ts.Constraint{
                 }
                 if (e.message=="Object.keys called on non-object"){
                     return ts.ok();
+                }
+                if (e.message == "Maximum call stack size exceeded"){
+                    return new ts.Status(ts.Status.ERROR,0,"JSON schema contains circular references",this);
                 }
                 return new ts.Status(ts.Status.ERROR,0,"Example does not conform to schema:"+e.message,this);
             }
