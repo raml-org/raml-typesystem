@@ -374,6 +374,12 @@ export class JSONSchemaObject {
         }
 
         if(json.id) {
+            json.id = json.id.trim();
+
+            if(json.id.indexOf('#')< 0) {
+                json.id = json.id + '#';
+            }
+
             return;
         }
 
