@@ -1062,7 +1062,7 @@ export abstract class AbstractType implements tsInterfaces.IHasExtra{
         var g=autoCloseFlag;
         if (!nullAllowed&&(i===null||i===undefined)) {
             if (!this.nullable) {
-                return error("object is expected", this)
+                return error("Null or undefined value is not allowed", this)
             }
         }
         if (autoClose){
