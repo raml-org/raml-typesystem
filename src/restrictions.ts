@@ -48,7 +48,6 @@ export abstract class MatchesProperty extends ts.Constraint{
 
     validateProp(i: any,n:string, t:ts.AbstractType,q:ts.IValidationPath){
         var vl=i[n];
-        if (vl!==null&&vl!==undefined){
 
             var st=t.validate(vl,true,false);
             if (!st.isOk()){
@@ -62,7 +61,6 @@ export abstract class MatchesProperty extends ts.Constraint{
                 s.setValidationPath(this.patchPath(q));
                 return s;
             }
-        }
         return ts.ok();
     }
 
@@ -282,7 +280,7 @@ export class HasProperty extends ts.Constraint{
  */
 export class PropertyIs extends MatchesProperty{
 
-    constructor(private name: string,private type:ts.AbstractType){
+    constructor(private name: string,private type:ts.AbstractType, private optional:boolean=false){
         super(type);
     }
     matches(s:string):boolean{
@@ -293,6 +291,9 @@ export class PropertyIs extends MatchesProperty{
         if (i && typeof i==="object") {
             if (i.hasOwnProperty(this.name)) {
                 var st = this.validateProp(i, this.name, this.type,p);
+                if(!st.isOk()&&this.optional&&i[this.name]==null){
+                    return ts.ok();
+                }
                 return st;
             }
         }

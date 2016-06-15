@@ -122,7 +122,7 @@ export class PropertyBean{
             t.addMeta(new rs.MapPropertyIs(this.id,this.type));
         }
         else{
-            t.addMeta(new rs.PropertyIs(this.id,this.type));
+            t.addMeta(new rs.PropertyIs(this.id,this.type,this.optional));
         }
     }
 }
