@@ -1536,7 +1536,7 @@ export class UnionType extends DerivedType{
     }
 
     restrictions(){
-        return [new OrRestriction(this.allOptions().map(x=>new AndRestriction(x.restrictions())),"union type options does not pass validation")]
+        return [new OrRestriction(this.allOptions().map(x=>new AndRestriction(x.restrictions())),"Union type options do not pass validation")]
     }
 }
 export class IntersectionType extends DerivedType{
