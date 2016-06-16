@@ -100,7 +100,7 @@ export function parseJSON(name: string,n:any,r:ts.TypeRegistry=ts.builtInRegistr
 export function parseJSONTypeCollection(n:any,r:ts.TypeRegistry=ts.builtInRegistry(), provider?: su.IContentProvider):TypeCollection {
     return parseTypeCollection(new JSObjectNode(null,n, false, provider),r);
 }
-function isOptional(p:string) {
+function endsWithQuestionMark(p:string) {
     return p.charAt(p.length - 1) == '?';
 }
 
@@ -350,8 +350,20 @@ export function parseTypeCollection(n:ParseNode,tr:ts.TypeRegistry):TypeCollecti
 
 export function parsePropertyBean(n:ParseNode,tr:ts.TypeRegistry):PropertyBean{
     var result=new PropertyBean();
+    var hasRequiredFacet = false;
+    var rs=n.childWithKey("required");
+    if (rs){
+        var rsValue = rs.value();
+        if (typeof rsValue=="boolean"){
+            hasRequiredFacet = true;
+        }
+        if (rsValue===false){
+            result.optional=true;
+            result.id=n.key();
+        }
+    }
     var name:string= n.key();
-    if (isOptional(n.key())){
+    if (!hasRequiredFacet&&endsWithQuestionMark(n.key())){
         name=name.substr(0,name.length-1);
         result.optional=true;
     }
@@ -369,13 +381,6 @@ export function parsePropertyBean(n:ParseNode,tr:ts.TypeRegistry):PropertyBean{
     }
     result.type=parse(null, n,tr,false,false,false);
     result.id=name;
-    var rs=n.childWithKey("required");
-    if (rs){
-        if (rs.value()==false){
-            result.optional=true;
-            result.id=n.key();
-        }
-    }
     return result;
 }
 
