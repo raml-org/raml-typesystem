@@ -275,10 +275,8 @@ export class JSONSchemaObject {
             if(reference.indexOf('#') === -1) {
                 reference = reference + '#';
             }
-
-            if(!this.provider.isAbsolutePath(reference)) {
-                refConatiner['$ref'] = this.provider.resolvePath(currentPath, reference).replace(/\\/g,'/');
-            }
+            var resolvedRef = this.provider.resolvePath(currentPath, reference);
+            refConatiner['$ref'] = resolvedRef;
         });
     }
 
