@@ -619,7 +619,14 @@ function typeToSignature(t:ts.AbstractType):string{
  * @param r
  * @returns {any}
  */
-export function parse(name: string,n:ParseNode,r:ts.TypeRegistry=ts.builtInRegistry(),defaultsToAny:boolean=false,annotation:boolean=false,global:boolean=true):ts.AbstractType{
+export function parse(
+    name: string,
+    n:ParseNode,
+    r:ts.TypeRegistry=ts.builtInRegistry(),
+    defaultsToAny:boolean=false,
+    annotation:boolean=false,
+    global:boolean=true,
+    ignoreTypeAttr:boolean=false):ts.AbstractType{
     //Build super types.
 
     var provider: su.IContentProvider = (<any>n).contentProvider ? (<any>n).contentProvider() : null;
@@ -661,7 +668,7 @@ export function parse(name: string,n:ParseNode,r:ts.TypeRegistry=ts.builtInRegis
             shAndType=true;
         }
     }
-    if (!tp){
+    if (!tp||ignoreTypeAttr){
         if (defaultsToAny){
             if (n.childWithKey("properties")) {
                 superTypes = [ts.OBJECT];

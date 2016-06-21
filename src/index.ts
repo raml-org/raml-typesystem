@@ -301,8 +301,15 @@ export function parseFromAST(data:IParseNode):IParsedTypeCollection {
  * @param data
  * @returns {any}
  */
-export function parseTypeFromAST(name:string,data:IParseNode,collection:IParsedTypeCollection,defaultsToAny:boolean=false,annotation:boolean=false,global:boolean=true):IParsedType {
-    return tc.parse(name,<any>data,collection? <ts.TypeRegistry>collection.getTypeRegistry():ts.builtInRegistry(),defaultsToAny,annotation,global);
+export function parseTypeFromAST(
+    name:string,
+    data:IParseNode,
+    collection:IParsedTypeCollection,
+    defaultsToAny:boolean=false,
+    annotation:boolean=false,
+    global:boolean=true,
+    ignoreTypeAttr:boolean=false):IParsedType {
+    return tc.parse(name,<any>data,collection? <ts.TypeRegistry>collection.getTypeRegistry():ts.builtInRegistry(),defaultsToAny,annotation,global,ignoreTypeAttr);
 }
 /**
  * dumps type or type collection to JSON

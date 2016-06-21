@@ -1,7 +1,7 @@
 import ts=require("./typesystem")
 import nt=require("./nominal-types")
 import parse=require("./parse")
-import {ComponentShouldBeOfType} from "./restrictions";
+import restrictions = require("./restrictions");
 import {FacetDeclaration} from "./metainfo";
 import {Description} from "./metainfo";
 import {DisplayName} from "./metainfo";
@@ -67,7 +67,7 @@ export function toNominal(t:ts.AbstractType,callback:StringToBuiltIn,customizer:
             var ar = new nt.Array(t.name(), null);
             vs = ar;
             t.putExtra(NOMINAL, vs);
-            var cm = t.oneMeta(ComponentShouldBeOfType);
+            var cm = t.oneMeta(restrictions.ComponentShouldBeOfType);
             var r = cm ? cm.value() : ts.ANY;
             ar.setComponent(toNominal(r, callback));
         }
@@ -150,7 +150,13 @@ export function toNominal(t:ts.AbstractType,callback:StringToBuiltIn,customizer:
     })
     t.customFacets().forEach(x=>{
         vs.fixFacet(x.facetName(), x.value());
-    })
+    });
+    var basicFacets = <restrictions.FacetRestriction<any>[]>
+            t.metaOfType(<any>restrictions.FacetRestriction);
+
+    for(var x of basicFacets){
+        vs.fixFacet(x.facetName(), x.value());
+    }
     vs.addAdapter(t);
     if (t.isEmpty()){
         vs.addAdapter(new nt.Empty());
