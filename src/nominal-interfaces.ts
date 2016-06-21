@@ -256,6 +256,10 @@ export interface ITypeDefinition extends INamedEntity,tsInterfaces.IHasExtra {
      */
     externalInHierarchy(): IExternalType
 
+    /**
+     * Whether the class is built-in.
+     */
+    isBuiltIn() : boolean;
 
     /**
      * List of value requirements for this type,

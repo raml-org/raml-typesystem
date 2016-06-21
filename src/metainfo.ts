@@ -4,9 +4,9 @@ import {Status} from "./typesystem";
 import {PropertyIs} from "./restrictions";
 import _=require("underscore")
 import xmlio=require("./xmlio")
-import int=require("./typesystem-interfaces")
+import tsInterfaces=require("./typesystem-interfaces")
 
-export class MetaInfo extends ts.TypeInformation{
+export class MetaInfo extends ts.TypeInformation {
 
 
     constructor(private _name: string,private _value: any,inhertitable:boolean=false){
@@ -23,16 +23,29 @@ export class MetaInfo extends ts.TypeInformation{
     facetName(){
         return this._name;
     }
+
+    kind() : tsInterfaces.MetaInformationKind {
+        //to be overriden in subtypes
+        return null;
+    }
 }
 export class Description extends MetaInfo{
 
     constructor(value:string){
         super("description",value)
     }
+
+    kind() : tsInterfaces.MetaInformationKind {
+        return tsInterfaces.MetaInformationKind.Description;
+    }
 }
 export  class NotScalar extends MetaInfo{
     constructor(){
         super("notScalar",true)
+    }
+
+    kind() : tsInterfaces.MetaInformationKind {
+        return tsInterfaces.MetaInformationKind.NotScalar;
     }
 }
 export class DisplayName extends MetaInfo{
@@ -41,12 +54,20 @@ export class DisplayName extends MetaInfo{
     constructor(value:string){
         super("displayName",value)
     }
+
+    kind() : tsInterfaces.MetaInformationKind {
+        return tsInterfaces.MetaInformationKind.DisplayName;
+    }
 }
 export class Usage extends MetaInfo{
 
 
     constructor(value:string){
         super("usage",value)
+    }
+
+    kind() : tsInterfaces.MetaInformationKind {
+        return tsInterfaces.MetaInformationKind.Usage;
     }
 }
 export class Annotation extends MetaInfo{
@@ -74,6 +95,10 @@ export class Annotation extends MetaInfo{
         }
         return ts.ok();
     }
+
+    kind() : tsInterfaces.MetaInformationKind {
+        return tsInterfaces.MetaInformationKind.Annotation;
+    }
 }
 export class FacetDeclaration extends MetaInfo{
 
@@ -93,11 +118,19 @@ export class FacetDeclaration extends MetaInfo{
     type():ts.AbstractType{
         return this._type;
     }
+
+    kind() : tsInterfaces.MetaInformationKind {
+        return tsInterfaces.MetaInformationKind.FacetDeclaration;
+    }
 }
 export class CustomFacet extends MetaInfo{
 
     constructor(name: string,value:any){
         super(name,value,true)
+    }
+
+    kind() : tsInterfaces.MetaInformationKind {
+        return tsInterfaces.MetaInformationKind.CustomFacet;
     }
 }
 
@@ -141,7 +174,7 @@ function parseExampleIfNeeded(val:any,type:ts.AbstractType):any{
             }
         }
     }
-    if (type.getExtra(int.REPEAT)){
+    if (type.getExtra(tsInterfaces.REPEAT)){
         val=[val];
     }
     return val;
@@ -215,6 +248,10 @@ export class Example extends MetaInfo{
 
         return serializeToXml(parsedValue, this.owner());
     }
+
+    kind() : tsInterfaces.MetaInformationKind {
+        return tsInterfaces.MetaInformationKind.Example;
+    }
 }
 export class Required extends MetaInfo{
     constructor(value:any){
@@ -227,6 +264,10 @@ export class Required extends MetaInfo{
         }
         return ts.ok();
     }
+
+    kind() : tsInterfaces.MetaInformationKind {
+        return tsInterfaces.MetaInformationKind.Required;
+    }
 }
 export class AllowedTargets extends MetaInfo{
     constructor(value:any){
@@ -236,6 +277,10 @@ export class AllowedTargets extends MetaInfo{
     validateSelf(registry:ts.TypeRegistry):ts.Status {
 
         return ts.ok();
+    }
+
+    kind() : tsInterfaces.MetaInformationKind {
+        return tsInterfaces.MetaInformationKind.AllowedTargets;
     }
 }
 
@@ -332,6 +377,10 @@ export class Examples extends MetaInfo{
             return new Status(Status.ERROR,0,"examples should be a map",this);
         }
     }
+
+    kind() : tsInterfaces.MetaInformationKind {
+        return tsInterfaces.MetaInformationKind.Examples;
+    }
 }
 function examplesPatchPath(example:ts.Status,noVal:boolean,x: string):void{
     if (noVal){
@@ -345,6 +394,10 @@ function examplesPatchPath(example:ts.Status,noVal:boolean,x: string):void{
 export class XMLInfo extends MetaInfo{
     constructor(o:any){
         super("xml",o)
+    }
+
+    kind() : tsInterfaces.MetaInformationKind {
+        return tsInterfaces.MetaInformationKind.XMLInfo;
     }
 }
 
@@ -362,6 +415,9 @@ export class Default extends MetaInfo{
         return ts.ok();
     }
 
+    kind() : tsInterfaces.MetaInformationKind {
+        return tsInterfaces.MetaInformationKind.Default;
+    }
 }
 export class Discriminator extends ts.TypeInformation{
 
@@ -393,6 +449,10 @@ export class Discriminator extends ts.TypeInformation{
             return new Status(Status.ERROR,0,"It is only allowed to use scalar properties as discriminators",this);
         }
         return ts.ok();
+    }
+
+    kind() : tsInterfaces.MetaInformationKind {
+        return tsInterfaces.MetaInformationKind.Discriminator;
     }
 }
 
@@ -428,5 +488,9 @@ export class DiscriminatorValue extends ts.TypeInformation{
     }
     value(){
         return this._value;
+    }
+
+    kind() : tsInterfaces.MetaInformationKind {
+        return tsInterfaces.MetaInformationKind.DiscriminatorValue;
     }
 }

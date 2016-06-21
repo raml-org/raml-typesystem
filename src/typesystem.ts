@@ -5,7 +5,7 @@ import tsInterfaces = require("./typesystem-interfaces")
 
 export type IValidationPath = tsInterfaces.IValidationPath;
 
-export class Status {
+export class Status implements tsInterfaces.IStatus {
 
     public static CODE_CONFLICTING_TYPE_KIND = 4;
 
@@ -162,7 +162,7 @@ export function error(message:string,source:any){
     return new Status(Status.ERROR,0,message,source);
 }
 
-export abstract class TypeInformation {
+export abstract class TypeInformation implements tsInterfaces.ITypeFacet {
 
     constructor(private _inheritable:boolean){}
 
@@ -182,6 +182,7 @@ export abstract class TypeInformation {
     abstract facetName():string
     abstract value():any;
     abstract requiredType():AbstractType
+    abstract kind() : tsInterfaces.MetaInformationKind
 }
 var stack:RestrictionStackEntry=null;
 
@@ -255,6 +256,10 @@ export abstract class Constraint extends TypeInformation{
             stack=stack.pop();
         }
     }
+
+    kind() : tsInterfaces.MetaInformationKind {
+        return tsInterfaces.MetaInformationKind.Constraint;
+    }
 }
 
 
@@ -276,7 +281,7 @@ export var autoCloseFlag=false;
 /**
  * Registry of the types
  */
-export class TypeRegistry {
+export class TypeRegistry implements tsInterfaces.ITypeRegistry {
   private _types:{[name:string]: AbstractType}={};
 
   private typeList:AbstractType[]=[]
@@ -422,7 +427,7 @@ export class RestrictionsConflict extends Status{
 var globalId=0;
 
 export var VALIDATED_TYPE:AbstractType=null;
-export abstract class AbstractType implements tsInterfaces.IHasExtra{
+export abstract class AbstractType implements tsInterfaces.IParsedType, tsInterfaces.IHasExtra{
 
     protected computeConfluent: boolean
 
@@ -1334,6 +1339,10 @@ export abstract class Modifier extends TypeInformation{
 
     requiredType(){
         return ANY;
+    }
+
+    kind() : tsInterfaces.MetaInformationKind {
+        return tsInterfaces.MetaInformationKind.Modifier;
     }
 }
 export class Polymorphic extends Modifier{
