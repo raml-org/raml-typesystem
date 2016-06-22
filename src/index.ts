@@ -9,6 +9,7 @@ import {FacetDeclaration} from "./metainfo";
 import {Status} from "./typesystem";
 import nm=require("./nominals")
 export import nominalTypes=require("./nominal-types")
+export import nominalInterfaces=require("./nominal-interfaces")
 export import typeExpressions=require("./typeExpressionUtil");
 import schemaUtil = require('./schemaUtil');
 
@@ -33,6 +34,9 @@ export type IParsedTypeCollection = tsInterfaces.IParsedTypeCollection;
 export type ITypeRegistry = tsInterfaces.ITypeRegistry;
 export type IParsedType = tsInterfaces.IParsedType;
 
+export function isParsedType(object : any) : object is IParsedType {
+    return object instanceof ts.AbstractType;
+}
 
 export interface Open {
     /**

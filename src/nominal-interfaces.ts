@@ -7,7 +7,7 @@ export interface INamedEntity{
     annotations():IAnnotation[]
     addAnnotation(a:IAnnotation):void;
     removeAnnotation(a:IAnnotation):void;
-
+    getAdapters() : any[];
 }
 export interface NamedId{
     name:string;
