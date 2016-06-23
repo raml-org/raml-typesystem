@@ -175,7 +175,7 @@ class Example implements nm.IExpandableExample{
 }
 var toExample = function (owner: any, exampleObj:any, name:string=null,isSingle:boolean=false) {
     var example:Example;
-    if (exampleObj) {
+    if (exampleObj!=null) {
         var val = exampleObj.value;
         if (!val) {
             val = exampleObj
@@ -234,7 +234,7 @@ export function exampleFromNominal(n:nm.ITypeDefinition):nm.IExpandableExample[]
         if (ms){
 
             var exampleV=ms.example();
-            if (exampleV){
+            if (exampleV!=null){
                 result.push(toExample(ms, ms.value(), undefined, true));
             }
         }
