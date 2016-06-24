@@ -995,8 +995,17 @@ export class Pattern extends FacetRestriction<string>{
         if (typeof i=='string'){
             var st:string=i;
             try {
-                var mm=st.match(this._value);
-                if (!mm){
+                var matches=st.match(this._value);
+                var gotMatch = false;
+                if (matches){
+                    for(var m of matches){
+                        if(m.length == st.length){
+                            gotMatch = true;
+                            break;
+                        }
+                    }
+                }
+                if(!gotMatch){
                     return new ts.Status(ts.Status.ERROR, 0, "string should match to " + this.value(),this);
                 }
             }catch (e){
