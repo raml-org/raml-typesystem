@@ -1050,7 +1050,7 @@ export abstract class AbstractType implements tsInterfaces.IParsedType, tsInterf
             }
             this.restrictions(true).forEach(x=>result.addSubStatus(x.check(i, path)));
             if ((autoClose || autoCloseFlag) && this.isObject() && (!this.oneMeta(KnownPropertyRestriction))) {
-                var cp = new KnownPropertyRestriction(true);
+                var cp = new KnownPropertyRestriction(false);
                 cp.patchOwner(this);
                 cp.check(i).getErrors().forEach(x=> {
                     var rs = new Status(Status.WARNING, 0, x.getMessage(), this);
@@ -1101,7 +1101,7 @@ export abstract class AbstractType implements tsInterfaces.IParsedType, tsInterf
      * make this type closed type (no unknown properties any more)
      */
     closeUnknownProperties(){
-        this.addMeta(new KnownPropertyRestriction(true))
+        this.addMeta(new KnownPropertyRestriction(false))
     }
 
     canDoAc():Status{
@@ -1431,7 +1431,7 @@ export class InheritedType extends AbstractType{
                     if (hasKp){
                         return;
                     }
-                    var kp=new KnownPropertyRestriction(true);
+                    var kp=new KnownPropertyRestriction(false);
                     kp.patchOwner(this);
                     rs.push(kp);
                     return;
