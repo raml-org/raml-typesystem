@@ -471,7 +471,7 @@ export class TypeConstructor {
      * @returns {TypeConstructor}
      */
     closeType():TypeConstructor {
-        (<ts.AbstractType>this.target).addMeta(new KnownPropertyRestriction(false));
+        (<ts.AbstractType>this.target).addMeta(new KnownPropertyRestriction(true));
         return this;
     }
 
