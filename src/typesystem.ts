@@ -1039,12 +1039,6 @@ export abstract class AbstractType implements tsInterfaces.IParsedType, tsInterf
      * validates object against this type without performing AC
      */
     validateDirect(i:any,autoClose:boolean=false,nullAllowed:boolean=true,path:tsInterfaces.IValidationPath=null):Status{
-        for( var subType of this.subTypes()){
-            var vr = subType.validateDirect(i,autoClose,nullAllowed,path);
-            if(vr.isOk()){
-                return vr;
-            }
-        }
         var prevValidated=VALIDATED_TYPE;
         try {
             VALIDATED_TYPE = this;
@@ -1080,6 +1074,12 @@ export abstract class AbstractType implements tsInterfaces.IParsedType, tsInterf
             autoCloseFlag=true;
         }
         try {
+            for( var subType of this.subTypes()){
+                var vr = subType.validateDirect(i,autoClose||g);
+                if(vr.isOk()){
+                    return vr;
+                }
+            }
             return this.validateDirect(i, autoClose||g);
         } finally {
             autoCloseFlag=g;
