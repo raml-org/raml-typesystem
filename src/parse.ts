@@ -483,7 +483,7 @@ export class TypeProto{
             }
         }
         if(this.additionalProperties!==undefined){
-            result.additionalProperties = this.additionalProperties;
+            result["additionalProperties"] = this.additionalProperties;
         }
 
         return result;
