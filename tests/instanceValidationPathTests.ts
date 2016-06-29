@@ -137,7 +137,8 @@ describe("Simple validation testing",function() {
                   type: "object",
                   properties:{
                       mm: "number"
-                  }
+                  },
+                  additionalProperties: false
                 },
                 a: {
                     "type": "object",

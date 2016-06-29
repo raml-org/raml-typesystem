@@ -401,6 +401,8 @@ export class TypeProto{
 
     superTypes: string[]
 
+    additionalProperties: boolean
+
     toJSON(){
         var result:{ [name:string]:any}={};
         if (this.superTypes&&this.superTypes.length>0){
@@ -480,6 +482,9 @@ export class TypeProto{
                 return result['type'];
             }
         }
+        if(this.additionalProperties!==undefined){
+            result["additionalProperties"] = this.additionalProperties;
+        }
 
         return result;
     }
@@ -549,12 +554,12 @@ export function toProto(type:AbstractType):TypeProto{
                     pmap[x.propertyName()]=pbean;
                 }
             }
+            else if (x instanceof rs.KnownPropertyRestriction) {
+                result.additionalProperties = x.value();
+            }
             else{
-
-                if (!(x instanceof rs.KnownPropertyRestriction)) {
-                    result.basicFacets.push(x);
-                }
-             }
+                result.basicFacets.push(x);
+            }
         }
     })
     Object.keys(pmap).forEach(x=>result.properties.push(pmap[x]));

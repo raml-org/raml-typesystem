@@ -49,7 +49,7 @@ export abstract class MatchesProperty extends ts.Constraint{
     validateProp(i: any,n:string, t:ts.AbstractType,q:ts.IValidationPath){
         var vl=i[n];
 
-            var st=t.validate(vl,true,false);
+            var st=t.validate(vl,false,false);
             if (!st.isOk()){
                 if (t.isUnknown()|| t.isRecurrent()){
                     var s=new Status(Status.ERROR,0,"Validating instance against unknown type:"+ t.name(),this);
@@ -164,8 +164,6 @@ export class MatchToSchema extends  ts.Constraint{
  */
 export class KnownPropertyRestriction extends ts.Constraint{
 
-
-
     facetName(){
         return "closed"
     }
@@ -175,7 +173,7 @@ export class KnownPropertyRestriction extends ts.Constraint{
     }
 
     value(){
-        return true;
+        return this._value;
     }
 
     constructor(private _value: boolean){
@@ -188,7 +186,7 @@ export class KnownPropertyRestriction extends ts.Constraint{
 
     check(i:any):ts.Status{
 
-        if (this._value) {
+        if (this._value===false) {
             if (i&&typeof  i == 'object'&&!Array.isArray(i)) {
                 var nm:{ [name:string]:boolean} = {};
                 Object.getOwnPropertyNames(i).forEach(n=>nm[n] = true);
@@ -908,7 +906,7 @@ export class ComponentShouldBeOfType extends FacetRestriction<ts.AbstractType>{
         if (Array.isArray(i)){
             var ar:any[]=i;
             for (var j=0;j<ar.length;j++){
-                var ss=this.type.validate(ar[j],true);
+                var ss=this.type.validate(ar[j],false);
                 if (!ss.isOk()){
                     var t=this.type;
                     if (t.isUnknown()|| t.isRecurrent()){

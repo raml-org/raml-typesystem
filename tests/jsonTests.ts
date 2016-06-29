@@ -367,14 +367,16 @@ describe("Type collection parse and store",function(){
                     type: "object",
                     properties: {
                         name: "string"
-                    }
+                    },
+                    additionalProperties: false
                 },
                 General:
                 {
                     type: "Person",
                     properties:{
                         rank: "string"
-                    }
+                    },
+                    additionalProperties: false
                 }
             }
         };
@@ -390,7 +392,8 @@ describe("Type collection parse and store",function(){
                     type: "object",
                     properties: {
                         name: "string"
-                    }
+                    },
+                    additionalProperties: false
                 },
                 General:
                 {
@@ -398,7 +401,8 @@ describe("Type collection parse and store",function(){
                     properties:{
                         rank: "string",
                         team: "Person[]"
-                    }
+                    },
+                    additionalProperties: false
                 }
             }
         };
@@ -415,7 +419,8 @@ describe("Type collection parse and store",function(){
                     closed: true,
                     properties: {
                         name: "string"
-                    }
+                    },
+                    additionalProperties: false
                 },
                 General:
                 {
@@ -424,7 +429,8 @@ describe("Type collection parse and store",function(){
                     properties:{
                         rank: "string",
                         team: "Person[]"
-                    }
+                    },
+                    additionalProperties: false
                 }
             }
         };
@@ -440,7 +446,8 @@ describe("Type collection parse and store",function(){
                     type: "object",
                     properties: {
                         name: "string"
-                    }
+                    },
+                    additionalProperties: false
                 },
                 General:
                 {
@@ -448,7 +455,8 @@ describe("Type collection parse and store",function(){
                     properties:{
                         rank: "string",
                         team: "General[]"
-                    }
+                    },
+                    additionalProperties: false
                 }
             }
         };
@@ -464,7 +472,8 @@ describe("Type collection parse and store",function(){
                     type: "object",
                     properties: {
                         name: "string"
-                    }
+                    },
+                    additionalProperties: false
                 },
                 General:
                 {
@@ -472,7 +481,8 @@ describe("Type collection parse and store",function(){
                     properties:{
                         rank: "string",
                         team: "General[]"
-                    }
+                    },
+                    additionalProperties: false
                 }
             }
         };
@@ -489,7 +499,8 @@ describe("Type collection parse and store",function(){
                     type: "object",
                     properties: {
                         name: "string"
-                    }
+                    },
+                    additionalProperties: false
                 },
                 General:
                 {
@@ -497,7 +508,8 @@ describe("Type collection parse and store",function(){
                     properties:{
                         rank: "string",
                         team: "Person[]"
-                    }
+                    },
+                    additionalProperties: false
                 }
             }
         };
@@ -515,7 +527,8 @@ describe("Type collection parse and store",function(){
                     closed: true,
                     properties: {
                         name: "string"
-                    }
+                    },
+                    additionalProperties: false
                 },
                 General:
                 {
@@ -523,7 +536,8 @@ describe("Type collection parse and store",function(){
                     properties:{
                         rank: "string",
                         team: "Person[]"
-                    }
+                    },
+                    additionalProperties: false
                 }
             }
         };
@@ -541,7 +555,8 @@ describe("Type collection parse and store",function(){
                     closed: true,
                     properties: {
                         name: "string"
-                    }
+                    },
+                    additionalProperties: false
                 },
                 General:
                 {
@@ -549,7 +564,8 @@ describe("Type collection parse and store",function(){
                     properties:{
                         rank: "string",
                         team: "Person[]"
-                    }
+                    },
+                    additionalProperties: false
                 }
             }
         };
@@ -567,7 +583,8 @@ describe("Type collection parse and store",function(){
                     closed: true,
                     properties: {
                         name: "string"
-                    }
+                    },
+                    additionalProperties: false
                 },
                 General:
                 {
@@ -576,7 +593,8 @@ describe("Type collection parse and store",function(){
                     properties:{
                         rank: "string",
                         team: "(Person| General)[]"
-                    }
+                    },
+                    additionalProperties: false
                 }
             }
         };
@@ -593,7 +611,8 @@ describe("Type collection parse and store",function(){
                     type: "object",
                     properties: {
                         name: "string"
-                    }
+                    },
+                    additionalProperties: false
                 },
                 General:
                 {
@@ -601,7 +620,8 @@ describe("Type collection parse and store",function(){
                     properties:{
                         rank: "string",
                         team: "(Person| General)[]"
-                    }
+                    },
+                    additionalProperties: false
                 }
             }
         };
@@ -619,7 +639,8 @@ describe("Type collection parse and store",function(){
                     closed: true,
                     properties: {
                         name: "string"
-                    }
+                    },
+                    additionalProperties: false
                 },
                 General:
                 {
@@ -627,7 +648,8 @@ describe("Type collection parse and store",function(){
                     properties:{
                         rank: "string",
                         team: "(Person| General)[]"
-                    }
+                    },
+                    additionalProperties: false
                 }
             }
         };
@@ -644,7 +666,8 @@ describe("Type collection parse and store",function(){
                     type: "General",
                     properties: {
                         name: "string"
-                    }
+                    },
+                    additionalProperties: false
                 },
                 General:
                 {
@@ -652,7 +675,8 @@ describe("Type collection parse and store",function(){
                     properties:{
                         rank: "string",
                         team: "(Person| General)[]"
-                    }
+                    },
+                    additionalProperties: false
                 }
             }
         };
@@ -669,11 +693,13 @@ describe("Type collection parse and store",function(){
                     type: "Person",
                     properties: {
                         name: "string"
-                    }
+                    },
+                    additionalProperties: false
                 },
                 General:
                 {
-                    type: "Person | General"
+                    type: "Person | General",
+                    additionalProperties: false
                 }
             }
         };
@@ -690,11 +716,13 @@ describe("Type collection parse and store",function(){
                     type: "Person",
                     properties: {
                         name: "string"
-                    }
+                    },
+                    additionalProperties: false
                 },
                 General:
                 {
-                    type: "Person | General"
+                    type: "Person | General",
+                    additionalProperties: false
                 }
             }
         };
@@ -710,14 +738,16 @@ describe("Type collection parse and store",function(){
                     type: "Person",
                     properties: {
                         name: "string"
-                    }
+                    },
+                    additionalProperties: false
                 },
                 General:
                 {
                     properties: {
                         title: "string"
                     },
-                    type: "Person | General"
+                    type: "Person | General",
+                    additionalProperties: false
                 }
             }
         };
@@ -737,14 +767,16 @@ describe("Type collection parse and store",function(){
                     type: "object",
                     properties: {
                         name: "string"
-                    }
+                    },
+                    additionalProperties: false
                 },
                 General:
                 {
                     properties: {
                         title: "string"
                     },
-                    type: "Person | General"
+                    type: "Person | General",
+                    additionalProperties: false
                 }
             }
         };
@@ -765,6 +797,7 @@ describe("Type collection parse and store",function(){
                     properties: {
                         name: "string"
                     },
+                    additionalProperties: false,
                     examples:{
                         a: {
                             content:{
@@ -809,7 +842,9 @@ describe("Type collection parse and store",function(){
             types:{
                 t1:{
                     type:"object",
-                    additionalProperties: "number"
+                    additionalProperties: {
+                        "/.+/": "number"
+                    }
                 }
             }
         };

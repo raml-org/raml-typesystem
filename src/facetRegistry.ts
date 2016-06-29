@@ -72,7 +72,7 @@ export class Registry {
         new FacetPrototype(()=>new HasProperty("x"), null),//X
         new FacetPrototype(()=>new UniqueItems(true), (x)=>new UniqueItems(x)),//X
         new FacetPrototype(()=>new ComponentShouldBeOfType(ts.ANY), null),//X
-        new FacetPrototype(()=>new KnownPropertyRestriction(true), (x)=>new KnownPropertyRestriction(<boolean>x))
+        new FacetPrototype(()=>new KnownPropertyRestriction(false), (x)=>new KnownPropertyRestriction(<boolean>x))
     ];
 
     meta:FacetPrototype[] = [
