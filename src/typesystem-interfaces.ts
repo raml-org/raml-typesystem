@@ -18,8 +18,8 @@ export const GLOBAL_EXTRA="GLOBAL";
 export const HAS_FACETS="HAS_FACETS";
 export const HAS_ITEMS="HAS_ITEMS";
 
-export interface IStatus {
-
+export interface IStatus extends IHasExtra {
+    
 
     /**
      * retur2ns true if status does not have errors
