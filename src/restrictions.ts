@@ -789,7 +789,7 @@ export class MinItems extends  MinMaxRestriction{
  */
 export class MaxLength extends  MinMaxRestriction{
     constructor(val: number){
-        super("maxLength",val,true,"minLength",new ts.UnionType("string-file",[ts.STRING,ts.FILE]),true);
+        super("maxLength",val,true,"minLength",new ts.UnionType("string and file",[ts.STRING,ts.FILE]),true);
     }
 
 
@@ -810,7 +810,7 @@ export class MaxLength extends  MinMaxRestriction{
  */
 export class MinLength extends  MinMaxRestriction{
     constructor(val: number){
-        super("minLength",val,false,"maxLength",new ts.UnionType("string-file",[ts.STRING,ts.FILE]),true);
+        super("minLength",val,false,"maxLength",new ts.UnionType("string and file",[ts.STRING,ts.FILE]),true);
     }
 
     extractValue(i:any):number {
