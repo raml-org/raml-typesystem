@@ -2,6 +2,7 @@
 import _=require("underscore")
 import su=require("./schemaUtil")
 import tsInterfaces = require("./typesystem-interfaces")
+import {ParseNode} from "./parse";
 
 export type IValidationPath = tsInterfaces.IValidationPath;
 
@@ -90,7 +91,7 @@ export class Status implements tsInterfaces.IStatus {
         })
     }
 
-    public constructor(severity:number, code:number, message:string,source:any) {
+    public constructor(severity:number, code:number, message:string,source:any,private takeNodeFromSource:boolean=false) {
         this.severity = severity;
         this.code = code;
         this.message = message;
@@ -150,6 +151,18 @@ export class Status implements tsInterfaces.IStatus {
         }
         return this.message;
     }
+
+    getExtra(name:string):any{
+        if(this.takeNodeFromSource&&name == tsInterfaces.SOURCE_EXTRA) {
+            if (this.source instanceof TypeInformation) {
+                return this.source.node();
+            }
+        }
+        return null;
+    }
+    
+    putExtra(name:string,value:any):void{}
+
 }
 
 export function ok(){ return new Status(Status.OK,Status.OK,"",null)};
@@ -158,8 +171,8 @@ export const GLOBAL=tsInterfaces.GLOBAL_EXTRA;
 export const TOPLEVEL=tsInterfaces.TOP_LEVEL_EXTRA;
 export const SOURCE_EXTRA = tsInterfaces.SOURCE_EXTRA;
 
-export function error(message:string,source:any){
-    return new Status(Status.ERROR,0,message,source);
+export function error(message:string,source:any,takeNodeFromSource:boolean=false){
+    return new Status(Status.ERROR,0,message,source,takeNodeFromSource);
 }
 
 export abstract class TypeInformation implements tsInterfaces.ITypeFacet {
@@ -167,6 +180,16 @@ export abstract class TypeInformation implements tsInterfaces.ITypeFacet {
     constructor(private _inheritable:boolean){}
 
     _owner:AbstractType;
+
+    _node:ParseNode;
+
+    node(){
+        return this._node;
+    }
+
+    setNode(node:ParseNode){
+        this._node = node;
+    }
 
     owner():AbstractType{
         return this._owner;

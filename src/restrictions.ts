@@ -528,14 +528,28 @@ export abstract class FacetRestriction<T> extends ts.Constraint{
 
 
     validateSelf(registry:ts.TypeRegistry):ts.Status{
-        if (!this.owner().isSubTypeOf(this.requiredType())){
+        
+        var ownerIsCorrect = false;
+        if(this.requiredType().isUnion()){
+            var family = (<ts.UnionType>this.requiredType()).typeFamily();
+            for(var tp of family){
+                if(this.owner().isSubTypeOf(tp)){
+                    ownerIsCorrect = true;
+                    break;
+                }
+            }
+        }
+        else{
+            ownerIsCorrect = this.owner().isSubTypeOf(this.requiredType());
+        }
+        if (!ownerIsCorrect){
             var rs= ts.error(this.facetName()+" facet can only be used with "+this.requiredType().name()+" types",this);
             rs.setValidationPath({name:this.facetName()});
             return rs;
         }
         var m=this.checkValue();
         if (m){
-            var rs= ts.error(m,this);
+            var rs= ts.error(m,this,true);
             rs.setValidationPath({name:this.facetName()});
             return rs;
         }
@@ -775,7 +789,7 @@ export class MinItems extends  MinMaxRestriction{
  */
 export class MaxLength extends  MinMaxRestriction{
     constructor(val: number){
-        super("maxLength",val,true,"minLength",ts.STRING,true);
+        super("maxLength",val,true,"minLength",new ts.UnionType("string-file",[ts.STRING,ts.FILE]),true);
     }
 
 
@@ -796,7 +810,7 @@ export class MaxLength extends  MinMaxRestriction{
  */
 export class MinLength extends  MinMaxRestriction{
     constructor(val: number){
-        super("minLength",val,false,"maxLength",ts.STRING,true);
+        super("minLength",val,false,"maxLength",new ts.UnionType("string-file",[ts.STRING,ts.FILE]),true);
     }
 
     extractValue(i:any):number {
@@ -1048,10 +1062,6 @@ export class Enum extends FacetRestriction<string[]>{
 
     constructor(private _value:string[]){
         super();
-        if (!Array.isArray(_value)){
-            this._value=[<string><any>_value];
-        }
-
     }
     facetName(){return "enum"}
     requiredType(){return ts.SCALAR}
@@ -1060,7 +1070,11 @@ export class Enum extends FacetRestriction<string[]>{
     checkStatus:boolean
     check(i:any):ts.Status{
         if (!this.checkStatus) {
-            if (!this.value().some(x=>x == i)) {
+            var opts = this.value();
+            if (!Array.isArray(opts)){
+                opts=[<string><any>opts];
+            }
+            if (!opts.some(x=>x == i)) {
                 return ts.error(this.toString(),this);
             }
         }
@@ -1087,6 +1101,9 @@ export class Enum extends FacetRestriction<string[]>{
         if (!this.owner().isSubTypeOf(this.requiredType())){
             return "enum facet can only be used with: "+this.requiredType().name();
 
+        }
+        if(!Array.isArray(this._value)){
+            return "enum facet value must be defined by array";
         }
         if (_.uniq(this._value).length<this._value.length){
             return "enum facet can only contain unique items";

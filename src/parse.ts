@@ -765,7 +765,8 @@ export function parse(
             return;
         }
         var vl=facetR.getInstance().buildFacet(key, x.value());
-        if (vl&&result.isSubTypeOf(vl.requiredType())){
+        if (vl/*&&result.isSubTypeOf(vl.requiredType())*/){
+            vl.setNode(x);
             result.addMeta(vl);
         }
         else{
