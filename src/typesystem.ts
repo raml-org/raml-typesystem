@@ -129,6 +129,9 @@ export class Status implements tsInterfaces.IStatus {
     getMessage() {
         return this.message;
     }
+    setMessage(message:string) {
+        this.message = message;
+    }
     getSource(){
         return this.source;
     }
@@ -491,6 +494,10 @@ export abstract class AbstractType implements tsInterfaces.IParsedType, tsInterf
     }
 
     name(){
+        return this._name;
+    }
+
+    label(){
         return this._name;
     }
 
@@ -1460,6 +1467,14 @@ export class InheritedType extends AbstractType{
         }
     }
 
+    label(){
+        var cmp:ComponentShouldBeOfType[] = <ComponentShouldBeOfType[]>this.metaOfType(ComponentShouldBeOfType);
+        if(cmp.length>0){
+            return cmp[0].value().label()+"[]";
+        }
+        return super.label();
+    }
+
 }
 export abstract class DerivedType extends AbstractType{
 
@@ -1532,18 +1547,10 @@ export class UnionType extends DerivedType{
     }
 
     validateDirect(i:any,autoClose:boolean=false):Status {
-        var st=new Status(Status.OK,0,"",this);
-        var options:Status=null;
-        for (var j=0;j<this.options().length;j++){
-            var s=this.options()[j].validateDirect(i,autoClose);
-            if (s.isOk()){
-                return s;
-            }
-            options=s;
-        }
 
-        st.addSubStatus(options);
-        return st;
+        var result=new Status(Status.OK,0,"",this);
+        this.restrictions().forEach(x=>result.addSubStatus(x.check(i,null)));
+        return result;
     }
 
     isUnion(){
@@ -1551,7 +1558,12 @@ export class UnionType extends DerivedType{
     }
 
     restrictions(){
-        return [new OrRestriction(this.allOptions().map(x=>new AndRestriction(x.restrictions())),"Union type options do not pass validation")]
+        return [new OrRestriction(this.allOptions().map(x=>new AndRestriction(x.restrictions())),
+            "Union type options do not pass validation",
+            "Union type option does not pass validation")]
+    }
+    label(){
+        return this.options().map(x=>x.label()).join("|");
     }
 }
 export class IntersectionType extends DerivedType{
@@ -1564,6 +1576,10 @@ export class IntersectionType extends DerivedType{
         var rs:Constraint[]=[];
         this.allOptions().forEach(x=>rs=rs.concat(x.restrictions()));
         return [new AndRestriction(rs)]
+    }
+
+    label(){
+        return this.options().map(x=>x.label()).join("&");
     }
 }
 
@@ -1818,25 +1834,42 @@ export class ScalarRestriction extends GenericTypeOf{
 
 export class OrRestriction extends Constraint{
 
-    constructor(private val: Constraint[],private _extraMessage?:string){
+    constructor(private val: Constraint[],private _extraMessage?:string,private _extraOptionMessage?:string){
         super();
     }
 
     check(i:any,p:tsInterfaces.IValidationPath):Status {
         var cs=new Status(Status.OK,0,"",this);
-        var first:Status=null;
+        var results:Status[]=[];
         for (var j=0;j<this.val.length;j++){
             var m=this.val[j].check(i,p);
             if (m.isOk()){
                 return ok();
             }
-            if (!first){
-                first=m;
-            }
-            ;
+            results.push(m);
         }
-        if (first){
-            cs.addSubStatus(first);
+        if (results.length>0){
+            for(var r of results){
+                var ownerName:string = null;
+                var src = r.getSource();
+                if(src instanceof TypeInformation){
+                    var owner = (<TypeInformation>src).owner();
+                    if(owner){
+                        ownerName = owner.label();
+                    }
+                }
+                r.getErrors().forEach(x=>{
+                    var msg = x.getMessage();
+                    if(ownerName){
+                        msg = `${ownerName}: ${msg}`;
+                    }
+                    if(this._extraOptionMessage){
+                        msg = `${this._extraOptionMessage} (${msg})`;
+                    }
+                    x.setMessage(msg);
+                    cs.addSubStatus(x)
+                });
+            }
             if (this._extraMessage){
                 cs.addSubStatus(error(this._extraMessage,this));
             }
