@@ -189,8 +189,8 @@ describe("Simple validation testing",function() {
         var tp=ps.parseJSON("Person",{
             type: "object",
             properties:{
-                "[]": "number",
-                "[..]": "string"
+                "/.*/": "number",
+                "/../": "string"
             }
         })
         var st=tp.validate({a: "3",a2:4});
@@ -329,7 +329,7 @@ describe("Type to JSON tests",function() {
             type: "object",
             "properties": {
                 "long": "string",
-                "[]": "scalar"
+                "/.*/": "scalar"
             }
         };
         var tp=ps.parseJSON("Person",st);
@@ -341,7 +341,7 @@ describe("Type to JSON tests",function() {
             type: "object",
             "properties": {
                 "long": "string",
-                "[xx]": "scalar"
+                "/xx/": "scalar"
             }
         };
         var tp=ps.parseJSON("Person",st);
