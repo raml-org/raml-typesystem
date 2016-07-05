@@ -367,7 +367,7 @@ export function parsePropertyBean(n:ParseNode,tr:ts.TypeRegistry):PropertyBean{
         name=name.substr(0,name.length-1);
         result.optional=true;
     }
-    if (name==='[]'||name.length==0||name==='//'){
+    if (name.length==0||name==='/.*/'){
         result.additonal=true;
 
     }
@@ -451,10 +451,10 @@ export class TypeProto{
                     nm=nm+"?";
                 }
                 if (x.additonal){
-                    nm="[]"
+                    nm="/.*/"
                 }
                 if (x.regExp){
-                    nm="["+nm+"]";
+                    nm="/"+nm+"/";
                 }
                 var vl:any=null;
                 if (x.type.isAnonymous()){
@@ -529,10 +529,10 @@ export function toProto(type:AbstractType):TypeProto{
 
                 var pbean=new PropertyBean();
                 pbean.optional=false;
-                pbean.id= "[]";
+                pbean.id= "/.*/";
                 pbean.additonal=true;
                 pbean.type= x.value();
-                pmap['[]']=pbean;
+                pmap['/.*/']=pbean;
             }
             else if (x instanceof rs.MapPropertyIs){
                 var pbean=new PropertyBean();
