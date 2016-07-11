@@ -443,7 +443,7 @@ export class Discriminator extends ts.TypeInformation{
         }
         var prop=_.find(this.owner().meta(),x=>x instanceof PropertyIs&& (<PropertyIs>x).propertyName()==this.value());
         if (!prop){
-            return new Status(Status.ERROR,0,"Using unknown property: "+this.value()+" as discriminator",this);
+            return new Status(Status.ERROR,0,"Using unknown property '"+this.value()+"' as discriminator",this,true);
         }
         if (!prop.value().isScalar()){
             return new Status(Status.ERROR,0,"It is only allowed to use scalar properties as discriminators",this);
