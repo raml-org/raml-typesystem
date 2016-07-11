@@ -726,7 +726,7 @@ export class Maximum extends  MinMaxRestriction{
     }
 
     toString(){
-        return "value should be not more then " + this.value();
+        return "value should be not more than " + this.value();
     }
 }
 /**
@@ -743,7 +743,7 @@ export class Minimum extends  MinMaxRestriction{
     }
 
     toString(){
-        return "value should be not less then " + this.value();
+        return "value should be not less than " + this.value();
     }
 }
 /**
@@ -762,7 +762,7 @@ export class MaxItems extends  MinMaxRestriction{
     }
 
     toString(){
-        return "array should have not more then " + this.value()+" items";
+        return "array should have not more than " + this.value()+" items";
     }
 }
 /**
@@ -781,7 +781,7 @@ export class MinItems extends  MinMaxRestriction{
     }
 
     toString(){
-        return "array should have not less then " + this.value()+" items";
+        return "array should have not less than " + this.value()+" items";
     }
 }
 /**
@@ -801,7 +801,7 @@ export class MaxLength extends  MinMaxRestriction{
     }
 
     toString(){
-        return "string length should be not more then " + this.value();
+        return "string length should be not more than " + this.value();
     }
 }
 
@@ -821,7 +821,7 @@ export class MinLength extends  MinMaxRestriction{
     }
 
     toString(){
-        return "string length should be not less then " + this.value();
+        return "string length should be not less than " + this.value();
     }
 }
 /**
@@ -838,7 +838,7 @@ export class MaxProperties extends  MinMaxRestriction{
     }
 
     toString(){
-        return "object should have not more then " + this.value()+" properties";
+        return "object should have not more than " + this.value()+" properties";
     }
 }
 /**
@@ -855,7 +855,7 @@ export class MinProperties extends  MinMaxRestriction{
     }
 
     toString(){
-        return "object should have not less then " + this.value()+" properties";
+        return "object should have not less than " + this.value()+" properties";
     }
 }
 /**
