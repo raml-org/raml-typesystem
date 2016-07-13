@@ -773,7 +773,9 @@ export abstract class AbstractType implements tsInterfaces.IParsedType, tsInterf
                     delete rfds[cd.facetName()];
                 }
                 else {
-                    rs.addSubStatus(new Status(Status.ERROR, 0, "specifying unknown facet:" + cd.facetName(),this))
+                    var msg = this.isExternal() ? "'" + cd.facetName() + "' facet is prohibited for external types" 
+                            : "specifying unknown facet:" + cd.facetName();
+                    rs.addSubStatus(new Status(Status.ERROR, 0, msg,cd,true))
                 }
             }
             if (x instanceof MapPropertyIs){

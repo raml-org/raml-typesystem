@@ -774,7 +774,9 @@ export function parse(
                 result.addMeta(new meta.AllowedTargets(x.value()));
             }
             else {
-                result.addMeta(new meta.CustomFacet(key, x.value()));
+                var customFacet = new meta.CustomFacet(key, x.value());
+                customFacet.setNode(x);
+                result.addMeta(customFacet);
             }
         }
     });
