@@ -115,14 +115,22 @@ export class PropertyBean{
         if (!this.optional&&!this.additonal&&!this.regExp){
             t.addMeta(new rs.HasProperty(this.id));
         }
+        var matchesPropertyFacet:rs.MatchesProperty;
         if (this.additonal){
-            t.addMeta(new rs.AdditionalPropertyIs(this.type));
+            matchesPropertyFacet = new rs.AdditionalPropertyIs(this.type);
         }
         else if (this.regExp){
-            t.addMeta(new rs.MapPropertyIs(this.id,this.type));
+            matchesPropertyFacet = new rs.MapPropertyIs(this.id,this.type);
         }
         else{
-            t.addMeta(new rs.PropertyIs(this.id,this.type,this.optional));
+            matchesPropertyFacet = new rs.PropertyIs(this.id,this.type,this.optional);            
+        }
+        if(matchesPropertyFacet!=null){
+            t.addMeta(matchesPropertyFacet);
+            if(this.type instanceof ts.InheritedType && this.type.name()==null){
+                //Linking anonymous types with properties declaring them
+                (<ts.InheritedType>this.type).setContextMeta(matchesPropertyFacet);
+            }
         }
     }
 }

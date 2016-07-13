@@ -17,6 +17,8 @@ export abstract class MatchesProperty extends ts.Constraint{
 
     constructor(private _type:ts.AbstractType){super()}
 
+    abstract path():string;
+
     check(i:any,p:ts.IValidationPath):ts.Status{
         throw new Error("Should be never called");
     }
@@ -285,6 +287,10 @@ export class PropertyIs extends MatchesProperty{
         return s===this.name;
     }
 
+    path(){
+        return this.name;
+    }
+
     check(i:any,p:ts.IValidationPath):ts.Status{
         if (i && typeof i==="object") {
             if (i.hasOwnProperty(this.name)) {
@@ -348,6 +354,9 @@ export class MapPropertyIs extends MatchesProperty{
 
     constructor(private regexp: string,private type:ts.AbstractType){
         super(type);
+    }
+    path(){
+        return `/${this.regexp}/`;
     }
     matches(s:string):boolean{
        if (s.match(this.regexp)){
@@ -440,6 +449,9 @@ export class AdditionalPropertyIs extends MatchesProperty{
 
     constructor(private type:ts.AbstractType){
         super(type);
+    }
+    path(){
+        return this.facetName();
     }
     matches(s:string):boolean{
         return true;
@@ -672,6 +684,29 @@ export abstract class MinMaxRestriction extends FacetRestriction<Number>{
         }
         return null;
     }
+
+    abstract textMessagePart():string;
+
+    facetPath():string{
+        var arr:string[] = [this.facetName()];
+        var owner = this._owner;
+        if(owner != null){
+            if (owner instanceof ts.InheritedType) {
+                var it = <ts.InheritedType>owner;
+                arr = ts.typePath(it).concat(arr);
+            }
+        }
+        return arr.join(".");
+    }
+
+    toString(){
+        return `'${this.facetPath()}=${this.value()}' i.e. ${this.textMessagePart()} ${this.value()}`;
+    }
+
+    conflictMessage(otherPath:string, otherValue:any):string{
+        var arr = this.isMax() ? ["less", "higher"] : ["higher", "less"];
+        return `['${this.facetPath()}=${this.value()}' is ${arr[0]} than '${otherPath}=${otherValue}'. The ${this._opposite} cannot be ${arr[1]} than the ${this.facetName()}.]`
+    }
 }
 
 export class MultipleOf extends FacetRestriction<Number>{
@@ -725,8 +760,8 @@ export class Maximum extends  MinMaxRestriction{
         return i;
     }
 
-    toString(){
-        return "value should be not more than " + this.value();
+    textMessagePart():string{
+        return "value should not be more than";
     }
 }
 /**
@@ -742,8 +777,8 @@ export class Minimum extends  MinMaxRestriction{
         return i;
     }
 
-    toString(){
-        return "value should be not less than " + this.value();
+    textMessagePart():string{
+        return "value should not be less than";
     }
 }
 /**
@@ -761,8 +796,8 @@ export class MaxItems extends  MinMaxRestriction{
         }
     }
 
-    toString(){
-        return "array should have not more than " + this.value()+" items";
+    textMessagePart():string{
+        return "array items count should not be more than";
     }
 }
 /**
@@ -780,8 +815,8 @@ export class MinItems extends  MinMaxRestriction{
         }
     }
 
-    toString(){
-        return "array should have not less than " + this.value()+" items";
+    textMessagePart():string{
+        return "array items count should not be less than";
     }
 }
 /**
@@ -800,8 +835,8 @@ export class MaxLength extends  MinMaxRestriction{
         return 0;
     }
 
-    toString(){
-        return "string length should be not more than " + this.value();
+    textMessagePart():string{
+        return "string length should not be more than";
     }
 }
 
@@ -820,8 +855,8 @@ export class MinLength extends  MinMaxRestriction{
         return 0;
     }
 
-    toString(){
-        return "string length should be not less than " + this.value();
+    textMessagePart():string{
+        return "string length should not be less than";
     }
 }
 /**
@@ -837,8 +872,8 @@ export class MaxProperties extends  MinMaxRestriction{
         return Object.keys(i).length;
     }
 
-    toString(){
-        return "object should have not more than " + this.value()+" properties";
+    textMessagePart():string{
+        return "object properties count should not be more than";
     }
 }
 /**
@@ -854,8 +889,8 @@ export class MinProperties extends  MinMaxRestriction{
         return Object.keys(i).length;
     }
 
-    toString(){
-        return "object should have not less than " + this.value()+" properties";
+    textMessagePart():string{
+        return "object properties count should not be less than";
     }
 }
 /**

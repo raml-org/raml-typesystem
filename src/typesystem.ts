@@ -286,6 +286,8 @@ export abstract class Constraint extends TypeInformation{
     kind() : tsInterfaces.MetaInformationKind {
         return tsInterfaces.MetaInformationKind.Constraint;
     }
+
+    conflictMessage(otherPath:string, otherValue:any):string{ return null; }
 }
 
 
@@ -428,8 +430,25 @@ class PropertyCyclesValidator{
 
 export class RestrictionsConflict extends Status{
     constructor(protected _conflicting:Constraint,protected _stack:RestrictionStackEntry,source:any){
-        super(Status.ERROR,0,"Restrictions conflict "+_conflicting+" and "+(_stack!=null?_stack.getRestriction().toString():""),source);
+        super(Status.ERROR,0,null,source);
+
+        var conflictingMessage:string = null;
+        if(_stack!=null){
+           if(_stack.getRestriction() instanceof restr.MinMaxRestriction){
+               var mmr:restr.MinMaxRestriction = <restr.MinMaxRestriction>_stack.getRestriction();
+               conflictingMessage = _conflicting.conflictMessage(mmr.facetPath(),mmr.value());
+           } 
+        }
+        if(conflictingMessage==null){
+            conflictingMessage = _conflicting+" and "+(_stack!=null?_stack.getRestriction().toString():"");
+        }
+        var typeInfo:string = "";
+        if(source instanceof AbstractType){
+            typeInfo = `in type '${typePath(<AbstractType>source)}'`;
+        }
+        this.message = `Restrictions conflict ${typeInfo}: ` + conflictingMessage;
     }
+
     getConflictDescription():string{
         var rs="";
         rs+="Restrictions coflict:\n";
@@ -1444,6 +1463,8 @@ export class RootType extends AbstractType{
 export class InheritedType extends AbstractType{
 
     protected _superTypes: AbstractType[]=[]
+    
+    protected _contextMeta: restr.MatchesProperty;
 
     superTypes(){
         return this._superTypes;
@@ -1498,6 +1519,14 @@ export class InheritedType extends AbstractType{
             return cmp[0].value().label()+"[]";
         }
         return super.label();
+    }
+    
+    contextMeta():restr.MatchesProperty{
+        return this._contextMeta;
+    }
+    
+    setContextMeta(contextMeta:restr.MatchesProperty){
+        this._contextMeta = contextMeta;
     }
 
 }
@@ -2076,4 +2105,30 @@ export class ExternalType extends InheritedType{
         return this._content;
     }
 
+}
+
+export function typePath(t:AbstractType):string[]{
+    var arr:string[] = [];
+    while(t != null){
+        if(t.name()==null) {
+            if (t instanceof InheritedType) {
+                var contextMeta = (<InheritedType>t).contextMeta();
+                if (contextMeta != null) {
+                    arr.push(contextMeta.path());
+                    t = contextMeta._owner;
+                }
+                else {
+                    break;
+                }
+            }
+            else {
+                break;
+            }
+        }
+        else{
+            arr.push(t.name());
+            break;
+        }
+    }
+    return arr.reverse();
 }
