@@ -747,7 +747,7 @@ export function parse(
         if (key==="schema"){
             return;
         }
-        if (key=="properties"||key=="additionalProperties"||key=="patternProperties"){
+        if (key=="properties"||key=="additionalProperties"){
             if (result.isSubTypeOf(ts.OBJECT)){
                 return;
             }
@@ -807,20 +807,6 @@ export function parse(
         var ap= n.childWithKey("additionalProperties");
         if (ap){
             result.addMeta(new KnownPropertyRestriction(ap.value()));
-        }
-        var props=n.childWithKey("patternProperties");
-        if (props) {
-            if (props.kind() == NodeKind.MAP) {
-                props.children().forEach(x=> {
-                    var pb=parsePropertyBean(x, r);
-                    result.declareMapProperty(pb.id,pb.type);
-                });
-            }
-            else{
-                var err=new ts.Status(ts.Status.ERROR,2,"pattern properties should be a map",actualResult);
-                err.setValidationPath({ name:"patternProperties"})
-                result.putExtra(tsInterfaces.PARSE_ERROR,err);
-            }
         }
     }
 

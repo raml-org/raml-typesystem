@@ -113,18 +113,9 @@ export interface ObjectType extends IType {
      * map of property signatures to the property  declarations
      */
     properties?:{
-
         [name:string]:IType
     }
-
-    /**
-     * map of regular expressions to pattern property declarations
-     */
-    patternProperties?:{
-
-        [name:string]:IType
-    }
-
+    
     /**
      * allows to set constraints on the type of additional properties
      */
@@ -453,19 +444,7 @@ export class TypeConstructor {
         (<ts.AbstractType>this.target).declareProperty(name, <ts.AbstractType>type, optional);
         return this;
     }
-
-    /**
-     * adds pattern property declaration to the type
-     * @param target
-     * @param regexp
-     * @param type
-     * @returns {TypeConstructor}
-     */
-    addPatternProperty(target:IParsedType, regexp:string, type:IParsedType):TypeConstructor {
-        (<ts.AbstractType>this.target).declareMapProperty(name, <ts.AbstractType>type);
-        return this;
-    }
-
+    
     /**
      * closes type
      * @returns {TypeConstructor}
