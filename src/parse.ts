@@ -379,10 +379,6 @@ export function parsePropertyBean(n:ParseNode,tr:ts.TypeRegistry):PropertyBean{
         result.additonal=true;
 
     }
-    else if (name.charAt(0)=='['&&name.charAt(name.length-1)==']'){
-        name=name.substring(1,name.length-1);
-        result.regExp=true;
-    }
     else if (name.charAt(0)=='/'&&name.charAt(name.length-1)=='/'){
         name=name.substring(1,name.length-1);
         result.regExp=true;

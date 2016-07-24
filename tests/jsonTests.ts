@@ -140,7 +140,7 @@ describe("Simple validation testing",function() {
             type: "object",
             properties:{
                 a: "any",
-                "[]": "any"
+                "/.*/": "any"
             }
         })
         var st=tp.validate({a: 3,a2:"dd"});
@@ -151,7 +151,7 @@ describe("Simple validation testing",function() {
             type: "object",
             properties:{
                 a: "string",
-                "[]": "any"
+                "/.*/": "any"
             }
         })
         var st=tp.validate({a: 3,a2:"dd"});
@@ -164,7 +164,7 @@ describe("Simple validation testing",function() {
             type: "object",
             properties:{
                 a: "string",
-                "[]": "string"
+                "/.*/": "string"
             }
         })
         var st=tp.validate({a: "3",a2:4});
@@ -177,7 +177,7 @@ describe("Simple validation testing",function() {
             type: "object",
             properties:{
                 a: "string",
-                "[..]": "string"
+                "/../": "string"
             }
         })
         var st=tp.validate({a: "3",a2:4});
@@ -1137,7 +1137,7 @@ describe("Type collection parse and store",function(){
                     type:"object",
                     properties:{
                         x: "number",
-                        "[x]":"string"
+                        "/x/":"string"
                     }
                 }
             }
@@ -1157,7 +1157,7 @@ describe("Type collection parse and store",function(){
                     type:"object",
                     properties:{
                         x: "number",
-                        "[x2]":"string"
+                        "/x2/":"string"
                     }
                 }
             }
