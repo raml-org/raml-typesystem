@@ -710,13 +710,7 @@ export function parse(
 
 
     var actualResult=result;
-    var repeat= n.childWithKey("repeat");
-    if (repeat&&repeat.value()==true){
-        actualResult=ts.derive(name,[ts.ARRAY]);
-
-        actualResult.putExtra(tsInterfaces.REPEAT,true)
-        actualResult.addMeta(new ComponentShouldBeOfType(result));
-    }
+    
     if (r instanceof AccumulatingRegistry){
         r.addType(actualResult);
         actualResult.putExtra(tsInterfaces.TOP_LEVEL_EXTRA,true);
@@ -731,10 +725,7 @@ export function parse(
         if (key==="type"){
             return;
         }
-        if (key==="repeat"){
-            hasfacetsOrOtherStuffDoesNotAllowedInExternals="repeat";
-            return;
-        }
+        
         if (key==="uses"){
 
             //FIXME this should be handled depending from parse level
@@ -834,15 +825,6 @@ export function parse(
     actualResult.putExtra(ts.GLOBAL,global);
     actualResult.putExtra(ts.SOURCE_EXTRA, n);
     actualResult.putExtra(tsInterfaces.HAS_FACETS, hasfacetsOrOtherStuffDoesNotAllowedInExternals);
-    if (repeat){
-        result.meta().forEach(x=>{
-            if (x instanceof Example){
-                actualResult.addMeta(x);
-            }
-            if (x instanceof Examples){
-                actualResult.addMeta(x);
-            }
-        })
-    }
+    
     return actualResult;
 }
