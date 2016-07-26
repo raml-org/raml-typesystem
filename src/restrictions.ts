@@ -1140,9 +1140,9 @@ export class Enum extends FacetRestriction<string[]>{
         if(!Array.isArray(this._value)){
             return "enum facet value must be defined by array";
         }
-        if (_.uniq(this._value).length<this._value.length){
-            return "enum facet can only contain unique items";
-        }
+        // if (_.uniq(this._value).length<this._value.length){
+        //     return "enum facet can only contain unique items";
+        // }
         var result:string=null;
         this.checkStatus=true;
         try {
