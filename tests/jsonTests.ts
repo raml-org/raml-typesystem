@@ -1001,26 +1001,7 @@ describe("Type collection parse and store",function(){
     //     assert.isTrue(t.validate({ "numberMap":{a:2}}).isOk());
     //     assert.isTrue(!t.validate({ "numberMap":{a:"ss"}}).isOk());
     // });
-    it ("repeat option",function(){
-        var st={
-
-
-            types:{
-                t1:{
-                    type:"number",
-                    repeat:true
-
-                }
-            }
-        };
-        var col=ps.parseJSONTypeCollection(st);
-        var t=col.getType("t1");
-       var val= t.validateType(ts.builtInRegistry()).isOk();
-        assert.isTrue(val);
-        assert.isTrue(!t.validate({ "numberMap":{a:2}}).isOk());
-        assert.isTrue(t.validate([2]).isOk());
-        assert.isTrue(!t.validate(["a2"]).isOk());
-    });
+    
     it ("external type",function(){
         var st={
 
