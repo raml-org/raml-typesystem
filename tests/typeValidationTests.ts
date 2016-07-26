@@ -193,7 +193,7 @@ describe("Other simple facet validation",function() {
             enum: [0,1,1]
         })
         var st= tp.validateType(ts.builtInRegistry());
-        assert.isTrue(!st.isOk());
+        assert.isTrue(st.isOk());
     });
     it("validating pattern", function () {
         var tp = ps.parseJSON("Person", {
