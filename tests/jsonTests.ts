@@ -347,6 +347,44 @@ describe("Type to JSON tests",function() {
         var tp=ps.parseJSON("Person",st);
         assert.deepEqual(st,ps.storeAsJSON(tp));
     });
+    it("invalid pattern properties 1", function () {
+        var st={
+            type: "object",
+            "properties": {
+                "[]": "string"
+            }
+        };
+        var tp=ps.parseJSON("Person",st);
+        var result = tp.validate({ "prop": "value" });
+        assert(!result.isOk());
+        var errors = result.getErrors();
+        assert(errors.length==1);
+        assert(errors[0].message=="Required property: [] is missed");
+    });
+
+    it("invalid pattern properties 2", function () {
+        var st={
+            type: "object",
+            "properties": {
+                "objectProperty": {
+                    "type": "object",
+                    "properties": {
+                        "[]": "string"
+                    }
+                }
+            }            
+        };
+        var tp=ps.parseJSON("Person",st);
+        var result = tp.validate({
+            "objectProperty": {
+                "prop": "value"
+            }
+        });
+        assert(!result.isOk());
+        var errors = result.getErrors();
+        assert(errors.length==1);
+        assert(errors[0].message=="Required property: [] is missed");
+    });
     it("simple", function () {
         var st="string";
         var tp=ps.parseJSON("Person",st);
