@@ -55,7 +55,7 @@ function parseNode(node:BaseNode,t:ts.TypeRegistry):ts.AbstractType
             if (!result){
                 result=ts.derive(lit.value,[ts.UNKNOWN]);
             }
-            result=ts.union(lit.value,[result,ts.NULL]);
+            result=ts.union(lit.value,[result,ts.NIL]);
             var a=lit.arr;
             return wrapArray(a, result);
         }

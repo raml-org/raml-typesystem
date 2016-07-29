@@ -1658,7 +1658,7 @@ export function intersect(name:string, t:AbstractType[]):IntersectionType{
 export function derive(name: string,t:AbstractType[]):InheritedType{
     var r=new InheritedType(name);
     t.forEach(x=>r.addSuper(x));
-    if (r.isSubTypeOf(NULL)){
+    if (r.isSubTypeOf(NIL)){
         r.nullable=true;
     }
     return r;
@@ -1979,7 +1979,7 @@ export const OBJECT=ANY.inherit("object");
 //export const POLYMORPHIC=OBJECT.inherit("polymorphic");
 
 export const ARRAY=ANY.inherit("array");
-export const NULL=ANY.inherit("null");
+export const NIL=ANY.inherit("nil");
 
 export const EXTERNAL=ANY.inherit("external");
 export const NUMBER=SCALAR.inherit("number");
@@ -2002,7 +2002,7 @@ export const RECURRENT=NOTHING.inherit("recurrent");
 ///
 //POLYMORPHIC.addMeta(new Polymorphic())
 ANY.addMeta(BUILT_IN);
-NULL.addMeta(BUILT_IN);
+NIL.addMeta(BUILT_IN);
 UNION.addMeta(BUILT_IN);
 SCALAR.addMeta(BUILT_IN);
 OBJECT.addMeta(BUILT_IN);
@@ -2039,7 +2039,7 @@ registry.addType(ARRAY);
 registry.addType(NUMBER);
 registry.addType(INTEGER);
 registry.addType(BOOLEAN);
-registry.addType(NULL);
+registry.addType(NIL);
 
 registry.addType(STRING);
 registry.addType(DATE_ONLY);
@@ -2058,7 +2058,7 @@ OBJECT.addMeta(new TypeOfRestriction("object"));
 ARRAY.addMeta(new TypeOfRestriction("array"));
 STRING.addMeta(new TypeOfRestriction("string"));
 INTEGER.addMeta(new IntegerRestriction());
-NULL.addMeta(new NullRestriction());
+NIL.addMeta(new NullRestriction());
 
 import dt=require("./datetime")
 
@@ -2074,7 +2074,7 @@ FILE.addMeta(new FacetDeclaration("fileTypes",arrayOfString,true));
 FILE.addMeta(new FacetDeclaration("minLength",INTEGER,true));
 FILE.addMeta(new FacetDeclaration("maxLength",INTEGER,true));
 DATETIME.addMeta(new FacetDeclaration("format",STRING,true));
-NULL.nullable=true;
+NIL.nullable=true;
 SCALAR.addMeta(new ScalarRestriction());
 registry.types().forEach(x=>x.lock())
 
