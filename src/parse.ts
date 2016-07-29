@@ -642,7 +642,7 @@ export function parse(
 
     if (n.kind()==NodeKind.SCALAR){
         var valString = n.value();
-        var sp:ts.InheritedType;
+        var sp:ts.AbstractType;
         if(valString==null||valString=="Null"||valString=="NULL"){
             sp = ts.STRING;
         }
