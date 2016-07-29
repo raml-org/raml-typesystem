@@ -211,6 +211,31 @@ describe("Other simple facet validation",function() {
         var st= tp.validateType(ts.builtInRegistry());
         assert.isTrue(st.isOk());
     });
+    it("validating patternProperties prohibited 1", function () {
+        var tp = ps.parseJSON("Person", {
+            type: "object",
+            patternProperties: {
+                "[]": "string"
+            }
+        });
+        var st= tp.validateType(ts.builtInRegistry());
+        assert.isTrue(!st.isOk());
+    });
+    it("validating patternProperties prohibited 2", function () {
+        var tp = ps.parseJSON("Person", {
+            type: "object",
+            properties: {
+                p1: {
+                    type: "object",
+                    patternProperties: {
+                        "[]": "string"
+                    }
+                }
+            }
+        });
+        var st= tp.validateType(ts.builtInRegistry());
+        assert.isTrue(!st.isOk());
+    });
 });
 describe("Type hierarchy validation",function() {
     it("validating - recurrent type", function () {
@@ -1753,7 +1778,7 @@ describe("Type validation basics",function() {
                 Hello:{
                     type: "object",
                     properties:{
-                        "zz" :"Hello | null"
+                        "zz" :"Hello | nil"
                     }
                 },
 
@@ -1787,7 +1812,7 @@ describe("Type validation basics",function() {
                 Hello:{
                     type: "object",
                     properties:{
-                        "zz" :"Hello | null"
+                        "zz" :"Hello | nil"
                     }
                 },
 
@@ -1804,7 +1829,7 @@ describe("Type validation basics",function() {
                 Hello:{
                     type: "object",
                     properties:{
-                        "zz" :"Hello | null"
+                        "zz" :"Hello | nil"
                     }
                 },
 
@@ -1821,7 +1846,7 @@ describe("Type validation basics",function() {
                 Hello:{
                     type: "object",
                     properties:{
-                        "zz" :"Hello | null"
+                        "zz" :"Hello | nil"
                     }
                     ,
                     example: [1,2]

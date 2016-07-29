@@ -112,7 +112,7 @@ export class PropertyBean{
     type: ts.AbstractType;
 
     add(t:ts.AbstractType){
-        if (!this.optional&&!this.additonal&&!this.regExp){
+        if (!this.optional&&!this.additonal&&!this.regExp&&!this.type.isSubTypeOf(ts.NIL)){
             t.addMeta(new rs.HasProperty(this.id));
         }
         var matchesPropertyFacet:rs.MatchesProperty;
@@ -641,7 +641,14 @@ export function parse(
     var provider: su.IContentProvider = (<any>n).contentProvider ? (<any>n).contentProvider() : null;
 
     if (n.kind()==NodeKind.SCALAR){
-        var sp= n.value()?typeExpressions.parseToType(""+n.value(),r, provider):ts.STRING;
+        var valString = n.value();
+        var sp:ts.AbstractType;
+        if(valString==null||valString=="Null"||valString=="NULL"){
+            sp = ts.STRING;
+        }
+        else{
+            sp = typeExpressions.parseToType(""+valString,r, provider)
+        }
         if (name==null){
             return sp;
         }
@@ -697,7 +704,13 @@ export function parse(
     }
     else{
         if (tp.kind()==NodeKind.SCALAR){
-            superTypes=[typeExpressions.parseToType(""+tp.value(),r, provider)];
+            var valString = tp.value();
+            if(valString==null||valString=="Null"||valString=="NULL"){
+                superTypes = [ ts.STRING ];
+            }
+            else{
+                superTypes=[typeExpressions.parseToType(""+valString,r, provider)];
+            }
         }
         else if (tp.kind()==NodeKind.ARRAY){
             superTypes=tp.children().map(x=>x.value()).map(y=>typeExpressions.parseToType(""+y,r, provider));
