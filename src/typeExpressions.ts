@@ -13,16 +13,23 @@ export type Parens = typeExpressionDefs.Parens;
 
 export function parseToType(val:string,t:ts.TypeRegistry, contentProvider: schemaUtil.IContentProvider = null):ts.AbstractType{
     try {
-
+        
         var q=val.trim();
-        var json=q.charAt(0)=='{';
-        if (json || q.charAt(0)=='<'){
-            return new ts.ExternalType("", q, json, contentProvider);
-        }
+        
+        if (q.length > 0) {
+            var json=q.charAt(0)=='{';
+            if (json || q.charAt(0)=='<'){
+                return new ts.ExternalType("", q, json, contentProvider);
+            }
 
-        var node:BaseNode = typeExpression.parse(val);
-        var result= parseNode(node, t);
-        return result;
+            var node:BaseNode = typeExpression.parse(val);
+            var result= parseNode(node, t);
+            return result;    
+        } else {
+            return ts.derive(val,[ts.STRING])
+        }
+        
+        
     } catch (e){
         return ts.derive(val,[ts.UNKNOWN]);
     }
