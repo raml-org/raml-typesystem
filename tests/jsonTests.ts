@@ -1666,7 +1666,7 @@ describe("Type collection parse and store",function(){
 
             types:{
                 t1:{
-                    type:"null",
+                    type:"nil",
                     example: 1
                 },
 
@@ -1684,7 +1684,7 @@ describe("Type collection parse and store",function(){
 
             types:{
                 t1:{
-                    type:"null",
+                    type:"nil",
                     example: <string>null
                 },
 

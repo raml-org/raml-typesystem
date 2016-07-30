@@ -1778,7 +1778,7 @@ describe("Type validation basics",function() {
                 Hello:{
                     type: "object",
                     properties:{
-                        "zz" :"Hello | null"
+                        "zz" :"Hello | nil"
                     }
                 },
 
@@ -1812,7 +1812,7 @@ describe("Type validation basics",function() {
                 Hello:{
                     type: "object",
                     properties:{
-                        "zz" :"Hello | null"
+                        "zz" :"Hello | nil"
                     }
                 },
 
@@ -1829,7 +1829,7 @@ describe("Type validation basics",function() {
                 Hello:{
                     type: "object",
                     properties:{
-                        "zz" :"Hello | null"
+                        "zz" :"Hello | nil"
                     }
                 },
 
@@ -1846,7 +1846,7 @@ describe("Type validation basics",function() {
                 Hello:{
                     type: "object",
                     properties:{
-                        "zz" :"Hello | null"
+                        "zz" :"Hello | nil"
                     }
                     ,
                     example: [1,2]
