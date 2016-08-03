@@ -802,7 +802,9 @@ export abstract class AbstractType implements tsInterfaces.IParsedType, tsInterf
                 Object.keys(knownPropertySet).forEach(c=>{
                     try {
                         if (c.match(mm.regexpValue())) {
-                            rs.addSubStatus(new Status(Status.ERROR, 0, "map property " + mm.facetName() + " conflicts with property:" + c, this))
+                            var regexpText = '/' + mm.regexpValue().toString() + '/';
+                            
+                            rs.addSubStatus(new Status(Status.WARNING, 0, "regular expression '" + regexpText + "' mathches with existing property: " + c, this));
                         }
                     } catch (e){
                         //ignore incorrect regexps here
