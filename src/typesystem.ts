@@ -804,7 +804,7 @@ export abstract class AbstractType implements tsInterfaces.IParsedType, tsInterf
                         if (c.match(mm.regexpValue())) {
                             var regexpText = '/' + mm.regexpValue().toString() + '/';
                             
-                            rs.addSubStatus(new Status(Status.WARNING, 0, "regular expression '" + regexpText + "' mathches with existing property: " + c, this));
+                            rs.addSubStatus(new Status(Status.WARNING, 0, "pattern property '" + regexpText + "' conflicts with property: " + c, this));
                         }
                     } catch (e){
                         //ignore incorrect regexps here
