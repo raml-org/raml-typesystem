@@ -5,10 +5,14 @@ var date:{
 
 import ts=require("./typesystem");
 
+function checkDate(dateStr : string) : boolean {
+    return date.isValid(dateStr,"YYYY-MM-DD")
+}
+
 export class DateOnlyR extends ts.GenericTypeOf{
-    check(i:any):ts.Status {
-        if (typeof i=="string"){
-            if (!date.isValid(i,"YYYY-MM-DD")){
+    check(value:any):ts.Status {
+        if (typeof value=="string"){
+            if (!checkDate(value)){
                 return new ts.Status(ts.Status.ERROR,0,"date-only should match to yyyy-mm-dd pattern",this)
             }
             return ts.ok();
@@ -25,15 +29,23 @@ export class DateOnlyR extends ts.GenericTypeOf{
         return "should be date-only"
     }
 }
+
+function checkTime(time : string): boolean {
+    return date.isValid("11 "+time.trim(),"YY HH:mm:ss");
+}
+
 export class TimeOnlyR extends ts.GenericTypeOf{
-    check(i:any):ts.Status {
-        if (typeof i=="string"){
-            var c=i.indexOf(".");
-            if(c!=-1){
-                i=i.substring(0,c);
+    check(value:any):ts.Status {
+        if (typeof value=="string"){
+
+            var regexp = /^([0-9][0-9]:[0-9][0-9]:[0-9][0-9])(.[0-9]+)?$/;
+            var matches = value.match(regexp);
+            if (!matches){
+                return new ts.Status(ts.Status.ERROR,0,"time-only should match to hh:mm:ss[.ff...] pattern",this)
             }
 
-            if (!i.match("[0-9][0-9]:[0-9][0-9]:[0-9][0-9]")||!date.isValid("11 "+i.trim(),"YY HH:mm:ss")){
+            var hhmmssTime = matches[1];
+            if (!checkTime(hhmmssTime)){
                 return new ts.Status(ts.Status.ERROR,0,"time-only should match to hh:mm:ss[.ff...] pattern",this)
             }
             return ts.ok();
@@ -51,13 +63,18 @@ export class TimeOnlyR extends ts.GenericTypeOf{
     }
 }
 export class DateTimeOnlyR extends ts.GenericTypeOf{
-    check(i:any):ts.Status {
-        if (typeof i=="string"){
-            var c=i.indexOf(".");
-            if(c!=-1){
-                i=i.substring(0,c);
+    check(value:any):ts.Status {
+        if (typeof value=="string"){
+
+            var regexp = /^(\d{4}-\d{2}-\d{2})T([0-9][0-9]:[0-9][0-9]:[0-9][0-9])(.[0-9]+)?$/;
+            var matches = value.match(regexp);
+            if (!matches || matches.length < 3){
+                return new ts.Status(ts.Status.ERROR,0,"datetime-only should match to yyyy-mm-ddThh:mm:ss[.ff...] pattern",this)
             }
-            if (!i.match("^\\d{4}-\\d{2}-\\d{2}T"+"[0-9][0-9]:[0-9][0-9]:[0-9][0-9]$")){
+
+            var date = matches[1];
+            var time = matches[2];
+            if (!checkDate(date) || !checkTime(time)) {
                 return new ts.Status(ts.Status.ERROR,0,"datetime-only should match to yyyy-mm-ddThh:mm:ss[.ff...] pattern",this)
             }
             return ts.ok();
@@ -80,9 +97,9 @@ var r2=/(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)\,[ ]+\d{2}-(J
 
 var r3=/(Mon|Tue|Wed|Thu|Fri|Sat|Sun)\,[ ]+(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[ ]+\d{1,2}[ ]+\d{2}:\d{2}:\d{2}[ ]+GMT/
 
-var r0=/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?((?:[\+\-]\d{2}:\d{2})|Z)$/;
+var r0=/^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2}:\d{2})(?:\.\d{1,3})?((?:[\+\-]\d{2}:\d{2})|Z)$/;
 export class DateTimeR extends ts.GenericTypeOf{
-    check(i:any):ts.Status {
+    check(value:any):ts.Status {
         var c=ts.VALIDATED_TYPE;
         var rfc2616=false;
         c.allCustomFacets().forEach(x=>{
@@ -94,15 +111,22 @@ export class DateTimeR extends ts.GenericTypeOf{
             }
         })
 
-        if (typeof i=="string"){
+        if (typeof value=="string"){
             if (!rfc2616){
-                if (!i.match(r0)){
+                var rfc3339Matches = value.match(r0)
+                if (!rfc3339Matches || rfc3339Matches.length < 3){
                     return new ts.Status(ts.Status.ERROR,0,"valid rfc3339 formatted string is expected",this)
+                } else {
+                    var date = rfc3339Matches[1];
+                    var time = rfc3339Matches[2];
+                    if (!checkDate(date) || !checkTime(time)) {
+                        return new ts.Status(ts.Status.ERROR,0,"valid rfc3339 formatted string is expected",this)
+                    }
                 }
                 return ts.ok();
             }
             else{
-                if (!(i.match(r1)||i.match(r2)||i.match(r3))){
+                if (!(value.match(r1)||value.match(r2)||value.match(r3))){
                     return new ts.Status(ts.Status.ERROR,0,"valid rfc2616 formatted string is expected",this)
                 }
             }

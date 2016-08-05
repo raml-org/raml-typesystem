@@ -1534,6 +1534,23 @@ describe("Type collection parse and store",function(){
         var val= t.validateType(ts.builtInRegistry()).isOk();
         assert.isTrue(val);
     });
+    it ("time only positive 2",function(){
+        var st={
+
+
+            types:{
+                t1:{
+                    type:"time-only",
+                    example: "07:12:02.05"
+                },
+
+            }
+        };
+        var col=ps.parseJSONTypeCollection(st);
+        var t=col.getType("t1");
+        var val= t.validateType(ts.builtInRegistry()).isOk();
+        assert.isTrue(val);
+    });
     it ("time only negative",function(){
         var st={
 
@@ -1542,6 +1559,42 @@ describe("Type collection parse and store",function(){
                 t1:{
                     type:"time-only",
                     example: "d3d3:12:22"
+                },
+
+            }
+        };
+        var col=ps.parseJSONTypeCollection(st);
+        var t=col.getType("t1");
+        var status=t.validateType(ts.builtInRegistry());
+        var val=status .isOk();
+        assert.isTrue(!val);
+    });
+    it ("time only negative 2",function(){
+        var st={
+
+
+            types:{
+                t1:{
+                    type:"time-only",
+                    example: "07:12:02.05Z"
+                },
+
+            }
+        };
+        var col=ps.parseJSONTypeCollection(st);
+        var t=col.getType("t1");
+        var status=t.validateType(ts.builtInRegistry());
+        var val=status .isOk();
+        assert.isTrue(!val);
+    });
+    it ("time only negative 3",function(){
+        var st={
+
+
+            types:{
+                t1:{
+                    type:"time-only",
+                    example: "07:12:02."
                 },
 
             }
@@ -1570,6 +1623,25 @@ describe("Type collection parse and store",function(){
         var val= t.validateType(ts.builtInRegistry()).isOk();
         assert.isTrue(val);
     });
+
+    it ("datetime only positive 2",function(){
+        var st={
+
+
+            types:{
+                t1:{
+                    type:"datetime-only",
+                    example: "2015-07-04T21:00:00.05"
+                },
+
+            }
+        };
+        var col=ps.parseJSONTypeCollection(st);
+        var t=col.getType("t1");
+        var val= t.validateType(ts.builtInRegistry()).isOk();
+        assert.isTrue(val);
+    });
+
     it ("datetime only negative",function(){
         var st={
 
@@ -1588,7 +1660,84 @@ describe("Type collection parse and store",function(){
         var val=status .isOk();
         assert.isTrue(!val);
     });
-    it ("datetime  rfc3339",function(){
+
+    it ("datetime only negative 2",function(){
+        var st={
+
+
+            types:{
+                t1:{
+                    type:"datetime-only",
+                    example: "2015-07-04T21:00:00.123Z"
+                },
+
+            }
+        };
+        var col=ps.parseJSONTypeCollection(st);
+        var t=col.getType("t1");
+        var status=t.validateType(ts.builtInRegistry());
+        var val=status .isOk();
+        assert.isTrue(!val);
+    });
+
+    it ("datetime only negative 3",function(){
+        var st={
+
+
+            types:{
+                t1:{
+                    type:"datetime-only",
+                    example: "2016-13-01T21:00:00.05"
+                },
+
+            }
+        };
+        var col=ps.parseJSONTypeCollection(st);
+        var t=col.getType("t1");
+        var status=t.validateType(ts.builtInRegistry());
+        var val=status .isOk();
+        assert.isTrue(!val);
+    });
+
+    it ("datetime only negative 4",function(){
+        var st={
+
+
+            types:{
+                t1:{
+                    type:"datetime-only",
+                    example: "2015-07-44T21:00:00"
+                },
+
+            }
+        };
+        var col=ps.parseJSONTypeCollection(st);
+        var t=col.getType("t1");
+        var status=t.validateType(ts.builtInRegistry());
+        var val=status .isOk();
+        assert.isTrue(!val);
+    });
+
+    it ("datetime only negative 5",function(){
+        var st={
+
+
+            types:{
+                t1:{
+                    type:"datetime-only",
+                    example: "2015-07-07T12:21:66"
+                },
+
+            }
+        };
+        var col=ps.parseJSONTypeCollection(st);
+        var t=col.getType("t1");
+        var status=t.validateType(ts.builtInRegistry());
+        var val=status .isOk();
+        assert.isTrue(!val);
+    });
+
+    it ("datetime  rfc3339 positive",function(){
         var st={
 
 
@@ -1605,6 +1754,43 @@ describe("Type collection parse and store",function(){
         var val= t.validateType(ts.builtInRegistry()).isOk();
         assert.isTrue(val);
     });
+
+    it ("datetime  rfc3339 positive 2",function(){
+        var st={
+
+
+            types:{
+                t1:{
+                    type:"datetime",
+                    example: "2016-02-28T16:41:41.090+06:00"
+                },
+
+            }
+        };
+        var col=ps.parseJSONTypeCollection(st);
+        var t=col.getType("t1");
+        var val= t.validateType(ts.builtInRegistry()).isOk();
+        assert.isTrue(val);
+    });
+
+    it ("datetime  rfc3339 positive 3",function(){
+        var st={
+
+
+            types:{
+                t1:{
+                    type:"datetime",
+                    example: "2016-02-28T16:41:41.090-10:30"
+                },
+
+            }
+        };
+        var col=ps.parseJSONTypeCollection(st);
+        var t=col.getType("t1");
+        var val= t.validateType(ts.builtInRegistry()).isOk();
+        assert.isTrue(val);
+    });
+
     it ("datetime  format rfc2616",function(){
         var st={
 
@@ -1641,6 +1827,43 @@ describe("Type collection parse and store",function(){
         var val= t.validateType(ts.builtInRegistry()).isOk();
         assert.isTrue(!val);
     });
+
+    it ("datetime  rfc3339 negative 2",function(){
+        var st={
+
+
+            types:{
+                t1:{
+                    type:"datetime",
+                    example: "2016-02-52T16:41:41.090Z"
+                },
+
+            }
+        };
+        var col=ps.parseJSONTypeCollection(st);
+        var t=col.getType("t1");
+        var val= t.validateType(ts.builtInRegistry()).isOk();
+        assert.isTrue(!val);
+    });
+
+    it ("datetime  rfc3339 negative 3",function(){
+        var st={
+
+
+            types:{
+                t1:{
+                    type:"datetime",
+                    example: "2016-02-28T16:72:41.090Z"
+                },
+
+            }
+        };
+        var col=ps.parseJSONTypeCollection(st);
+        var t=col.getType("t1");
+        var val= t.validateType(ts.builtInRegistry()).isOk();
+        assert.isTrue(!val);
+    });
+
     it ("datetime  format rfc2616 negative",function(){
         var st={
 
