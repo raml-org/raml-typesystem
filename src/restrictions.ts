@@ -905,6 +905,10 @@ export class UniqueItems extends FacetRestriction<boolean>{
     requiredType(){return ts.ARRAY}
 
     check(i:any):ts.Status{
+        if(!this._value) {
+            return ts.ok();
+        }
+        
         if (Array.isArray(i)){
             var r:any[]=i;
             if (_.unique(r).length!= r.length){
@@ -913,8 +917,7 @@ export class UniqueItems extends FacetRestriction<boolean>{
         }
         return ts.ok()
     }
-
-
+    
     composeWith(r:ts.Constraint):ts.Constraint{
         if (r instanceof UniqueItems){
             var mm:UniqueItems=r;
