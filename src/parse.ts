@@ -622,6 +622,47 @@ function typeToSignature(t:ts.AbstractType):string{
 }
 
 /**
+ * Analogue of type.isSubTypeOf(), but also checks through unions
+ * @param potentialSubtype
+ * @param potentialSupertype
+ */
+function isSubtypeOf(potentialSubtype : ts.AbstractType, potentialSupertype : ts.AbstractType) : boolean {
+    //TODO this algorithm should be moved to type.isSubTypeOf() after release (now leaving it here for safety)
+    if (potentialSupertype===ts.ANY ||
+        potentialSubtype===potentialSupertype ||
+        potentialSubtype.superTypes().some(
+            currentSuperType=>isSubtypeOf(currentSuperType,potentialSupertype))) {
+
+        return true;
+    }
+
+    if (potentialSubtype.isUnion() && (<any>potentialSubtype).options) {
+        var options = (<ts.UnionType>potentialSubtype).options();
+        if (options.some(
+                option=>isSubtypeOf(option,potentialSupertype))) return true;
+    }
+
+    if (potentialSupertype.isUnion() && (<any>potentialSupertype).options) {
+        var options = (<ts.UnionType>potentialSupertype).options();
+        if (options.some(
+                option=>potentialSubtype==option)) return true;
+    }
+
+    return false;
+}
+
+function testFacetAgainstType(facet : ts.TypeInformation, type : ts.AbstractType) : boolean {
+    var requiredType = facet.requiredType();
+    var requiredTypes = facet.requiredTypes();
+
+    if (requiredTypes && requiredTypes.length > 0) {
+        return requiredTypes.some(currentRType=>isSubtypeOf(type, currentRType))
+    } else {
+        return isSubtypeOf(type, requiredType);
+    }
+}
+
+/**
  * parses a type from a JSON structure
  * @param name
  * @param n
@@ -773,7 +814,9 @@ export function parse(
             return;
         }
         var vl=facetR.getInstance().buildFacet(key, x.value());
-        if (vl/*&&result.isSubTypeOf(vl.requiredType())*/){
+
+        //TODO remove "format" condition and use this check for all facets
+        if (vl && (key != "format" || testFacetAgainstType(vl, result))){
             vl.setNode(x);
             result.addMeta(vl);
         }

@@ -7,7 +7,8 @@ import {TypeInformation,  Abstract, Polymorphic} from "./typesystem";
 
 import {MinProperties, MaxProperties, MinLength, MaxLength, MinItems , MaxItems, Minimum,
         Maximum, Enum, Pattern, UniqueItems,
-        PropertyIs, AdditionalPropertyIs , MapPropertyIs, HasProperty, KnownPropertyRestriction, ComponentShouldBeOfType} from "./restrictions";
+        PropertyIs, AdditionalPropertyIs , MapPropertyIs, HasProperty,
+        KnownPropertyRestriction, ComponentShouldBeOfType, Format} from "./restrictions";
 
 import {Default, Example, Description, DisplayName} from "./metainfo";
 import {AbstractType} from "./typesystem";
@@ -33,7 +34,14 @@ export class FacetPrototype{
         return this._constructWithValue(v);
     }
     isApplicable(t:ts.AbstractType):boolean{
-        return t.isSubTypeOf(this.newInstance().requiredType());
+        var instance = this.newInstance();
+        var requiredType = instance.requiredType()
+        var requiredTypes = instance.requiredTypes();
+        if (requiredTypes && requiredTypes.length > 0) {
+            return requiredTypes.some(currentRType=>t.isSubTypeOf(currentRType))
+        } else {
+            return t.isSubTypeOf(requiredType);
+        }
     }
 
     isInheritable():boolean{
@@ -66,6 +74,7 @@ export class Registry {
         new FacetPrototype(()=>new Maximum(1), (x)=>new Maximum(x)),//X
         new FacetPrototype(()=>new Enum([""]), (x)=>new Enum(x)),//X
         new FacetPrototype(()=>new Pattern("."), (x)=>new Pattern(x)),//X
+        new FacetPrototype(()=>new Format(""), (x)=>new Format(x)),//X
         new FacetPrototype(()=>new PropertyIs("x", ts.ANY), null),//X
         new FacetPrototype(()=>new AdditionalPropertyIs(ts.ANY), null),//X
         new FacetPrototype(()=>new MapPropertyIs(".", ts.ANY), null),//X

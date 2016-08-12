@@ -208,6 +208,18 @@ export abstract class TypeInformation implements tsInterfaces.ITypeFacet {
     abstract facetName():string
     abstract value():any;
     abstract requiredType():AbstractType
+
+    /**
+     * Extension of requiredType() method for the case when there are more than a single type
+     * hierarchy roots to cover.
+     * requiredType() should return the common superclass for the list.
+     *
+     * @returns {Array} of types or empty list of there is only a single type set by requiredType() method
+     */
+    requiredTypes():AbstractType[] {
+        return [];
+    }
+
     abstract kind() : tsInterfaces.MetaInformationKind
 }
 var stack:RestrictionStackEntry=null;

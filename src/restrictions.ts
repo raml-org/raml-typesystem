@@ -538,12 +538,22 @@ export abstract class FacetRestriction<T> extends ts.Constraint{
     abstract checkValue():string
     abstract value():T;
 
+    /**
+     * Extension of requiredType() method for the case when there are more than a single type
+     * hierarchy roots to cover.
+     * requiredType() should return the common superclass for the list.
+     *
+     * @returns {Array} of types or empty list of there is only a single type set by requiredType() method
+     */
+    requiredTypes():ts.AbstractType[] {
+        return [];
+    }
 
-    validateSelf(registry:ts.TypeRegistry):ts.Status{
-        
+    private checkOwner(requiredType : ts.AbstractType) : boolean {
         var ownerIsCorrect = false;
-        if(this.requiredType().isUnion()){
-            var family = (<ts.UnionType>this.requiredType()).typeFamily();
+
+        if(requiredType.isUnion()){
+            var family = (<ts.UnionType>requiredType).typeFamily();
             for(var tp of family){
                 if(this.owner().isSubTypeOf(tp)){
                     ownerIsCorrect = true;
@@ -552,10 +562,36 @@ export abstract class FacetRestriction<T> extends ts.Constraint{
             }
         }
         else{
-            ownerIsCorrect = this.owner().isSubTypeOf(this.requiredType());
+            ownerIsCorrect = this.owner().isSubTypeOf(requiredType);
         }
+
+        return ownerIsCorrect;
+    }
+
+    validateSelf(registry:ts.TypeRegistry):ts.Status{
+        
+        var ownerIsCorrect = false;
+        if (this.checkOwner(this.requiredType())) {
+            if (this.requiredTypes() && this.requiredTypes().length > 0) {
+                var owner = this.owner();
+                var correctRequiredSuperType = _.find(this.requiredTypes(), requiredType=>this.checkOwner(requiredType));
+                if (correctRequiredSuperType) {
+                    ownerIsCorrect = true;
+                }
+            } else {
+                ownerIsCorrect = true;
+            }
+        }
+
         if (!ownerIsCorrect){
-            var rs= ts.error(this.facetName()+" facet can only be used with "+this.requiredType().name()+" types",this);
+
+            var typeNames = this.requiredType().name();
+            if (this.requiredTypes() && this.requiredTypes().length > 0) {
+                typeNames = "[" + this.requiredTypes().map(requiredType=>requiredType.name()).join() + "]"
+            }
+
+            var rs= ts.error(this.facetName()+" facet can only be used with "+ typeNames +" types",this);
+
             rs.setValidationPath({name:this.facetName()});
             return rs;
         }
@@ -1093,6 +1129,69 @@ export class Pattern extends FacetRestriction<string>{
         return "should pass reg exp:"+this.value;
     }
 }
+
+/**
+ * regular expression (pattern) constraint
+ */
+export class Format extends FacetRestriction<string>{
+
+    constructor(private _value:string){
+        super();
+    }
+    facetName(){return "format"}
+
+    requiredType(){
+        return ts.SCALAR
+    }
+
+    requiredTypes() {
+        return [ts.NUMBER, ts.INTEGER, ts.DATETIME];
+    }
+
+    check(i:any):ts.Status{
+        return ts.ok()
+    }
+
+    composeWith(r:ts.Constraint):ts.Constraint{
+        if (r instanceof Format){
+            var v=<Format>r;
+            if (v._value===this._value){
+                return this;
+            }
+            return  this.nothing(r,"Format restrictions can not be composed at one type");
+        }
+        return null;
+    }
+
+    value(){
+        return this._value;
+    }
+    checkValue(){
+        try{
+            var allowedValues : string[] = [];
+
+            if (this.owner().isSubTypeOf(ts.INTEGER)) {
+                allowedValues = ["int32", "int64", "int", "int16", "int8"];
+            } else if (this.owner().isSubTypeOf(ts.NUMBER)) {
+                allowedValues = ["int32", "int64", "int", "long", "float", "double", "int16", "int8"];
+            } else if (this.owner().isSubTypeOf(ts.DATETIME)) {
+                allowedValues = ["rfc3339", "rfc2616"];
+            } else return null;
+
+            var found = _.find(allowedValues, allowedValue=>allowedValue==this.value());
+            if (!found) {
+                return "Following format values are allowed: " + allowedValues.join();
+            }
+        }
+        catch (e){
+            return e.message;
+        }
+        return null;
+    }
+    toString(){
+        return "should have format:"+this.value;
+    }
+}
 /**
  * enum constraint
  */
@@ -1138,7 +1237,14 @@ export class Enum extends FacetRestriction<string[]>{
     checkValue(){
         if (!this.owner().isSubTypeOf(this.requiredType())){
             return "enum facet can only be used with: "+this.requiredType().name();
-
+        }
+        if (this.requiredTypes() && this.requiredTypes().length > 0) {
+            var owner = this.owner();
+            var requiredSuperType = _.find(this.requiredTypes(), requiredType=>owner.isSubTypeOf(requiredType));
+            if (!requiredSuperType) {
+                var typeNames = "[" + this.requiredTypes().map(requiredType=>requiredType.name()).join() + "]";
+                return "enum facet can only be used with: " + typeNames;
+            }
         }
         if(!Array.isArray(this._value)){
             return "enum facet value must be defined by array";

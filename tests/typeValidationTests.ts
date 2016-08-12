@@ -236,6 +236,152 @@ describe("Other simple facet validation",function() {
         var st= tp.validateType(ts.builtInRegistry());
         assert.isTrue(!st.isOk());
     });
+    it("validating number format positive 1", function () {
+        var tp = ps.parseJSON("TestType", {
+            type: "number",
+            format: "int32"
+        })
+        var st= tp.validateType(ts.builtInRegistry());
+        assert.isTrue(st.isOk());
+    });
+    it("validating number format positive 1", function () {
+        var tp = ps.parseJSON("TestType", {
+            type: "number",
+            format: "int64"
+        })
+        var st= tp.validateType(ts.builtInRegistry());
+        assert.isTrue(st.isOk());
+    });
+    it("validating number format positive 2", function () {
+        var tp = ps.parseJSON("TestType", {
+            type: "number",
+            format: "int"
+        })
+        var st= tp.validateType(ts.builtInRegistry());
+        assert.isTrue(st.isOk());
+    });
+    it("validating number format positive 3", function () {
+        var tp = ps.parseJSON("TestType", {
+            type: "number",
+            format: "long"
+        })
+        var st= tp.validateType(ts.builtInRegistry());
+        assert.isTrue(st.isOk());
+    });
+    it("validating number format positive 5", function () {
+        var tp = ps.parseJSON("TestType", {
+            type: "number",
+            format: "float"
+        })
+        var st= tp.validateType(ts.builtInRegistry());
+        assert.isTrue(st.isOk());
+    });
+    it("validating number format positive 6", function () {
+        var tp = ps.parseJSON("TestType", {
+            type: "number",
+            format: "double"
+        })
+        var st= tp.validateType(ts.builtInRegistry());
+        assert.isTrue(st.isOk());
+    });
+    it("validating number format positive 7", function () {
+        var tp = ps.parseJSON("TestType", {
+            type: "number",
+            format: "int16"
+        })
+        var st= tp.validateType(ts.builtInRegistry());
+        assert.isTrue(st.isOk());
+    });
+    it("validating number format positive 8", function () {
+        var tp = ps.parseJSON("TestType", {
+            type: "number",
+            format: "int8"
+        })
+        var st= tp.validateType(ts.builtInRegistry());
+        assert.isTrue(st.isOk());
+    });
+    it("validating number format negative", function () {
+        var tp = ps.parseJSON("TestType", {
+            type: "number",
+            format: "blah"
+        })
+        var st= tp.validateType(ts.builtInRegistry());
+        assert.isTrue(!st.isOk());
+    });
+
+    it("validating integer format positive 1", function () {
+        var tp = ps.parseJSON("TestType", {
+            type: "integer",
+            format: "int64"
+        })
+        var st= tp.validateType(ts.builtInRegistry());
+        assert.isTrue(st.isOk());
+    });
+    it("validating integer format positive 2", function () {
+        var tp = ps.parseJSON("TestType", {
+            type: "integer",
+            format: "int"
+        })
+        var st= tp.validateType(ts.builtInRegistry());
+        assert.isTrue(st.isOk());
+    });
+    it("validating integer format positive 3", function () {
+        var tp = ps.parseJSON("TestType", {
+            type: "integer",
+            format: "int16"
+        })
+        var st= tp.validateType(ts.builtInRegistry());
+        assert.isTrue(st.isOk());
+    });
+    it("validating integer format positive 4", function () {
+        var tp = ps.parseJSON("TestType", {
+            type: "integer",
+            format: "int8"
+        })
+        var st= tp.validateType(ts.builtInRegistry());
+        assert.isTrue(st.isOk());
+    });
+    it("validating integer format negative", function () {
+        var tp = ps.parseJSON("TestType", {
+            type: "integer",
+            format: "blah"
+        })
+        var st= tp.validateType(ts.builtInRegistry());
+        assert.isTrue(!st.isOk());
+    });
+    it("validating integer format negative 2", function () {
+        var tp = ps.parseJSON("TestType", {
+            type: "integer",
+            format: "double"
+        })
+        var st= tp.validateType(ts.builtInRegistry());
+        assert.isTrue(!st.isOk());
+    });
+
+    it("validating datetime format positive 1", function () {
+        var tp = ps.parseJSON("TestType", {
+            type: "datetime",
+            format: "rfc2616"
+        })
+        var st= tp.validateType(ts.builtInRegistry());
+        assert.isTrue(st.isOk());
+    });
+    it("validating datetime format positive 2", function () {
+        var tp = ps.parseJSON("TestType", {
+            type: "datetime",
+            format: "rfc3339"
+        })
+        var st= tp.validateType(ts.builtInRegistry());
+        assert.isTrue(st.isOk());
+    });
+    it("validating datetime format negative", function () {
+        var tp = ps.parseJSON("TestType", {
+            type: "datetime",
+            format: "blah"
+        })
+        var st= tp.validateType(ts.builtInRegistry());
+        assert.isTrue(!st.isOk());
+    });
 });
 describe("Type hierarchy validation",function() {
     it("validating - recurrent type", function () {

@@ -102,7 +102,7 @@ export class DateTimeR extends ts.GenericTypeOf{
     check(value:any):ts.Status {
         var c=ts.VALIDATED_TYPE;
         var rfc2616=false;
-        c.allCustomFacets().forEach(x=>{
+        c.allFacets().forEach(x=>{
             if (x.facetName()=="format") {
                 if (x.value()==="rfc2616"){
                     rfc2616=true;
