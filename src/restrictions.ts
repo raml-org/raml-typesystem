@@ -994,7 +994,7 @@ export class ComponentShouldBeOfType extends FacetRestriction<ts.AbstractType>{
         if (Array.isArray(i)){
             var ar:any[]=i;
             for (var j=0;j<ar.length;j++){
-                var ss=this.type.validate(ar[j],false);
+                var ss=this.type.validate(ar[j],false,false);
                 if (!ss.isOk()){
                     var t=this.type;
                     if (t.isUnknown()|| t.isRecurrent()){
