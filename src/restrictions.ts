@@ -76,7 +76,8 @@ export abstract class MatchesProperty extends ts.Constraint{
             return p;
         }
         if (this._type.isSubTypeOf(ts.UNKNOWN)||this._type.isSubTypeOf(ts.RECURRENT)){
-            var p= new Status(Status.ERROR,0,"property "+this.propId()+" refers to unknown type "+this._type.name(),this)
+            var actualUnknown = actualUnknownType(this._type);
+            var p= new Status(Status.ERROR,0,"property "+this.propId()+" refers to unknown type "+actualUnknown.name(),this)
             p.setValidationPath({name: this.propId(), child: { name: "type"}})
             return p;
         }
@@ -1311,4 +1312,21 @@ export function optimize(r:ts.Constraint[]){
         }
     }
     return optimized;
+}
+
+function actualUnknownType(t:AbstractType):AbstractType{
+    
+    if(!t.isSubTypeOf(ts.UNKNOWN)){
+        return null;
+    }
+    if(t.name()!=null){
+        return t;
+    }
+    for(var st of t.superTypes()){
+        var ust = actualUnknownType(st);
+        if(ust!=null){
+            return ust;
+        }
+    }
+    return t;
 }
