@@ -185,6 +185,13 @@ export class Example extends MetaInfo{
     }
 
     validateSelf(registry:ts.TypeRegistry):ts.Status {
+        var status = ts.ok();
+        status.addSubStatus(this.validateValue(registry));
+        status.addSubStatus(this.validateAnnotations(registry));
+        return status;
+    }
+
+    validateValue(registry:ts.TypeRegistry):ts.Status {
         var val=this.value();
         var isVal=false;
         if (typeof val==="object"&&val){
@@ -227,6 +234,25 @@ export class Example extends MetaInfo{
         return ts.ok();
     }
 
+    validateAnnotations(registry:ts.TypeRegistry):ts.Status {
+        var status = ts.ok();
+        var val=this.value();
+        if (typeof val==="object"&&val){
+            if (val.value){
+                var usedAnnotations = Object.keys(val).filter(x=>
+                x.length>2 && x.charAt(0)=="(" && x.charAt(x.length-1)==")");
+
+                for(var ua of usedAnnotations) {
+                    var aValue = val[ua];
+                    var aName = ua.substring(1,ua.length-1);
+                    var aInstance = new Annotation(aName,aValue);
+                    status.addSubStatus(aInstance.validateSelf(registry));
+                }
+            }
+        }
+        return status;
+    }
+    
     example():any{
         var val=this.value();
         if (typeof val==="object"&&val){
