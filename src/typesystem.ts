@@ -1106,6 +1106,10 @@ export abstract class AbstractType implements tsInterfaces.IParsedType, tsInterf
     validateDirect(i:any,autoClose:boolean=false,nullAllowed:boolean=true,path:tsInterfaces.IValidationPath=null):Status{
         var prevValidated=VALIDATED_TYPE;
         try {
+            var g = autoCloseFlag;
+            if(autoClose){
+                autoCloseFlag = true;
+            }
             VALIDATED_TYPE = this;
             var result = new Status(Status.OK, 0, "", this);
             if (!nullAllowed && (i === null || i === undefined)) {
@@ -1124,6 +1128,7 @@ export abstract class AbstractType implements tsInterfaces.IParsedType, tsInterf
                 });
             }
         } finally{
+            autoCloseFlag = g;
             VALIDATED_TYPE=prevValidated;
         }
         return  result;
@@ -1403,6 +1408,10 @@ export abstract class AbstractType implements tsInterfaces.IParsedType, tsInterf
             }
         })
         return _.unique(rs);
+    }
+
+    hasPropertiesFacet():boolean{
+        return this.metaInfo.some(x=>x instanceof metaInfo.HasPropertiesFacet);
     }
 }
 

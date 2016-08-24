@@ -72,6 +72,7 @@ export enum MetaInformationKind {
     CustomFacet,
     Example,
     Required,
+    HasPropertiesFacet,
     AllowedTargets,
     Examples,
     XMLInfo,

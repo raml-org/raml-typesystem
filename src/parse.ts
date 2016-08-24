@@ -835,6 +835,7 @@ export function parse(
         var props=n.childWithKey("properties");
         var hasProps=false;
         if (props) {
+            result.addMeta(new meta.HasPropertiesFacet());
             if (props.kind() == NodeKind.MAP) {
                 props.children().forEach(x=> {
                     hasProps = true;

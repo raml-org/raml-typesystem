@@ -295,6 +295,20 @@ export class Required extends MetaInfo{
         return tsInterfaces.MetaInformationKind.Required;
     }
 }
+
+export class HasPropertiesFacet extends MetaInfo{
+    constructor(){
+        super("hasPropertiesFacet",null);
+    }
+
+    validateSelf(registry:ts.TypeRegistry):ts.Status {
+        return ts.ok();
+    }
+
+    kind() : tsInterfaces.MetaInformationKind {
+        return tsInterfaces.MetaInformationKind.HasPropertiesFacet;
+    }
+}
 export class AllowedTargets extends MetaInfo{
     constructor(value:any){
         super("allowedTargets",value)
