@@ -561,7 +561,7 @@ export function toProto(type:AbstractType):TypeProto{
             else if (x instanceof rs.KnownPropertyRestriction) {
                 result.additionalProperties = x.value();
             }
-            else{
+            else if(!(x instanceof meta.HasPropertiesFacet)) {
                 result.basicFacets.push(x);
             }
         }

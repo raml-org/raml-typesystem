@@ -202,7 +202,7 @@ export class KnownPropertyRestriction extends ts.Constraint{
                     });
                 });
                 var unknownPropertyNames = Object.keys(nm);
-                if (this.owner().hasPropertiesFacet() && unknownPropertyNames.length > 0) {
+                if ((this.owner().hasPropertiesFacet()||mp.length>0) && unknownPropertyNames.length > 0) {
                     var s=new ts.Status(ts.Status.OK,0,"",this);
                     unknownPropertyNames.forEach(x=>{
                         var err=ts.error("Unknown property:"+x,this);
