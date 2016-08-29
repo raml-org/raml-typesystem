@@ -561,7 +561,7 @@ export function toProto(type:AbstractType):TypeProto{
             else if (x instanceof rs.KnownPropertyRestriction) {
                 result.additionalProperties = x.value();
             }
-            else{
+            else if(!(x instanceof meta.HasPropertiesFacet)) {
                 result.basicFacets.push(x);
             }
         }
@@ -835,6 +835,7 @@ export function parse(
         var props=n.childWithKey("properties");
         var hasProps=false;
         if (props) {
+            result.addMeta(new meta.HasPropertiesFacet());
             if (props.kind() == NodeKind.MAP) {
                 props.children().forEach(x=> {
                     hasProps = true;
