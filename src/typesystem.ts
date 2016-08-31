@@ -1106,6 +1106,10 @@ export abstract class AbstractType implements tsInterfaces.IParsedType, tsInterf
     validateDirect(i:any,autoClose:boolean=false,nullAllowed:boolean=true,path:tsInterfaces.IValidationPath=null):Status{
         var prevValidated=VALIDATED_TYPE;
         try {
+            var g = autoCloseFlag;
+            if(autoClose){
+                autoCloseFlag = true;
+            }
             VALIDATED_TYPE = this;
             var result = new Status(Status.OK, 0, "", this);
             if (!nullAllowed && (i === null || i === undefined)) {
@@ -1124,6 +1128,7 @@ export abstract class AbstractType implements tsInterfaces.IParsedType, tsInterf
                 });
             }
         } finally{
+            autoCloseFlag = g;
             VALIDATED_TYPE=prevValidated;
         }
         return  result;
@@ -1404,6 +1409,10 @@ export abstract class AbstractType implements tsInterfaces.IParsedType, tsInterf
         })
         return _.unique(rs);
     }
+
+    hasPropertiesFacet():boolean{
+        return this.metaInfo.some(x=>x instanceof metaInfo.HasPropertiesFacet);
+    }
 }
 
 export abstract class Modifier extends TypeInformation{
@@ -1541,6 +1550,14 @@ export class InheritedType extends AbstractType{
     
     setContextMeta(contextMeta:restr.MatchesProperty){
         this._contextMeta = contextMeta;
+    }
+    
+    patch(another:InheritedType){
+        for (var prop in another) {
+            if (another.hasOwnProperty(prop)) {
+                (<any>this)[prop] = (<any>another)[prop];
+            }
+        }
     }
 
 }
@@ -2010,6 +2027,7 @@ export const FILE=SCALAR.inherit("file");
 export const NOTHING=new RootType("nothing");
 export const UNION=ANY.inherit("union");
 export const UNKNOWN=NOTHING.inherit("unknown");
+export const REFERENCE=NOTHING.inherit("reference");
 export const RECURRENT=NOTHING.inherit("recurrent");
 
 
