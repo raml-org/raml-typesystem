@@ -1551,6 +1551,14 @@ export class InheritedType extends AbstractType{
     setContextMeta(contextMeta:restr.MatchesProperty){
         this._contextMeta = contextMeta;
     }
+    
+    patch(another:InheritedType){
+        for (var prop in another) {
+            if (another.hasOwnProperty(prop)) {
+                (<any>this)[prop] = (<any>another)[prop];
+            }
+        }
+    }
 
 }
 export abstract class DerivedType extends AbstractType{
@@ -2019,6 +2027,7 @@ export const FILE=SCALAR.inherit("file");
 export const NOTHING=new RootType("nothing");
 export const UNION=ANY.inherit("union");
 export const UNKNOWN=NOTHING.inherit("unknown");
+export const REFERENCE=NOTHING.inherit("reference");
 export const RECURRENT=NOTHING.inherit("recurrent");
 
 
