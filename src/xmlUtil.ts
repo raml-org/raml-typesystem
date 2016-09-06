@@ -32,7 +32,6 @@ function objectToXml(object: any) {
     var result = '<' + nodeName;
 
     var attributes = root['$'] || {};
-
     Object.keys(attributes).forEach(key => {
         result = result + ' ' + key  + '="' + attributes[key] + '"';
     });
@@ -101,6 +100,9 @@ function checkAttributes(root: any) {
     var attributes: any[] = [];
 
     Object.keys(root).forEach(key => {
+        if(key=="$"){
+            return;
+        }
         if(key.indexOf('@') === 0) {
             var attribute = {key: key, value: root[key]};
 
