@@ -19,7 +19,7 @@
     "z-schema": "^3.16.1",
     "date-and-time": "0.3.0",
     "xmldom": "^0.1.22",
-    "xmllint-hack2": "^0.0.2"
+    "raml-xml-validation": "*"
   },
   "repository": {
     "type": "git",

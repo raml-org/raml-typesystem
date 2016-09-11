@@ -1,20 +1,27 @@
 /// <reference path="../typings/main.d.ts" />
+/// <reference path="../custom_typings/main.d.ts" />
+
+import {XMLValidator} from "raml-xml-validation";
+var sss: XMLValidator
+
 declare function require(s:string):any;
 
-var validator = require('xmllint-hack2');
+var XMLValidatorConstructor: any;
 
-export class XMLValidator {
-    private schemaObject: any;
+try {
+    XMLValidatorConstructor = require("raml-xml-validation").XMLValidator;
+} catch(exception) {
+    class XMLValidatorDummyImpl {
+        constructor(arg: string) {
+
+        }
+
+        validate(xml: string): Error[] {
+            return [];
+        }
+    }
     
-    constructor(private schema:string) {
-        
-    }
-
-    validate(xml: string): Error[] {
-        var result = validator.validateXML({xml: xml, schema: this.schema});
-
-        return (result && result.errors && result.errors.map((error: any) => new Error(error))) || [];
-    }
+    XMLValidatorConstructor = XMLValidatorDummyImpl;
 }
 
 function objectToXml(object: any) {
@@ -78,6 +85,10 @@ function objectToXml(object: any) {
     result = result + '</' + nodeName + '>';
 
     return result;
+}
+
+export function getValidator(arg: string): XMLValidator {
+    return new XMLValidatorConstructor(arg);
 }
 
 export function jsonToXml(jsonObject: any) {

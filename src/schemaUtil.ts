@@ -1,10 +1,13 @@
 /// <reference path="../typings/main.d.ts" />
+/// <reference path="../custom_typings/main.d.ts" />
+
+import {XMLValidator} from "raml-xml-validation";
 declare var global:any;
 declare function require(s:string):any;
 
 import _ = require("./utils");
 
-import xmlValidator = require('./xmlUtil');
+import xmlUtil = require('./xmlUtil');
 
 var DOMParser = require('xmldom').DOMParser;
 var ZSchema=require("z-schema");
@@ -450,7 +453,7 @@ export interface ValidationError{
 }
 var MAX_EXAMPLES_TRESHOLD=10;
 export class XMLSchemaObject {
-    private schemaObj: xmlValidator.XMLValidator;
+    private schemaObj: XMLValidator;
 
     private extraElementData: any = null;
 
@@ -459,7 +462,7 @@ export class XMLSchemaObject {
             throw new Error("Invalid JSON schema")
         }
 
-        this.schemaObj = new xmlValidator.XMLValidator(this.handleReferenceElement(schema));
+        this.schemaObj = xmlUtil.getValidator(this.handleReferenceElement(schema));
     }
 
     getType() : string {
@@ -493,7 +496,7 @@ export class XMLSchemaObject {
             }
         }
         
-        this.validate(xmlValidator.jsonToXml(object));
+        this.validate(xmlUtil.jsonToXml(object));
     }
 
     validate(xml: any) {
