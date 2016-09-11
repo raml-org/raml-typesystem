@@ -1,5 +1,4 @@
 /// <reference path="../typings/main.d.ts" />
-/// <reference path="../custom_typings/main.d.ts" />
 
 import {XMLValidator} from "raml-xml-validation";
 var sss: XMLValidator
