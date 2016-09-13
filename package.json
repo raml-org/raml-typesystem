@@ -4,7 +4,8 @@
   "main": "dist/src/index.js",
   "scripts": {
     "test-cov": " ./node_modules/.bin/istanbul cover _mocha dist/tests/*Tests.js",
-    "build": "rimraf dist && tsc",
+    "noValidationBuild": "rimraf dist && tsc",
+    "build": "npm install raml-xml-validation && npm run noValidationBuild",
     "pullall": "dev-env-installer pullall",
     "buildall": "dev-env-installer buildall",
     "testall": "dev-env-installer testall",
@@ -18,8 +19,7 @@
     "xml2js": "^0.4.16",
     "z-schema": "^3.16.1",
     "date-and-time": "0.3.0",
-    "xmldom": "^0.1.22",
-    "raml-xml-validation": "*"
+    "xmldom": "^0.1.22"
   },
   "repository": {
     "type": "git",
