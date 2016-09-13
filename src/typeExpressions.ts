@@ -18,7 +18,7 @@ export function parseToType(val:string,t:ts.TypeRegistry, contentProvider: schem
         
         if (q.length > 0) {
             var json=q.charAt(0)=='{';
-            if (json || q.charAt(0)=='<'){
+            if (json || (q.charAt(0)=='<'&&q.length>1&&q.charAt(1)!='<')){
                 return new ts.ExternalType("", q, json, contentProvider);
             }
 
