@@ -3,7 +3,6 @@
     "build" : "npm run build",
     "test" : "gulp test",
     "gitUrl" : "https://github.com/raml-org/raml-js-parser-2.git",
-    "gitBranch" : "develop",
     "installTypings" : true
   },
   "raml-definition-system" : {
@@ -21,13 +20,11 @@
   "raml-xml-validation" : {
     "build" : "npm run build",
     "gitUrl" : "https://github.com/dreamflyer/raml-xml-validation.git",
-    "gitBranch" : false,
     "installTypings" : true
   },
   "ts-structure-parser" : {
     "build" : "npm run build",
     "gitUrl" : "https://github.com/mulesoft-labs/ts-structure-parser.git",
-    "gitBranch" : "develop",
     "installTypings" : true
   },
   "yaml-ast-parser" : {
@@ -37,7 +34,6 @@
   "ts-model" : {
     "build" : "npm run build",
     "gitUrl" : "https://github.com/mulesoft-labs/ts-model.git",
-    "gitBranch" : "develop",
     "installTypings" : true
   }
 }
