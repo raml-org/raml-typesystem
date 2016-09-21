@@ -1,7 +1,6 @@
 /// <reference path="../typings/main.d.ts" />
 
 import {XMLValidator} from "raml-xml-validation";
-var sss: XMLValidator
 
 declare function require(s:string):any;
 

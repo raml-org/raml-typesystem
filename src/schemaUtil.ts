@@ -1,15 +1,17 @@
 /// <reference path="../typings/main.d.ts" />
 
 import {XMLValidator} from "raml-xml-validation";
+import {JSONValidator} from "raml-json-validation";
+
 declare var global:any;
 declare function require(s:string):any;
 
 import _ = require("./utils");
 
 import xmlUtil = require('./xmlUtil');
+import jsonUtil = require('./jsonUtil');
 
 var DOMParser = require('xmldom').DOMParser;
-var ZSchema=require("z-schema");
 
 export class ValidationResult{
     result:any;
@@ -178,9 +180,9 @@ export class JSONSchemaObject {
     getMissingReferences(references: any[], normalize: boolean = false): any[] {
         var result: any[] = [];
 
-        var validator = new ZSchema();
+        var validator = jsonUtil.getValidator();
 
-        references.forEach(references => validator.setRemoteReference(references.reference, references.content || {}));
+        references.forEach(reference => validator.setRemoteReference(reference.reference, reference.content || {}));
 
         var schemaUrl : string = null;
         if (this.jsonSchema.id && typeof(this.jsonSchema.id)==="string") {
@@ -204,7 +206,7 @@ export class JSONSchemaObject {
         var result = <any[]>validator.getMissingRemoteReferences();
         var filteredReferences : string[] = [];
         if (result) filteredReferences = _.filter(result, referenceUrl=>{
-            return validator.cache[referenceUrl] == null && referenceUrl != schemaUrl;
+            return !validator.isResourceLoaded(referenceUrl) && referenceUrl != schemaUrl;
         })
 
         return normalize ? filteredReferences.map(reference => this.provider.normalizePath(reference)) : filteredReferences;
@@ -313,7 +315,7 @@ export class JSONSchemaObject {
             return;
         }
 
-        var validator = new ZSchema();
+        var validator = jsonUtil.getValidator();
 
         alreadyAccepted.forEach(accepted => validator.setRemoteReference(accepted.reference, accepted.content));
 
