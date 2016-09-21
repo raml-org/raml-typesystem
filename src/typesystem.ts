@@ -809,20 +809,20 @@ export abstract class AbstractType implements tsInterfaces.IParsedType, tsInterf
                     rs.addSubStatus(new Status(Status.ERROR, 0, msg,cd,true))
                 }
             }
-            if (x instanceof MapPropertyIs){
-                var mm:MapPropertyIs=x;
-                Object.keys(knownPropertySet).forEach(c=>{
-                    try {
-                        if (c.match(mm.regexpValue())) {
-                            var regexpText = '/' + mm.regexpValue().toString() + '/';
-                            
-                            rs.addSubStatus(new Status(Status.WARNING, 0, "pattern property '" + regexpText + "' conflicts with property: " + c, this));
-                        }
-                    } catch (e){
-                        //ignore incorrect regexps here
-                    }
-                })
-            }
+            // if (x instanceof MapPropertyIs){
+            //     var mm:MapPropertyIs=x;
+            //     Object.keys(knownPropertySet).forEach(c=>{
+            //         try {
+            //             if (c.match(mm.regexpValue())) {
+            //                 var regexpText = '/' + mm.regexpValue().toString() + '/';
+            //                
+            //                 rs.addSubStatus(new Status(Status.WARNING, 0, "pattern property '" + regexpText + "' conflicts with property: " + c, this));
+            //             }
+            //         } catch (e){
+            //             //ignore incorrect regexps here
+            //         }
+            //     })
+            // }
         })
         if (Object.getOwnPropertyNames(rfds).length > 0) {
             rs.addSubStatus(new Status(Status.ERROR, 0, "missing required facets:" + Object.keys(rfds).join(","),this))

@@ -428,15 +428,24 @@ export class MapPropertyIs extends MatchesProperty{
     check(i:any,p:ts.IValidationPath):ts.Status{
         if (i) {
             if (typeof i == 'object') {
+                var fixedProperties:any = {};
+                if(this._owner!=null) {
+                    this._owner.meta().filter(x=>x instanceof PropertyIs).forEach(x=> {
+                        fixedProperties[(<PropertyIs>x).propertyName()] = true;
+                    });
+                }
                 var rs:ts.Status = new ts.Status(ts.Status.OK, 0, "",this);
-                Object.getOwnPropertyNames(i).forEach(n=> {
+                for(var n of Object.getOwnPropertyNames(i)){
+                    if(fixedProperties[n]){
+                        continue;
+                    }
                     if (n.match(this.regexp)) {
                         var stat = this.validateProp(i, n, this.type,p);
                         if (!stat.isOk()) {
                             rs.addSubStatus(stat);
                         }
                     }
-                });
+                }
                 return rs;
             }
         }
