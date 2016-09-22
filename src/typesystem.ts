@@ -441,24 +441,48 @@ class PropertyCyclesValidator{
 }
 
 export class RestrictionsConflict extends Status{
-    constructor(protected _conflicting:Constraint,protected _stack:RestrictionStackEntry,source:any){
+    constructor(protected _conflicting:Constraint,protected _stack:RestrictionStackEntry, protected source:any){
         super(Status.ERROR,0,null,source);
 
+        this.computeMessage();
+    }
+
+    private computeMessage() {
         var conflictingMessage:string = null;
-        if(_stack!=null){
-           if(_stack.getRestriction() instanceof restr.MinMaxRestriction){
-               var mmr:restr.MinMaxRestriction = <restr.MinMaxRestriction>_stack.getRestriction();
-               conflictingMessage = _conflicting.conflictMessage(mmr.facetPath(),mmr.value());
-           } 
+        if (this._stack != null) {
+            if (this._stack.getRestriction() instanceof restr.MinMaxRestriction) {
+                var mmr:restr.MinMaxRestriction = <restr.MinMaxRestriction>this._stack.getRestriction();
+                conflictingMessage = this._conflicting.conflictMessage(mmr.facetPath(), mmr.value());
+            }
         }
-        if(conflictingMessage==null){
-            conflictingMessage = _conflicting+" and "+(_stack!=null?_stack.getRestriction().toString():"");
+        if (conflictingMessage == null) {
+            conflictingMessage = this._conflicting + " and " + (this._stack != null ? this._stack.getRestriction().toString() : "");
         }
         var typeInfo:string = "";
-        if(source instanceof AbstractType){
-            typeInfo = `in type '${typePath(<AbstractType>source)}'`;
+        if (this.source instanceof AbstractType) {
+            var path:tsInterfaces.IValidationPath[] = [];
+            var rse = this._stack;
+            while (rse) {
+                var restri = rse.getRestriction();
+                if (restri instanceof PropertyIs) {
+                    var vp:tsInterfaces.IValidationPath = {name: (<PropertyIs>restri).propId()};
+                    if (path.length > 0) {
+                        vp.child = path[path.length - 1];
+                    }
+                    path.push(vp);
+                }
+                rse = rse.pop();
+            }
+            this.setValidationPath(path.pop());
+            var arc = restr.anotherRestrictionComponent();
+            if(arc) {
+                typeInfo = ` between types '${typePath(<AbstractType>this.source)}' and '${typePath(<AbstractType>arc)}'`;
+            }
+            else{
+                typeInfo = ` in type '${typePath(<AbstractType>this.source)}'`;
+            }
         }
-        this.message = `Restrictions conflict ${typeInfo}: ` + conflictingMessage;
+        this.message = `Restrictions conflict${typeInfo}: ` + conflictingMessage;
     }
 
     getConflictDescription():string{
@@ -904,6 +928,7 @@ export abstract class AbstractType implements tsInterfaces.IParsedType, tsInterf
             return ok();
         }
         this.computeConfluent=true;
+        var arcc = restr.anotherRestrictionComponentsCount();  
         try {
             var os = restr.optimize(this.restrictions());
             var ns=_.find(os,x=>x instanceof NothingRestriction);
@@ -915,12 +940,13 @@ export abstract class AbstractType implements tsInterfaces.IParsedType, tsInterf
                     lstack=nswl.getStack();
                     another=nswl.another();
                 }
-                var status=new RestrictionsConflict(another,lstack,this);
+                var status=new RestrictionsConflict(another,lstack,this);                
                 return status;
             }
             return ok();
         }finally {
             this.computeConfluent=false;
+            restr.releaseAnotherRestrictionComponent(arcc);
         }
     }
     /**

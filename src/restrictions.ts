@@ -332,7 +332,8 @@ export class PropertyIs extends MatchesProperty{
                 if (pi.type.typeFamily().indexOf(this.type)!=-1){
                     return this;
                 }
-                    var intersectionType = this.intersect(this.type, pi.type);
+                setAnotherRestrictionComponent(t);
+                var intersectionType = this.intersect(this.type, pi.type);
                 try {
                     var is:ts.Status = intersectionType.checkConfluent();
                     if (!is.isOk()) {
@@ -347,6 +348,36 @@ export class PropertyIs extends MatchesProperty{
         }
         return null;
     }
+}
+
+var anotherSource:any[] = [];
+
+export function anotherRestrictionComponent():any{
+    return anotherSource.length > 0 ? anotherSource[anotherSource.length-1] : null;
+}
+
+function setAnotherRestrictionComponent(src:Constraint){
+    var owner:AbstractType;
+    while(src){
+        owner = src.owner();
+        if(owner instanceof ts.InheritedType) {
+            src = (<ts.InheritedType>owner).contextMeta();
+        }
+        else{
+            src = null;
+        }
+    }
+    anotherSource.push(owner);
+}
+
+export function releaseAnotherRestrictionComponent(l:number=0){
+    while(anotherSource.length>l) {
+        anotherSource.pop();
+    }
+}
+
+export function anotherRestrictionComponentsCount():number{
+    return anotherSource.length;
 }
 /**
  * this cosnstraint checks that map property values passes to particular type if exists
