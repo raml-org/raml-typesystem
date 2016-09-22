@@ -370,7 +370,7 @@ function setAnotherRestrictionComponent(src:Constraint){
     anotherSource.push(owner);
 }
 
-export function releaseAnotherRestrictionComponent(l?:number=0){
+export function releaseAnotherRestrictionComponent(l:number=0){
     while(anotherSource.length>l) {
         anotherSource.pop();
     }
