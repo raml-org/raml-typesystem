@@ -582,6 +582,11 @@ export function toProto(type:AbstractType):TypeProto{
             else if (x instanceof rs.KnownPropertyRestriction) {
                 result.additionalProperties = x.value();
             }
+            else if(x instanceof meta.DiscriminatorValue){
+                if((<meta.DiscriminatorValue>x).isStrict()){
+                    result.basicFacets.push(x);
+                }
+            }
             else if(!(x instanceof meta.HasPropertiesFacet)) {
                 result.basicFacets.push(x);
             }
@@ -860,6 +865,9 @@ export function parse(
             }
         }
     });
+    if(result.metaOfType(meta.DiscriminatorValue).length==0){
+        result.addMeta(new meta.DiscriminatorValue(result.name(),false));
+    }
     if (result.isSubTypeOf(ts.OBJECT)) {
         var props=n.childWithKey("properties");
         var hasProps=false;

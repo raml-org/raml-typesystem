@@ -496,13 +496,53 @@ export class Discriminator extends ts.TypeInformation{
     }
 }
 
-export class DiscriminatorValue extends ts.TypeInformation{
-    constructor(public _value: any){
+export class DiscriminatorValue extends ts.Constraint{
+    constructor(public _value: any, protected strict:boolean=true){
         super(false);
+    }
+
+    check(i:any,path:tsInterfaces.IValidationPath):Status{
+        var owner = this.owner();//_.find([t].concat(t.allSuperTypes()),x=>x.getExtra(TOPLEVEL));
+        var dVal:string = this.value();
+        var discriminator = owner.metaOfType(Discriminator);
+        if(discriminator.length==0){
+            return ts.ok();
+        }
+        var dName = discriminator[0].value();
+        // if(owner) {
+        //     dVal = owner.name();
+        // }
+        // var discriminatorValue = t.metaOfType(metaInfo.DiscriminatorValue);
+        // if(discriminatorValue.length!=0){
+        //     dVal = discriminatorValue[0].value();
+        // }
+        if(dVal) {
+            if (i.hasOwnProperty(dName)) {
+                var adVal = i[dName];
+                if (adVal != dVal) {
+                    var wrng = new Status(Status.WARNING, Status.CODE_INCORRECT_DISCRIMINATOR,
+                        `None of the '${owner.name()}' type known subtypes declare '${adVal}' as value of discriminating property '${dName}'.`, this);
+                    //var wrng = new Status(Status.WARNING, Status.CODE_INCORRECT_DISCRIMINATOR, dVal, this);
+                    wrng.setValidationPath({name: dName, child: path});
+                    return wrng;
+                }
+                return ts.ok();
+            }
+            else {
+                var err = new Status(Status.ERROR, Status.CODE_MISSING_DISCRIMINATOR,
+                    `Instance of '${owner.name()}' subtype misses value of the discriminating property '${dName}'.`, this);
+                //var err = new Status(Status.ERROR, Status.CODE_MISSING_DISCRIMINATOR, dVal, this);
+                err.setValidationPath(path);
+                return err;
+            }
+        }
     }
     facetName(){return "discriminatorValue"}
 
     validateSelf(registry:ts.TypeRegistry):ts.Status {
+        if(!this.strict){
+            return ts.ok();
+        }
         if (!this.owner().isSubTypeOf(ts.OBJECT)){
             return new Status(Status.ERROR,0,"you only can use `discriminator` with object types",this)
         }
@@ -533,4 +573,6 @@ export class DiscriminatorValue extends ts.TypeInformation{
     kind() : tsInterfaces.MetaInformationKind {
         return tsInterfaces.MetaInformationKind.DiscriminatorValue;
     }
+    
+    isStrict():boolean{ return this.strict; }
 }

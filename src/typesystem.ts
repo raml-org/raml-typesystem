@@ -10,6 +10,10 @@ export class Status implements tsInterfaces.IStatus {
 
     public static CODE_CONFLICTING_TYPE_KIND = 4;
 
+    public static CODE_INCORRECT_DISCRIMINATOR = 5;
+
+    public static CODE_MISSING_DISCRIMINATOR = 6;
+
     public static ERROR = 3;
 
     public static INFO = 1;
@@ -136,6 +140,9 @@ export class Status implements tsInterfaces.IStatus {
     getSource(){
         return this.source;
     }
+    getCode(){
+        return this.code;
+    }
     isWarning(){
         return this.severity==Status.WARNING;
     }
@@ -144,6 +151,9 @@ export class Status implements tsInterfaces.IStatus {
     }
     isOk(){
         return this.severity===Status.OK;
+    }
+    isInfo(){
+        return this.severity===Status.INFO;
     }
     setSource(s:any){
         this.source=s;
@@ -163,7 +173,7 @@ export class Status implements tsInterfaces.IStatus {
         }
         return null;
     }
-    
+
     putExtra(name:string,value:any):void{}
 
 }
@@ -225,7 +235,7 @@ export abstract class TypeInformation implements tsInterfaces.ITypeFacet {
 var stack:RestrictionStackEntry=null;
 
 export abstract class Constraint extends TypeInformation{
-    constructor(){super(true)}
+    constructor(_inheritable=true){super(_inheritable)}
 
 
 
@@ -1170,13 +1180,39 @@ export abstract class AbstractType implements tsInterfaces.IParsedType, tsInterf
             autoCloseFlag=true;
         }
         try {
-            for( var subType of this.subTypes()){
+            // for( var subType of this.subTypes()){
+            //     var vr = subType.validateDirect(i,autoClose||g);
+            //     if(vr.isOk()){
+            //         return vr;
+            //     }
+            // }
+            // return this.validateDirect(i, autoClose||g);
+
+            var statuses:Status[] = [];
+            var queue = this.subTypes().concat(this);
+            var lastStatus:Status;
+            for( var subType of queue){
+                var dStatus = checkDescriminator(i,subType);
                 var vr = subType.validateDirect(i,autoClose||g);
-                if(vr.isOk()){
+                if(dStatus){
+                    if(dStatus.isOk()) {
+                        return vr;
+                    }
+                    else {
+                        statuses.push(dStatus);
+                    }
+                }
+                else if(vr.isOk()){
                     return vr;
                 }
+                lastStatus = vr;
             }
-            return this.validateDirect(i, autoClose||g);
+            if(statuses.length==0){
+                return lastStatus;
+            }
+            var result = ok();
+            statuses.forEach(x=>result.addSubStatus(x));
+            return statuses.pop();//result;
         } finally {
             autoCloseFlag=g;
         }
@@ -1982,7 +2018,9 @@ export class OrRestriction extends Constraint{
                 });
             }
             if (this._extraMessage){
-                cs.addSubStatus(error(this._extraMessage,this));
+                var severity = 0;
+                results.forEach(x=>severity = Math.max(severity,x.getSeverity()));
+                cs.addSubStatus(new Status(severity,0,this._extraMessage,this));
             }
         }
         return cs;
@@ -2189,4 +2227,43 @@ export function typePath(t:AbstractType):string[]{
         }
     }
     return arr.reverse();
+}
+
+function checkDescriminator(i:any,t:AbstractType,path?:IValidationPath){
+    var discriminator = t.metaOfType(metaInfo.Discriminator);
+    if(discriminator.length!=0){
+        var dName = discriminator[0].value();
+        var owner = _.find([t].concat(t.allSuperTypes()),x=>x.getExtra(TOPLEVEL));
+        var dVal:string;
+        if(owner) {
+             dVal = owner.name();
+        }
+        var discriminatorValue = t.metaOfType(metaInfo.DiscriminatorValue);
+        if(discriminatorValue.length!=0){
+            dVal = discriminatorValue[0].value();
+        }
+        if(dVal) {
+            if (i.hasOwnProperty(dName)) {
+                var adVal = i[dName];
+                if (adVal != dVal) {
+                    var wrng = new Status(Status.WARNING, Status.CODE_INCORRECT_DISCRIMINATOR,
+                        `None of the '${owner.name()}' type known subtypes declare '${adVal}' as value of discriminating property '${dName}'.`, this);
+                    //var wrng = new Status(Status.WARNING, Status.CODE_INCORRECT_DISCRIMINATOR, dVal, this);
+                    wrng.setValidationPath({name: dName, child: path});
+                    return wrng;
+                }
+                return ok();
+            }
+            else {
+                var err = new Status(Status.ERROR, Status.CODE_MISSING_DISCRIMINATOR,
+                    `Instance of '${owner.name()}' subtype misses value of the discriminating property '${dName}'.`, this);
+                //var err = new Status(Status.ERROR, Status.CODE_MISSING_DISCRIMINATOR, dVal, this);
+                err.setValidationPath(path);
+                return err;
+            }
+        }
+    }
+    else{
+        return null;
+    }
 }
