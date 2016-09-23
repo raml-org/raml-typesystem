@@ -928,7 +928,7 @@ function contributeToAccumulatingRegistry(result:ts.InheritedType,r:TypeRegistry
     var existing:ts.InheritedType;
     var _r = r;
     while(_r){
-        existing = _r.typeMap()[result.name()];
+        existing = <ts.InheritedType>_r.typeMap()[result.name()];
         if(existing){
             break;
         }
