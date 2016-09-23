@@ -907,10 +907,18 @@ export abstract class AbstractType implements tsInterfaces.IParsedType, tsInterf
      * @return true if type has no associated meta information of restrictions
      */
     isEmpty():boolean{
-        if (this.metaInfo.length>1){
+        if (this.metaInfo.length>2){
             return false;
         }
-        return this.metaInfo.filter(x=>!(x instanceof NotScalar)).length==0;
+        return this.metaInfo.filter(x=>{
+                if(x instanceof NotScalar){
+                    return false;
+                }
+                else if(x instanceof metaInfo.DiscriminatorValue){
+                    return (<metaInfo.DiscriminatorValue>x).isStrict();
+                }
+                return true;
+            }).length==0;
     }
 
     /**
