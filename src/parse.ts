@@ -329,14 +329,14 @@ export function parseTypeCollection(n:ParseNode,tr:ts.TypeRegistry):TypeCollecti
 
     var reg=new AccumulatingRegistry(tpes,schemas,tr,result);
     if (tpes&&tpes.kind()!==NodeKind.SCALAR){
-        tpes.children().forEach(x=>{
+        tpes.children().filter(x=>x.key()&&true).forEach(x=>{
             var t = ts.derive(x.key(),[ts.REFERENCE]);
             result.add(t);
             reg.addType(t);
         });
     }
     if (schemas&&schemas.kind()!==NodeKind.SCALAR){
-        schemas.children().forEach(x=>{
+        schemas.children().filter(x=>x.key()&&true).forEach(x=>{
             var t = ts.derive(x.key(),[ts.REFERENCE]);
             result.add(t);
             reg.addType(t);
@@ -354,12 +354,12 @@ export function parseTypeCollection(n:ParseNode,tr:ts.TypeRegistry):TypeCollecti
     }
 
     if (tpes&&tpes.kind()!==NodeKind.SCALAR){
-        tpes.children().forEach(x=>{
+        tpes.children().filter(x=>x.key()&&true).forEach(x=>{
             reg.get(x.key());
         });
     }
     if (schemas&&schemas.kind()!==NodeKind.SCALAR){
-        schemas.children().forEach(x=>{
+        schemas.children().filter(x=>x.key()&&true).forEach(x=>{
             reg.get(x.key());
         });
     }
@@ -924,7 +924,16 @@ export function parse(
 }
 
 function contributeToAccumulatingRegistry(result:ts.InheritedType,r:TypeRegistry):ts.InheritedType {
-    var existing = ts.TypeRegistry.prototype.get.call(r,result.name());
+    
+    var existing:ts.InheritedType;
+    var _r = r;
+    while(_r){
+        existing = _r.typeMap()[result.name()];
+        if(existing){
+            break;
+        }
+        _r = _r.parent();
+    }
     if (existing == null || !existing.isSubTypeOf(ts.REFERENCE)) {
         r.addType(result);
     }

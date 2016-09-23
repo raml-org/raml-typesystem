@@ -304,6 +304,18 @@ export function parseTypeFromAST(
     annotation:boolean=false,
     global:boolean=true,
     ignoreTypeAttr:boolean=false):IParsedType {
+    if(global) {
+        var t:IParsedType;
+        if (annotation) {
+            t = collection.getAnnotationType(name);
+        }
+        else {
+            t = collection.getType(name);
+        }
+        if (t != null) {
+            return t;
+        }
+    }
     return tc.parse(name,<any>data,collection? <ts.TypeRegistry>collection.getTypeRegistry():ts.builtInRegistry(),defaultsToAny,annotation,global,ignoreTypeAttr);
 }
 /**

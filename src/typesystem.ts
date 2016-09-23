@@ -365,6 +365,14 @@ export class TypeRegistry implements tsInterfaces.ITypeRegistry {
     types():AbstractType[]{
         return this.typeList;
     }
+
+    typeMap():{[name:string]: AbstractType}{
+        return this._types;
+    }
+    
+    parent():TypeRegistry{
+        return this._parent;
+    }
 }
 interface PropertyInfoHandle{
     name:string
@@ -692,7 +700,7 @@ export abstract class AbstractType implements tsInterfaces.IParsedType, tsInterf
     public validateHierarchy(rs:Status) {
         if (!this.isAnonymous()) {
             if (this.getExtra(tsInterfaces.TOP_LEVEL_EXTRA) && builtInRegistry().get(this.name())) {
-                rs.addSubStatus(new Status(Status.ERROR, 0, "redefining builtin type:" + this.name(), this))
+                rs.addSubStatus(new Status(Status.ERROR, 0, "redefining a built in type:" + this.name(), this))
 
             }
         }
@@ -2241,11 +2249,11 @@ function checkDescriminator(i:any,t:AbstractType,path?:IValidationPath){
     var discriminator = t.metaOfType(metaInfo.Discriminator);
     if(discriminator.length!=0){
         var dName = discriminator[0].value();
-        var owner = _.find([t].concat(t.allSuperTypes()),x=>x.getExtra(TOPLEVEL));
-        var dVal:string;
-        if(owner) {
-             dVal = owner.name();
+        var owner = _.find([t].concat(t.allSuperTypes()),x=>x.getExtra(GLOBAL));
+        if(!owner) {
+             return null;
         }
+        var dVal = owner.name();
         var discriminatorValue = t.metaOfType(metaInfo.DiscriminatorValue);
         if(discriminatorValue.length!=0){
             dVal = discriminatorValue[0].value();

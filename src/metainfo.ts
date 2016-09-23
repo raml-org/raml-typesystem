@@ -395,7 +395,7 @@ export class Examples extends MetaInfo{
                             rs.addSubStatus(example);
                             return;
                         }
-                        var res = this.owner().validateDirect(example, true, false);
+                        var res = this.owner().validate(example, true, false);
                         res.getErrors().forEach(ex=> {
                             rs.addSubStatus(ex);
                             examplesPatchPath(ex,noVal,x)
