@@ -91,6 +91,7 @@ export class Annotation extends MetaInfo{
         if (!valOwner.isOk()){
             var res=new Status(Status.OK,0,"invalid annotation value"+valOwner.getMessage(),this);
             res.addSubStatus(valOwner);
+            res.setValidationPath({name:`(${this.facetName()})`});
             return res;
         }
         return ts.ok();

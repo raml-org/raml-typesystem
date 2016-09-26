@@ -77,9 +77,9 @@ export class Status implements tsInterfaces.IStatus {
             return r;
         }
     }
-    setValidationPath(c:tsInterfaces.IValidationPath){
+    setValidationPath(_c:tsInterfaces.IValidationPath){
         if (this.vp){
-            c=this.patchPath(c);
+            var c=this.patchPath(_c);
             var m=c;
             while (m.child){
                 m= m.child;
@@ -88,10 +88,10 @@ export class Status implements tsInterfaces.IStatus {
             this.vp=c;
         }
         else {
-            this.vp = c;
+            this.vp = _c;
         }
         this.subStatus.forEach(x=>{
-            x.setValidationPath(this.vp);
+            x.setValidationPath(_c);
         })
     }
 
