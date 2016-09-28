@@ -476,20 +476,27 @@ export class Discriminator extends ts.TypeInformation{
     facetName(){return "discriminator"}
 
     validateSelf(registry:ts.TypeRegistry):ts.Status {
-        if (!this.owner().isSubTypeOf(ts.OBJECT)){
-            return new Status(Status.ERROR,0,"you only can use `discriminator` with object types",this)
+        var result = ts.ok();
+        if (this.owner().isUnion()){
+            result = new Status(Status.ERROR,0,"You can not specify `discriminator` for union types",this)
         }
-        if (this.owner().getExtra(ts.GLOBAL)===false){
-            return new Status(Status.ERROR,0,"you only can use `discriminator` with top level type definitions",this)
+        else if (!this.owner().isSubTypeOf(ts.OBJECT)){
+            result = new Status(Status.ERROR,0,"You only can use `discriminator` with object types",this);
         }
-        var prop=_.find(this.owner().meta(),x=>x instanceof PropertyIs&& (<PropertyIs>x).propertyName()==this.value());
-        if (!prop){
-            return new Status(Status.ERROR,0,"Using unknown property '"+this.value()+"' as discriminator",this,true);
+        else if (this.owner().getExtra(ts.GLOBAL)===false){
+            result = new Status(Status.ERROR,0,"You can not specify `discriminator` for inline type declarations",this)
         }
-        if (!prop.value().isScalar()){
-            return new Status(Status.ERROR,0,"It is only allowed to use scalar properties as discriminators",this);
+        else {
+            var prop = _.find(this.owner().meta(), x=>x instanceof PropertyIs && (<PropertyIs>x).propertyName() == this.value());
+            if (!prop) {
+                result = new Status(Status.ERROR, 0, "Using unknown property '" + this.value() + "' as discriminator", this, true);
+            }
+            else if (!prop.value().isScalar()) {
+                result = new Status(Status.ERROR, 0, "It is only allowed to use scalar properties as discriminators", this);
+            }
         }
-        return ts.ok();
+        result.setValidationPath({name:this.facetName()});
+        return result;
     }
 
     kind() : tsInterfaces.MetaInformationKind {
