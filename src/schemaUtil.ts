@@ -124,7 +124,7 @@ export class JSONSchemaObject {
         try {
             var jsonSchemaObject = JSON.parse(schema);
         } catch(err){
-            throw new Error("It is not JSON schema(can not parse JSON:"+err.message+")");
+            throw new Error("It is not JSON schema(can not parse JSON: "+err.message+")");
         }
 
         if(!jsonSchemaObject){
@@ -390,7 +390,7 @@ export class JSONSchemaObject {
 
     private acceptErrors(key: any, errors: any[], throwImmediately = false): void {
         if(errors && errors.length>0){
-            var res= new Error("Content is not valid according to schema:"+errors.map(x=>x.message+" "+x.params).join(", "));
+            var res= new Error("Content is not valid according to schema: "+errors.map(x=>x.message+" "+x.params).join(", "));
 
             (<any>res).errors=errors;
 
@@ -417,7 +417,7 @@ export class JSONSchemaObject {
             return this.provider.promiseResolve({
                 reference: reference,
                 content: null,
-                error: new Error('Reference not found: ' + reference)
+                error: new Error(`Reference not found: '${reference}'`)
             });
         }
 
@@ -475,13 +475,15 @@ export class XMLSchemaObject {
             var objectName = Object.keys(object)[0];
 
             if(!this.extraElementData.type && !this.extraElementData.originalName) {
-                this.acceptErrors("key", [new Error('Referenced type "' + this.extraElementData.requestedName + '" is not match with "' + objectName + '" root node')], true);
+                this.acceptErrors("key", [new Error(
+                    `Referenced type '${this.extraElementData.requestedName}' does not match '${objectName}' root node`)], true);
 
                 return;
             }
 
             if(this.extraElementData.originalName && objectName !== this.extraElementData.originalName) {
-                this.acceptErrors("key", [new Error('Referenced type "' + this.extraElementData.requestedName + '" is not match with "' + objectName + '" root node')], true);
+                this.acceptErrors("key", [new Error(
+                    `Referenced type '${this.extraElementData.requestedName}' does not match '${objectName}' root node`)], true);
 
                 return;
             }
@@ -555,7 +557,7 @@ export class XMLSchemaObject {
     
     private acceptErrors(key: any, errors: any[], throwImmediately = false): void {
         if(errors && errors.length>0){
-            var res= new Error("Content is not valid according to schema:"+errors.map(x=>x.message).join(", "));
+            var res= new Error("Content is not valid according to schema: "+errors.map(x=>x.message).join(", "));
 
             (<any>res).errors=errors;
 

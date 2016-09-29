@@ -359,7 +359,7 @@ describe("Type to JSON tests",function() {
         assert(!result.isOk());
         var errors = result.getErrors();
         assert(errors.length==1);
-        assert(errors[0].message=="Required property: [] is missed");
+        assert(errors[0].message=="Required property '[]' is missing");
     });
 
     it("invalid pattern properties 2", function () {
@@ -383,7 +383,7 @@ describe("Type to JSON tests",function() {
         assert(!result.isOk());
         var errors = result.getErrors();
         assert(errors.length==1);
-        assert(errors[0].message=="Required property: [] is missed");
+        assert(errors[0].message=="Required property '[]' is missing");
     });
     it("simple", function () {
         var st="string";

@@ -54,7 +54,7 @@ export abstract class MatchesProperty extends ts.Constraint{
             var st=t.validate(vl,false,false);
             if (!st.isOk()){
                 if (t.isUnknown()|| t.isRecurrent()){
-                    var s=new Status(Status.ERROR,0,"Validating instance against unknown type:"+ t.name(),this);
+                    var s=new Status(Status.ERROR,0,`Validating instance against unknown type: '${t.name()}'`,this);
                     s.setValidationPath(this.patchPath(q));
                     return s;
                 }
@@ -77,17 +77,17 @@ export abstract class MatchesProperty extends ts.Constraint{
         }
         if (this._type.isSubTypeOf(ts.UNKNOWN)||this._type.isSubTypeOf(ts.RECURRENT)){
             var actualUnknown = actualUnknownType(this._type);
-            var p= new Status(Status.ERROR,0,"property "+this.propId()+" refers to unknown type "+actualUnknown.name(),this)
+            var p= new Status(Status.ERROR,0,`Property '${this.propId()}' refers to unknown type '${actualUnknown.name()}'`,this);
             p.setValidationPath({name: this.propId(), child: { name: "type"}})
             return p;
         }
         if (this._type.isAnonymous()){
             var st=this._type.validateType(registry);
             if (!st.isOk()){
-                var p= new Status(Status.ERROR,0,"property "+this.propId()+" range type has error:"+st.getMessage(),this)
-                st.getErrors().forEach(y=>{p.addSubStatus(y)})
+                var p= new Status(Status.ERROR,0,`Property '${this.propId()}' range type has error: `+st.getMessage(),this);
+                st.getErrors().forEach(y=>{p.addSubStatus(y)});
 
-                p.setValidationPath({name: this.propId()})
+                p.setValidationPath({name: this.propId()});
                 return p;
             }
             return st;
@@ -96,7 +96,7 @@ export abstract class MatchesProperty extends ts.Constraint{
         if (this._type.isUnion()){
            var ui= _.find(this._type.typeFamily(),x=>x.isSubTypeOf(ts.UNKNOWN));
            if (ui){
-               var p=new Status(Status.ERROR,0,"property "+this.propId()+" refers to unknown type "+ui.name(),this);
+               var p=new Status(Status.ERROR,0,`Property '${this.propId()}' refers to unknown type `+ui.name(),this);
                p.setValidationPath({name: this.propId()})
                return p;
            }
@@ -120,7 +120,7 @@ export class MatchToSchema extends  ts.Constraint{
             try {
                 so = su.getJSONSchema(strVal, this.provider);
             } catch (e){
-                return new ts.Status(ts.Status.ERROR,0,"Incorrect schema :"+ e.message,this);
+                return new ts.Status(ts.Status.ERROR,0,"Incorrect schema: "+ e.message,this);
             }
         }
         if (strVal.charAt(0)=="<"){
@@ -146,7 +146,7 @@ export class MatchToSchema extends  ts.Constraint{
                 if (e.message == "Maximum call stack size exceeded"){
                     return new ts.Status(ts.Status.ERROR,0,"JSON schema contains circular references",this);
                 }
-                return new ts.Status(ts.Status.ERROR,0,"Example does not conform to schema:"+e.message,this);
+                return new ts.Status(ts.Status.ERROR,0,"Example does not conform to schema: "+e.message,this);
             }
             //validate using classical schema;
         }
@@ -205,7 +205,7 @@ export class KnownPropertyRestriction extends ts.Constraint{
                 if ((this.owner().hasPropertiesFacet()||mp.length>0) && unknownPropertyNames.length > 0) {
                     var s=new ts.Status(ts.Status.OK,0,"",this);
                     unknownPropertyNames.forEach(x=>{
-                        var err=ts.error("Unknown property:"+x,this);
+                        var err=ts.error(`Unknown property: '${x}'`,this);
                         err.setValidationPath({name:x});
                         s.addSubStatus(err)}
                     );
@@ -248,7 +248,7 @@ export class HasProperty extends ts.Constraint{
             if (i.hasOwnProperty(this.name)) {
                 return ts.ok();
             }
-            return ts.error("Required property: " + this.name+" is missed",this);
+            return ts.error(`Required property '${this.name}' is missing`,this);
         }
         return ts.ok();
     }
@@ -711,15 +711,15 @@ export abstract class MinMaxRestriction extends FacetRestriction<Number>{
 
     checkValue():string{
         if (typeof this._value !="number"){
-            return this.facetName()+" should be a number";
+            return `'${this.facetName()}' value should be a number`;
         }
         if (this.isIntConstraint()){
             if (!is_int(this.value())){
-                return this.facetName()+" should be a integer";
+                return `'${this.facetName()}' value should be an integer`;
             }
         }
         if (this.value()<this.minValue()){
-            return this.facetName()+" should be at least "+this.minValue();
+            return `${this.facetName()}' value should be at least ${this.minValue()}`;
         }
     }
 
@@ -814,7 +814,7 @@ export class MultipleOf extends FacetRestriction<Number>{
 
     checkValue():string{
         if (typeof this._value !="number"){
-            return this.facetName()+" should be a number";
+            return `'${this.facetName()}' value should be a number`;
         }
         return null;
     }
@@ -1039,11 +1039,11 @@ export class ComponentShouldBeOfType extends FacetRestriction<ts.AbstractType>{
                 if (!ss.isOk()){
                     var t=this.type;
                     if (t.isUnknown()|| t.isRecurrent()){
-                        var s=new Status(Status.ERROR,0,"array instance is validated against unknown type:"+ t.name(),this);
+                        var s=new Status(Status.ERROR,0,`Array instance is validated against unknown type: '${t.name()}'`,this);
                         return s;
                     }
                 }
-                ss.setValidationPath({ name:""+j})
+                ss.setValidationPath({ name:""+j});
                 rs.addSubStatus(ss);
             }
         }
@@ -1053,21 +1053,21 @@ export class ComponentShouldBeOfType extends FacetRestriction<ts.AbstractType>{
         if (this.type.isAnonymous()) {
             var st = this.type.validateType(registry);
             if (!st.isOk()) {
-                return new Status(Status.ERROR, 0,  "component type has error:" + st.getMessage(),this)
+                return new Status(Status.ERROR, 0,  "Component type has error: " + st.getMessage(),this);
             }
             return st;
         }
         if (this.type.isExternal()){
-            var p= new Status(Status.ERROR,0,"It is not allowed to use external types in component type definitions",this)
+            var p= new Status(Status.ERROR,0,"It is not allowed to use external types in component type definitions",this);
             return p;
         }
         if (this.type.isSubTypeOf(ts.UNKNOWN) || this.type.isSubTypeOf(ts.RECURRENT)) {
-            return new Status(Status.ERROR, 0, "component refers to unknown type " + this.type.name(),this)
+            return new Status(Status.ERROR, 0, `Component refers to unknown type '${this.type.name()}'`,this);
         }
         if (this.type.isUnion()) {
             var ui = _.find(this.type.typeFamily(), x=>x.isSubTypeOf(ts.UNKNOWN));
             if (ui) {
-                return new Status(Status.ERROR, 0, "component refers to unknown type " + ui.name(),this)
+                return new Status(Status.ERROR, 0, `Component refers to unknown type '${ui.name()}'`,this)
             }
         }
         return ts.ok();
@@ -1133,7 +1133,7 @@ export class Pattern extends FacetRestriction<string>{
                     }
                 }
                 if(!gotMatch){
-                    return new ts.Status(ts.Status.ERROR, 0, "string should match to " + this.value(),this);
+                    return new ts.Status(ts.Status.ERROR, 0, `String should match to '${this.value()}'`,this);
                 }
             }catch (e){
 
@@ -1221,7 +1221,7 @@ export class Format extends FacetRestriction<string>{
 
             var found = _.find(allowedValues, allowedValue=>allowedValue==this.value());
             if (!found) {
-                return "Following format values are allowed: " + allowedValues.join();
+                return "Following format values are allowed: " + allowedValues.map(x=>`'${x}'`).join(", ");
             }
         }
         catch (e){
@@ -1277,18 +1277,18 @@ export class Enum extends FacetRestriction<string[]>{
     }
     checkValue(){
         if (!this.owner().isSubTypeOf(this.requiredType())){
-            return "enum facet can only be used with: "+this.requiredType().name();
+            return "'enum' facet can only be used with: "+this.requiredType().name();
         }
         if (this.requiredTypes() && this.requiredTypes().length > 0) {
             var owner = this.owner();
             var requiredSuperType = _.find(this.requiredTypes(), requiredType=>owner.isSubTypeOf(requiredType));
             if (!requiredSuperType) {
-                var typeNames = "[" + this.requiredTypes().map(requiredType=>requiredType.name()).join() + "]";
-                return "enum facet can only be used with: " + typeNames;
+                var typeNames = "[" + this.requiredTypes().map(requiredType=>`'${requiredType.name()}'`).join(", ") + "]";
+                return "'enum' facet can only be used with: " + typeNames;
             }
         }
         if(!Array.isArray(this._value)){
-            return "enum facet value must be defined by array";
+            return "'enum' facet value must be defined by array";
         }
         // if (_.uniq(this._value).length<this._value.length){
         //     return "enum facet can only contain unique items";
@@ -1308,7 +1308,8 @@ export class Enum extends FacetRestriction<string[]>{
         return result;
     }
     toString(){
-        return "value should be one of:" + this._value;
+        var valStr = Array.isArray(this._value) ? this._value.map(x=>`'${x}'`).join(", ") : `'${this._value}'`;
+        return "value should be one of: " + valStr;
     }
 }
 /**

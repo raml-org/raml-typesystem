@@ -880,7 +880,7 @@ export function parse(
                 });
             }
             else{
-                var err=new ts.Status(ts.Status.ERROR,2,"properties should be a map",actualResult);
+                var err=new ts.Status(ts.Status.ERROR,2,"'properties' should be a map",actualResult);
                 err.setValidationPath({ name:"properties"})
                 result.putExtra(tsInterfaces.PARSE_ERROR,err);
             }
@@ -900,7 +900,7 @@ export function parse(
             });
         }
         else{
-            var err=new ts.Status(ts.Status.ERROR,2,"facets should be a map",actualResult);
+            var err=new ts.Status(ts.Status.ERROR,2,"'facets' should be a map",actualResult);
             err.setValidationPath({ name:"facets"})
             result.putExtra(tsInterfaces.PARSE_ERROR,err);
         }
