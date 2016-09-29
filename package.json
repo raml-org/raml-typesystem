@@ -1,6 +1,6 @@
 {
   "name": "raml-typesystem",
-  "version": "0.0.53",
+  "version": "0.0.54",
   "main": "dist/src/index.js",
   "scripts": {
     "test-cov": " ./node_modules/.bin/istanbul cover _mocha dist/tests/*Tests.js",

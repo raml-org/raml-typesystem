@@ -520,7 +520,7 @@ describe("Facet Registry",function() {
         assert.equal(facetRegistry.getInstance().applyableTo(ts.OBJECT).length,19);
     });
     it ("All meta",function (){
-        assert.equal(facetRegistry.getInstance().allMeta().length,12);
+        assert.equal(facetRegistry.getInstance().allMeta().length,11);
     });
 })
 describe("Automatic classification",function(){

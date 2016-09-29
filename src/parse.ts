@@ -329,14 +329,14 @@ export function parseTypeCollection(n:ParseNode,tr:ts.TypeRegistry):TypeCollecti
 
     var reg=new AccumulatingRegistry(tpes,schemas,tr,result);
     if (tpes&&tpes.kind()!==NodeKind.SCALAR){
-        tpes.children().forEach(x=>{
+        tpes.children().filter(x=>x.key()&&true).forEach(x=>{
             var t = ts.derive(x.key(),[ts.REFERENCE]);
             result.add(t);
             reg.addType(t);
         });
     }
     if (schemas&&schemas.kind()!==NodeKind.SCALAR){
-        schemas.children().forEach(x=>{
+        schemas.children().filter(x=>x.key()&&true).forEach(x=>{
             var t = ts.derive(x.key(),[ts.REFERENCE]);
             result.add(t);
             reg.addType(t);
@@ -354,12 +354,12 @@ export function parseTypeCollection(n:ParseNode,tr:ts.TypeRegistry):TypeCollecti
     }
 
     if (tpes&&tpes.kind()!==NodeKind.SCALAR){
-        tpes.children().forEach(x=>{
+        tpes.children().filter(x=>x.key()&&true).forEach(x=>{
             reg.get(x.key());
         });
     }
     if (schemas&&schemas.kind()!==NodeKind.SCALAR){
-        schemas.children().forEach(x=>{
+        schemas.children().filter(x=>x.key()&&true).forEach(x=>{
             reg.get(x.key());
         });
     }
@@ -581,6 +581,11 @@ export function toProto(type:AbstractType):TypeProto{
             }
             else if (x instanceof rs.KnownPropertyRestriction) {
                 result.additionalProperties = x.value();
+            }
+            else if(x instanceof meta.DiscriminatorValue){
+                if((<meta.DiscriminatorValue>x).isStrict()){
+                    result.basicFacets.push(x);
+                }
             }
             else if(!(x instanceof meta.HasPropertiesFacet)) {
                 result.basicFacets.push(x);
@@ -860,6 +865,9 @@ export function parse(
             }
         }
     });
+    if(result.metaOfType(meta.DiscriminatorValue).length==0){
+        result.addMeta(new meta.DiscriminatorValue(result.name(),false));
+    }
     if (result.isSubTypeOf(ts.OBJECT)) {
         var props=n.childWithKey("properties");
         var hasProps=false;
@@ -872,7 +880,7 @@ export function parse(
                 });
             }
             else{
-                var err=new ts.Status(ts.Status.ERROR,2,"properties should be a map",actualResult);
+                var err=new ts.Status(ts.Status.ERROR,2,"'properties' should be a map",actualResult);
                 err.setValidationPath({ name:"properties"})
                 result.putExtra(tsInterfaces.PARSE_ERROR,err);
             }
@@ -892,7 +900,7 @@ export function parse(
             });
         }
         else{
-            var err=new ts.Status(ts.Status.ERROR,2,"facets should be a map",actualResult);
+            var err=new ts.Status(ts.Status.ERROR,2,"'facets' should be a map",actualResult);
             err.setValidationPath({ name:"facets"})
             result.putExtra(tsInterfaces.PARSE_ERROR,err);
         }
@@ -916,7 +924,16 @@ export function parse(
 }
 
 function contributeToAccumulatingRegistry(result:ts.InheritedType,r:TypeRegistry):ts.InheritedType {
-    var existing = ts.TypeRegistry.prototype.get.call(r,result.name());
+    
+    var existing:ts.InheritedType;
+    var _r = r;
+    while(_r){
+        existing = <ts.InheritedType>_r.typeMap()[result.name()];
+        if(existing){
+            break;
+        }
+        _r = _r.parent();
+    }
     if (existing == null || !existing.isSubTypeOf(ts.REFERENCE)) {
         r.addType(result);
     }

@@ -10,6 +10,10 @@ export class Status implements tsInterfaces.IStatus {
 
     public static CODE_CONFLICTING_TYPE_KIND = 4;
 
+    public static CODE_INCORRECT_DISCRIMINATOR = 5;
+
+    public static CODE_MISSING_DISCRIMINATOR = 6;
+
     public static ERROR = 3;
 
     public static INFO = 1;
@@ -73,9 +77,9 @@ export class Status implements tsInterfaces.IStatus {
             return r;
         }
     }
-    setValidationPath(c:tsInterfaces.IValidationPath){
+    setValidationPath(_c:tsInterfaces.IValidationPath){
         if (this.vp){
-            c=this.patchPath(c);
+            var c=this.patchPath(_c);
             var m=c;
             while (m.child){
                 m= m.child;
@@ -84,10 +88,10 @@ export class Status implements tsInterfaces.IStatus {
             this.vp=c;
         }
         else {
-            this.vp = c;
+            this.vp = _c;
         }
         this.subStatus.forEach(x=>{
-            x.setValidationPath(this.vp);
+            x.setValidationPath(_c);
         })
     }
 
@@ -136,6 +140,9 @@ export class Status implements tsInterfaces.IStatus {
     getSource(){
         return this.source;
     }
+    getCode(){
+        return this.code;
+    }
     isWarning(){
         return this.severity==Status.WARNING;
     }
@@ -144,6 +151,9 @@ export class Status implements tsInterfaces.IStatus {
     }
     isOk(){
         return this.severity===Status.OK;
+    }
+    isInfo(){
+        return this.severity===Status.INFO;
     }
     setSource(s:any){
         this.source=s;
@@ -163,7 +173,7 @@ export class Status implements tsInterfaces.IStatus {
         }
         return null;
     }
-    
+
     putExtra(name:string,value:any):void{}
 
 }
@@ -225,7 +235,7 @@ export abstract class TypeInformation implements tsInterfaces.ITypeFacet {
 var stack:RestrictionStackEntry=null;
 
 export abstract class Constraint extends TypeInformation{
-    constructor(){super(true)}
+    constructor(_inheritable=true){super(_inheritable)}
 
 
 
@@ -355,6 +365,14 @@ export class TypeRegistry implements tsInterfaces.ITypeRegistry {
     types():AbstractType[]{
         return this.typeList;
     }
+
+    typeMap():{[name:string]: AbstractType}{
+        return this._types;
+    }
+    
+    parent():TypeRegistry{
+        return this._parent;
+    }
 }
 interface PropertyInfoHandle{
     name:string
@@ -441,24 +459,48 @@ class PropertyCyclesValidator{
 }
 
 export class RestrictionsConflict extends Status{
-    constructor(protected _conflicting:Constraint,protected _stack:RestrictionStackEntry,source:any){
+    constructor(protected _conflicting:Constraint,protected _stack:RestrictionStackEntry, protected source:any){
         super(Status.ERROR,0,null,source);
 
+        this.computeMessage();
+    }
+
+    private computeMessage() {
         var conflictingMessage:string = null;
-        if(_stack!=null){
-           if(_stack.getRestriction() instanceof restr.MinMaxRestriction){
-               var mmr:restr.MinMaxRestriction = <restr.MinMaxRestriction>_stack.getRestriction();
-               conflictingMessage = _conflicting.conflictMessage(mmr.facetPath(),mmr.value());
-           } 
+        if (this._stack != null) {
+            if (this._stack.getRestriction() instanceof restr.MinMaxRestriction) {
+                var mmr:restr.MinMaxRestriction = <restr.MinMaxRestriction>this._stack.getRestriction();
+                conflictingMessage = this._conflicting.conflictMessage(mmr.facetPath(), mmr.value());
+            }
         }
-        if(conflictingMessage==null){
-            conflictingMessage = _conflicting+" and "+(_stack!=null?_stack.getRestriction().toString():"");
+        if (conflictingMessage == null) {
+            conflictingMessage = this._conflicting + " and " + (this._stack != null ? this._stack.getRestriction().toString() : "");
         }
         var typeInfo:string = "";
-        if(source instanceof AbstractType){
-            typeInfo = `in type '${typePath(<AbstractType>source)}'`;
+        if (this.source instanceof AbstractType) {
+            var path:tsInterfaces.IValidationPath[] = [];
+            var rse = this._stack;
+            while (rse) {
+                var restri = rse.getRestriction();
+                if (restri instanceof PropertyIs) {
+                    var vp:tsInterfaces.IValidationPath = {name: (<PropertyIs>restri).propId()};
+                    if (path.length > 0) {
+                        vp.child = path[path.length - 1];
+                    }
+                    path.push(vp);
+                }
+                rse = rse.pop();
+            }
+            this.setValidationPath(path.pop());
+            var arc = restr.anotherRestrictionComponent();
+            if(arc) {
+                typeInfo = ` between types '${typePath(<AbstractType>this.source)}' and '${typePath(<AbstractType>arc)}'`;
+            }
+            else{
+                typeInfo = ` in type '${typePath(<AbstractType>this.source)}'`;
+            }
         }
-        this.message = `Restrictions conflict ${typeInfo}: ` + conflictingMessage;
+        this.message = `Restrictions conflict${typeInfo}: ` + conflictingMessage;
     }
 
     getConflictDescription():string{
@@ -605,7 +647,7 @@ export abstract class AbstractType implements tsInterfaces.IParsedType, tsInterf
         }
 
         if (this.getExtra(SCHEMA_AND_TYPE)){
-            rs.addSubStatus(new Status(Status.ERROR,0, "schema and type are mutually exclusive",this));
+            rs.addSubStatus(new Status(Status.ERROR,0, "'schema' and 'type' are mutually exclusive",this));
         }
         if (rs.isOk()) {
             this.validateMeta(tr).getErrors().forEach(x=>rs.addSubStatus(x));
@@ -633,14 +675,15 @@ export abstract class AbstractType implements tsInterfaces.IParsedType, tsInterf
                 if (x instanceof restr.PropertyIs){
                     var pr:restr.PropertyIs=x;
                     if (required.hasOwnProperty(pr.propertyName())){
-                        rs.addSubStatus(new Status(Status.ERROR,0,"Can not override required property:"+pr.propertyName()+" to be optional",this));
+                        rs.addSubStatus(new Status(Status.ERROR,0,
+                            `Can not override required property '${pr.propertyName()}' to be optional`,this));
                     }
                 }
             })
             var propertyCycles=new PropertyCyclesValidator().validateType(this);
             if (propertyCycles.length>0){
                 propertyCycles.forEach(p=>{
-                    var st=new Status(Status.ERROR,0,p+"has cyclic dependency",this);
+                    var st=new Status(Status.ERROR,0,`'${p}' has cyclic dependency`,this);
                     st.setValidationPath({name:p})
                     rs.addSubStatus(st);
                 })
@@ -658,25 +701,25 @@ export abstract class AbstractType implements tsInterfaces.IParsedType, tsInterf
     public validateHierarchy(rs:Status) {
         if (!this.isAnonymous()) {
             if (this.getExtra(tsInterfaces.TOP_LEVEL_EXTRA) && builtInRegistry().get(this.name())) {
-                rs.addSubStatus(new Status(Status.ERROR, 0, "redefining builtin type:" + this.name(), this))
+                rs.addSubStatus(new Status(Status.ERROR, 0, `Redefining a built in type: ${this.name()}`, this))
 
             }
         }
 
         if (this.isSubTypeOf(RECURRENT)) {
-            rs.addSubStatus(new Status(Status.ERROR, 0, "recurrent type definition",this),"type")
+            rs.addSubStatus(new Status(Status.ERROR, 0, "Recurrent type definition",this),"type")
         }
 
         if (this.isSubTypeOf(UNKNOWN)) {
-            rs.addSubStatus(new Status(Status.ERROR, 0, "inheriting from unknown type",this),"type")
+            rs.addSubStatus(new Status(Status.ERROR, 0, "Inheriting from unknown type",this),"type")
         }
         if (this.isUnion()) {
             var tf = this.typeFamily();
             if (tf.some(x=>x.isSubTypeOf(RECURRENT))) {
-                rs.addSubStatus(new Status(Status.ERROR, 0, "recurrent type as an option of union type",this),"type")
+                rs.addSubStatus(new Status(Status.ERROR, 0, "Recurrent type as an option of union type",this),"type")
             }
             if (tf.some(x=>x.isSubTypeOf(UNKNOWN))) {
-                rs.addSubStatus(new Status(Status.ERROR, 0, "unknown type as an option of union type",this),"type")
+                rs.addSubStatus(new Status(Status.ERROR, 0, "Unknown type as an option of union type",this),"type")
             }
         }
         if (this.isArray()) {
@@ -684,11 +727,12 @@ export abstract class AbstractType implements tsInterfaces.IParsedType, tsInterf
             var ps= this.getExtra(tsInterfaces.HAS_ITEMS)?"items":"type";
             if ((fs.indexOf(this)!=-1)||fs.some(x=>x===RECURRENT)){
 
-               rs.addSubStatus(new Status(Status.ERROR, 0, "recurrent array type definition",this),ps)
+               rs.addSubStatus(new Status(Status.ERROR, 0, "Recurrent array type definition",this),ps)
            }
            else  if (fs.some(x=>x===UNKNOWN)){
 
-                rs.addSubStatus(new Status(Status.ERROR, 0, "referring to unknown type "+this.oneMeta(ComponentShouldBeOfType).value().name()+" as an array component type",this),ps)
+                var componentTypeName = this.oneMeta(ComponentShouldBeOfType).value().name();
+                rs.addSubStatus(new Status(Status.ERROR, 0, `Referring to unknown type '${componentTypeName}' as an array component type`,this),ps)
            }
         }
         var supers=this.superTypes();
@@ -718,7 +762,7 @@ export abstract class AbstractType implements tsInterfaces.IParsedType, tsInterf
         }
         if (this.isExternal()){
             if (this.getExtra(tsInterfaces.HAS_FACETS)){
-                var fs=new Status(Status.ERROR, 0, "External types can not declare facet '"+this.getExtra(tsInterfaces.HAS_FACETS)+"'",this);
+                var fs=new Status(Status.ERROR, 0, `External types can not declare facet '${this.getExtra(tsInterfaces.HAS_FACETS)}'`,this);
                 fs.setValidationPath({ name:this.getExtra(tsInterfaces.HAS_FACETS)});
                 rs.addSubStatus(fs);
             }
@@ -774,17 +818,17 @@ export abstract class AbstractType implements tsInterfaces.IParsedType, tsInterf
                 if (fd.owner()==this){
                     var an=fd.actualName();
                     if (super_facets.hasOwnProperty(an)){
-                        rs.addSubStatus(new Status(Status.ERROR, 0, "facet :" + an+" can not be overriden",this))
+                        rs.addSubStatus(new Status(Status.ERROR, 0, `Facet '${an}' can not be overriden`,this))
 
                     }
 
                     var fp=fr.getInstance().facetPrototypeWithName(an);
                     if (fp&&fp.isApplicable(this)||an=="type"||fd.facetName()=="properties"||an=="schema"||an=="facets"||an=="uses"){
-                        rs.addSubStatus(new Status(Status.ERROR, 0, "built-in facet :" + an+" can not be overriden",this))
+                        rs.addSubStatus(new Status(Status.ERROR, 0, `Built in facet '${an}' can not be overriden`,this))
                     }
 
                     if (an.charAt(0)=='('){
-                        rs.addSubStatus(new Status(Status.ERROR, 0, "facet :" + an+" can not start from '('",this))
+                        rs.addSubStatus(new Status(Status.ERROR, 0, `Facet '${an}' can not start from '('`,this))
                     }
                 }
             }
@@ -804,8 +848,8 @@ export abstract class AbstractType implements tsInterfaces.IParsedType, tsInterf
                     delete rfds[cd.facetName()];
                 }
                 else {
-                    var msg = this.isExternal() ? "'" + cd.facetName() + "' facet is prohibited for external types" 
-                            : "specifying unknown facet:" + cd.facetName();
+                    var msg = this.isExternal() ? `'${cd.facetName()}' facet is prohibited for external types` 
+                            : `Specifying unknown facet: '${cd.facetName()}'`;
                     rs.addSubStatus(new Status(Status.ERROR, 0, msg,cd,true))
                 }
             }
@@ -816,7 +860,7 @@ export abstract class AbstractType implements tsInterfaces.IParsedType, tsInterf
             //             if (c.match(mm.regexpValue())) {
             //                 var regexpText = '/' + mm.regexpValue().toString() + '/';
             //                
-            //                 rs.addSubStatus(new Status(Status.WARNING, 0, "pattern property '" + regexpText + "' conflicts with property: " + c, this));
+            //                 rs.addSubStatus(new Status(Status.WARNING, 0, `Pattern property '${regexpText}' conflicts with property: '${c}'`, this));
             //             }
             //         } catch (e){
             //             //ignore incorrect regexps here
@@ -825,7 +869,7 @@ export abstract class AbstractType implements tsInterfaces.IParsedType, tsInterf
             // }
         })
         if (Object.getOwnPropertyNames(rfds).length > 0) {
-            rs.addSubStatus(new Status(Status.ERROR, 0, "missing required facets:" + Object.keys(rfds).join(","),this))
+            rs.addSubStatus(new Status(Status.ERROR, 0, "Missing required facets: " + Object.keys(rfds).map(x=>`'${x}'`).join(","),this))
         }
     };
 
@@ -873,10 +917,18 @@ export abstract class AbstractType implements tsInterfaces.IParsedType, tsInterf
      * @return true if type has no associated meta information of restrictions
      */
     isEmpty():boolean{
-        if (this.metaInfo.length>1){
+        if (this.metaInfo.length>2){
             return false;
         }
-        return this.metaInfo.filter(x=>!(x instanceof NotScalar)).length==0;
+        return this.metaInfo.filter(x=>{
+                if(x instanceof NotScalar){
+                    return false;
+                }
+                else if(x instanceof metaInfo.DiscriminatorValue){
+                    return (<metaInfo.DiscriminatorValue>x).isStrict();
+                }
+                return true;
+            }).length==0;
     }
 
     /**
@@ -904,6 +956,7 @@ export abstract class AbstractType implements tsInterfaces.IParsedType, tsInterf
             return ok();
         }
         this.computeConfluent=true;
+        var arcc = restr.anotherRestrictionComponentsCount();  
         try {
             var os = restr.optimize(this.restrictions());
             var ns=_.find(os,x=>x instanceof NothingRestriction);
@@ -915,12 +968,13 @@ export abstract class AbstractType implements tsInterfaces.IParsedType, tsInterf
                     lstack=nswl.getStack();
                     another=nswl.another();
                 }
-                var status=new RestrictionsConflict(another,lstack,this);
+                var status=new RestrictionsConflict(another,lstack,this);                
                 return status;
             }
             return ok();
         }finally {
             this.computeConfluent=false;
+            restr.releaseAnotherRestrictionComponent(arcc);
         }
     }
     /**
@@ -1144,13 +1198,39 @@ export abstract class AbstractType implements tsInterfaces.IParsedType, tsInterf
             autoCloseFlag=true;
         }
         try {
-            for( var subType of this.subTypes()){
+            // for( var subType of this.subTypes()){
+            //     var vr = subType.validateDirect(i,autoClose||g);
+            //     if(vr.isOk()){
+            //         return vr;
+            //     }
+            // }
+            // return this.validateDirect(i, autoClose||g);
+
+            var statuses:Status[] = [];
+            var queue = this.subTypes().concat(this);
+            var lastStatus:Status;
+            for( var subType of queue){
+                var dStatus = checkDescriminator(i,subType);
                 var vr = subType.validateDirect(i,autoClose||g);
-                if(vr.isOk()){
+                if(dStatus){
+                    if(dStatus.isOk()) {
+                        return vr;
+                    }
+                    else {
+                        statuses.push(dStatus);
+                    }
+                }
+                else if(vr.isOk()){
                     return vr;
                 }
+                lastStatus = vr;
             }
-            return this.validateDirect(i, autoClose||g);
+            if(statuses.length==0){
+                return lastStatus;
+            }
+            var result = ok();
+            statuses.forEach(x=>result.addSubStatus(x));
+            return statuses.pop();//result;
         } finally {
             autoCloseFlag=g;
         }
@@ -1213,7 +1293,7 @@ export abstract class AbstractType implements tsInterfaces.IParsedType, tsInterf
     }
 
     checkDiscriminator(t1:AbstractType, t2:AbstractType):Status {
-        var found = new Status(Status.ERROR, 0, "can not discriminate types " + t1.name() + " and " + t2.name() + " without discriminator",this);
+        var found = new Status(Status.ERROR, 0, `Can not discriminate types '${t1.name()}' and '${t2.name()}' without discriminator`,this);
         var oneMeta = t1.oneMeta(metaInfo.Discriminator);
         var anotherMeta = t2.oneMeta(metaInfo.Discriminator);
         if (oneMeta != null && anotherMeta != null && oneMeta.value() === (anotherMeta.value())) {
@@ -1232,7 +1312,7 @@ export abstract class AbstractType implements tsInterfaces.IParsedType, tsInterf
                 return ok();
             }
             found = new Status(Status.ERROR, 0,
-                "types" + t1.name() + " and " + t2.name() + " have same discriminator value",this);
+                `Types '${t1.name()}' and '${t2.name()}' have same discriminator value`,this);
         }
         return found;
     }
@@ -1956,7 +2036,9 @@ export class OrRestriction extends Constraint{
                 });
             }
             if (this._extraMessage){
-                cs.addSubStatus(error(this._extraMessage,this));
+                var severity = 0;
+                results.forEach(x=>severity = Math.max(severity,x.getSeverity()));
+                cs.addSubStatus(new Status(severity,0,this._extraMessage,this));
             }
         }
         return cs;
@@ -2163,4 +2245,43 @@ export function typePath(t:AbstractType):string[]{
         }
     }
     return arr.reverse();
+}
+
+function checkDescriminator(i:any,t:AbstractType,path?:IValidationPath){
+    var discriminator = t.metaOfType(metaInfo.Discriminator);
+    if(discriminator.length!=0){
+        var dName = discriminator[0].value();
+        var owner = _.find([t].concat(t.allSuperTypes()),x=>x.getExtra(GLOBAL));
+        if(!owner) {
+             return null;
+        }
+        var dVal = owner.name();
+        var discriminatorValue = t.metaOfType(metaInfo.DiscriminatorValue);
+        if(discriminatorValue.length!=0){
+            dVal = discriminatorValue[0].value();
+        }
+        if(dVal) {
+            if (i.hasOwnProperty(dName)) {
+                var adVal = i[dName];
+                if (adVal != dVal) {
+                    var wrng = new Status(Status.WARNING, Status.CODE_INCORRECT_DISCRIMINATOR,
+                        `None of the '${owner.name()}' type known subtypes declare '${adVal}' as value of discriminating property '${dName}'.`, this);
+                    //var wrng = new Status(Status.WARNING, Status.CODE_INCORRECT_DISCRIMINATOR, dVal, this);
+                    wrng.setValidationPath({name: dName, child: path});
+                    return wrng;
+                }
+                return ok();
+            }
+            else {
+                var err = new Status(Status.ERROR, Status.CODE_MISSING_DISCRIMINATOR,
+                    `Instance of '${owner.name()}' subtype misses value of the discriminating property '${dName}'.`, this);
+                //var err = new Status(Status.ERROR, Status.CODE_MISSING_DISCRIMINATOR, dVal, this);
+                err.setValidationPath(path);
+                return err;
+            }
+        }
+    }
+    else{
+        return null;
+    }
 }

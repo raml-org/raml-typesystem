@@ -75,7 +75,7 @@ describe("Simple validation testing",function() {
         var st=t.validateType(ts.builtInRegistry());
         var f=false;
         st.getErrors().forEach((x: any)=>{
-            if (x.getMessage().indexOf("Required property:")!=-1){
+            if (x.getMessage().indexOf("Required property ")!=-1){
                 f=true;
             }
         });
@@ -299,7 +299,7 @@ describe("Simple validation testing",function() {
         var st=t.validateType(ts.builtInRegistry());
         var f=false;
         assert.isTrue(st.getErrors().length===1);
-        assert.isTrue(st.getMessage()==="Example does not conform to schema:Content is not valid according to schema:Additional properties not allowed: r r")
+        assert.isTrue(st.getMessage()==="Example does not conform to schema: Content is not valid according to schema: Additional properties not allowed: r r")
     });
     it("Valid example", function () {
         var tp = ps.parseJSONTypeCollection({

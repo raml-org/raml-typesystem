@@ -79,7 +79,7 @@ export class Annotation extends MetaInfo{
     validateSelf(registry:ts.TypeRegistry):ts.Status {
         var tp=registry.get(this.facetName());
         if (!tp){
-            return new Status(Status.ERROR,0,"using unknown annotation type:"+this.facetName(),this);
+            return new Status(Status.ERROR,0,`Using unknown annotation type: '${this.facetName()}'`,this);
         }
         var q=this.value();
         if (!q){
@@ -89,8 +89,9 @@ export class Annotation extends MetaInfo{
         }
         var valOwner=tp.validateDirect(q,true,false);
         if (!valOwner.isOk()){
-            var res=new Status(Status.OK,0,"invalid annotation value"+valOwner.getMessage(),this);
+            var res=new Status(Status.OK,0,"Invalid annotation value "+valOwner.getMessage(),this);
             res.addSubStatus(valOwner);
+            res.setValidationPath({name:`(${this.facetName()})`});
             return res;
         }
         return ts.ok();
@@ -148,7 +149,7 @@ function parseExampleIfNeeded(val:any,type:ts.AbstractType):any{
                     return JSON.parse(exampleString);
                 } catch (e) {
                     if (type.isObject()||type.isArray()){
-                        var c= new Status(Status.ERROR,0,"Can not parse JSON example:"+e.message,this);
+                        var c= new Status(Status.ERROR,0,"Can not parse JSON example: "+e.message,this);
                         return c;
                     }
                 }
@@ -200,7 +201,7 @@ export class Example extends MetaInfo{
                     return ts.ok();
                 }
                 if (val.strict&&typeof val.strict!="boolean"){
-                    var s= new Status(Status.ERROR,0,"strict should be boolean",this);
+                    var s= new Status(Status.ERROR,0,"'strict' should be boolean",this);
                     s.setValidationPath({name: "example", child: {name: "strict"}})
                     return s;
                 }
@@ -219,7 +220,7 @@ export class Example extends MetaInfo{
             if (typeof this.value()==="string"){
 
             }
-            var c= new Status(Status.ERROR,0,"using invalid `example`:"+valOwner.getMessage(),this);
+            var c= new Status(Status.ERROR,0,"Using invalid 'example': "+valOwner.getMessage(),this);
             valOwner.getErrors().forEach(x=>{c.addSubStatus(x);
                 if (isVal) {
                     x.setValidationPath({name: "example", child: {name: "value"}});
@@ -286,7 +287,7 @@ export class Required extends MetaInfo{
 
     validateSelf(registry:ts.TypeRegistry):ts.Status {
         if (typeof this.value()!=="boolean"){
-            return new Status(Status.ERROR,0,"value of required facet should be boolean",this);
+            return new Status(Status.ERROR,0,"Value of required facet should be boolean",this);
         }
         return ts.ok();
     }
@@ -384,7 +385,7 @@ export class Examples extends MetaInfo{
                                 return ;
                             }
                             if (v[x].strict&&typeof v[x].strict!="boolean"){
-                                var s= new Status(Status.ERROR,0,"strict should be boolean",this);
+                                var s= new Status(Status.ERROR,0,"'strict' should be boolean",this);
                                 s.setValidationPath({name: x, child: {name: "strict", child: {name: "strict"}}});
                                 return s;
                             }
@@ -395,7 +396,7 @@ export class Examples extends MetaInfo{
                             rs.addSubStatus(example);
                             return;
                         }
-                        var res = this.owner().validateDirect(example, true, false);
+                        var res = this.owner().validate(example, true, false);
                         res.getErrors().forEach(ex=> {
                             rs.addSubStatus(ex);
                             examplesPatchPath(ex,noVal,x)
@@ -414,7 +415,7 @@ export class Examples extends MetaInfo{
             return rs;
         }
         else{
-            return new Status(Status.ERROR,0,"examples should be a map",this);
+            return new Status(Status.ERROR,0,"'examples' value should be a map",this);
         }
     }
 
@@ -450,7 +451,7 @@ export class Default extends MetaInfo{
     validateSelf(registry:ts.TypeRegistry):ts.Status {
         var valOwner=this.owner().validateDirect(this.value(),true);
         if (!valOwner.isOk()){
-            return new Status(Status.ERROR,0,"using invalid `defaultValue`:"+valOwner.getMessage(),this);
+            return new Status(Status.ERROR,0,"Using invalid 'defaultValue': "+valOwner.getMessage(),this);
         }
         return ts.ok();
     }
@@ -475,20 +476,27 @@ export class Discriminator extends ts.TypeInformation{
     facetName(){return "discriminator"}
 
     validateSelf(registry:ts.TypeRegistry):ts.Status {
-        if (!this.owner().isSubTypeOf(ts.OBJECT)){
-            return new Status(Status.ERROR,0,"you only can use `discriminator` with object types",this)
+        var result = ts.ok();
+        if (this.owner().isUnion()){
+            result = new Status(Status.ERROR,0,"You can not specify 'discriminator' for union types",this)
         }
-        if (this.owner().getExtra(ts.GLOBAL)===false){
-            return new Status(Status.ERROR,0,"you only can use `discriminator` with top level type definitions",this)
+        else if (!this.owner().isSubTypeOf(ts.OBJECT)){
+            result = new Status(Status.ERROR,0,"You only can use 'discriminator' with object types",this);
         }
-        var prop=_.find(this.owner().meta(),x=>x instanceof PropertyIs&& (<PropertyIs>x).propertyName()==this.value());
-        if (!prop){
-            return new Status(Status.ERROR,0,"Using unknown property '"+this.value()+"' as discriminator",this,true);
+        else if (this.owner().getExtra(ts.GLOBAL)===false){
+            result = new Status(Status.ERROR,0,"You can not specify 'discriminator' for inline type declarations",this)
         }
-        if (!prop.value().isScalar()){
-            return new Status(Status.ERROR,0,"It is only allowed to use scalar properties as discriminators",this);
+        else {
+            var prop = _.find(this.owner().meta(), x=>x instanceof PropertyIs && (<PropertyIs>x).propertyName() == this.value());
+            if (!prop) {
+                result = new Status(Status.ERROR, 0, "Using unknown property '" + this.value() + "' as discriminator", this, true);
+            }
+            else if (!prop.value().isScalar()) {
+                result = new Status(Status.ERROR, 0, "It is only allowed to use scalar properties as discriminators", this);
+            }
         }
-        return ts.ok();
+        result.setValidationPath({name:this.facetName()});
+        return result;
     }
 
     kind() : tsInterfaces.MetaInformationKind {
@@ -496,28 +504,68 @@ export class Discriminator extends ts.TypeInformation{
     }
 }
 
-export class DiscriminatorValue extends ts.TypeInformation{
-    constructor(public _value: any){
+export class DiscriminatorValue extends ts.Constraint{
+    constructor(public _value: any, protected strict:boolean=true){
         super(false);
+    }
+
+    check(i:any,path:tsInterfaces.IValidationPath):Status{
+        var owner = this.owner();//_.find([t].concat(t.allSuperTypes()),x=>x.getExtra(TOPLEVEL));
+        var dVal:string = this.value();
+        var discriminator = owner.metaOfType(Discriminator);
+        if(discriminator.length==0){
+            return ts.ok();
+        }
+        var dName = discriminator[0].value();
+        // if(owner) {
+        //     dVal = owner.name();
+        // }
+        // var discriminatorValue = t.metaOfType(metaInfo.DiscriminatorValue);
+        // if(discriminatorValue.length!=0){
+        //     dVal = discriminatorValue[0].value();
+        // }
+        if(dVal) {
+            if (i.hasOwnProperty(dName)) {
+                var adVal = i[dName];
+                if (adVal != dVal) {
+                    var wrng = new Status(Status.WARNING, Status.CODE_INCORRECT_DISCRIMINATOR,
+                        `None of the '${owner.name()}' type known subtypes declare '${adVal}' as value of discriminating property '${dName}'.`, this);
+                    //var wrng = new Status(Status.WARNING, Status.CODE_INCORRECT_DISCRIMINATOR, dVal, this);
+                    wrng.setValidationPath({name: dName, child: path});
+                    return wrng;
+                }
+                return ts.ok();
+            }
+            else {
+                var err = new Status(Status.ERROR, Status.CODE_MISSING_DISCRIMINATOR,
+                    `Instance of '${owner.name()}' subtype misses value of the discriminating property '${dName}'.`, this);
+                //var err = new Status(Status.ERROR, Status.CODE_MISSING_DISCRIMINATOR, dVal, this);
+                err.setValidationPath(path);
+                return err;
+            }
+        }
     }
     facetName(){return "discriminatorValue"}
 
     validateSelf(registry:ts.TypeRegistry):ts.Status {
+        if(!this.strict){
+            return ts.ok();
+        }
         if (!this.owner().isSubTypeOf(ts.OBJECT)){
-            return new Status(Status.ERROR,0,"you only can use `discriminator` with object types",this)
+            return new Status(Status.ERROR,0,"You only can use 'discriminator' with object types",this)
         }
         if (this.owner().getExtra(ts.GLOBAL)===false){
-            return new Status(Status.ERROR,0,"you only can use `discriminator` with top level type definitions",this)
+            return new Status(Status.ERROR,0,"You only can use 'discriminator' with top level type definitions",this)
         }
         var ds=this.owner().oneMeta(Discriminator);
         if (!ds){
-            return new Status(Status.ERROR,0,"you can not use `discriminatorValue` without declaring `discriminator`",this)
+            return new Status(Status.ERROR,0,"You can not use 'discriminatorValue' without declaring 'discriminator'",this)
         }
         var prop=_.find(this.owner().meta(),x=>x instanceof PropertyIs&& (<PropertyIs>x).propertyName()==ds.value());
         if (prop){
             var sm=prop.value().validate(this.value());
             if (!sm.isOk()){
-                return new Status(Status.ERROR,0,"using invalid `disciminatorValue`:"+sm.getMessage(),this);
+                return new Status(Status.ERROR,0,"Using invalid 'disciminatorValue': "+sm.getMessage(),this);
             }
         }
         return ts.ok();
@@ -533,4 +581,6 @@ export class DiscriminatorValue extends ts.TypeInformation{
     kind() : tsInterfaces.MetaInformationKind {
         return tsInterfaces.MetaInformationKind.DiscriminatorValue;
     }
+    
+    isStrict():boolean{ return this.strict; }
 }

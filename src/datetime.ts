@@ -13,11 +13,11 @@ export class DateOnlyR extends ts.GenericTypeOf{
     check(value:any):ts.Status {
         if (typeof value=="string"){
             if (!checkDate(value)){
-                return new ts.Status(ts.Status.ERROR,0,"date-only should match to yyyy-mm-dd pattern",this)
+                return new ts.Status(ts.Status.ERROR,0,"'date-only' instance should match 'yyyy-mm-dd' pattern",this)
             }
             return ts.ok();
         }
-        return new ts.Status(ts.Status.ERROR,0,"date-only should be string matching to  yyyy-mm-dd pattern ",this)
+        return new ts.Status(ts.Status.ERROR,0,"'date-only' instance should match 'yyyy-mm-dd' pattern",this)
     }
     requiredType(){
         return ts.STRING;
@@ -41,16 +41,16 @@ export class TimeOnlyR extends ts.GenericTypeOf{
             var regexp = /^([0-9][0-9]:[0-9][0-9]:[0-9][0-9])(.[0-9]+)?$/;
             var matches = value.match(regexp);
             if (!matches){
-                return new ts.Status(ts.Status.ERROR,0,"time-only should match to hh:mm:ss[.ff...] pattern",this)
+                return new ts.Status(ts.Status.ERROR,0,"'time-only' instance should match 'hh:mm:ss[.ff...]' pattern",this)
             }
 
             var hhmmssTime = matches[1];
             if (!checkTime(hhmmssTime)){
-                return new ts.Status(ts.Status.ERROR,0,"time-only should match to hh:mm:ss[.ff...] pattern",this)
+                return new ts.Status(ts.Status.ERROR,0,"'time-only' instance should match 'hh:mm:ss[.ff...]' pattern",this)
             }
             return ts.ok();
         }
-        return new ts.Status(ts.Status.ERROR,0,"time-only should be string matching to  hh:mm:ss[.ff...] pattern ",this)
+        return new ts.Status(ts.Status.ERROR,0,"'time-only' instance should match 'hh:mm:ss[.ff...]' pattern",this)
     }
     requiredType(){
         return ts.STRING;
@@ -69,17 +69,17 @@ export class DateTimeOnlyR extends ts.GenericTypeOf{
             var regexp = /^(\d{4}-\d{2}-\d{2})T([0-9][0-9]:[0-9][0-9]:[0-9][0-9])(.[0-9]+)?$/;
             var matches = value.match(regexp);
             if (!matches || matches.length < 3){
-                return new ts.Status(ts.Status.ERROR,0,"datetime-only should match to yyyy-mm-ddThh:mm:ss[.ff...] pattern",this)
+                return new ts.Status(ts.Status.ERROR,0,"'datetime-only' instance should match 'yyyy-mm-ddThh:mm:ss[.ff...]' pattern",this)
             }
 
             var date = matches[1];
             var time = matches[2];
             if (!checkDate(date) || !checkTime(time)) {
-                return new ts.Status(ts.Status.ERROR,0,"datetime-only should match to yyyy-mm-ddThh:mm:ss[.ff...] pattern",this)
+                return new ts.Status(ts.Status.ERROR,0,"'datetime-only' instance should match 'yyyy-mm-ddThh:mm:ss[.ff...]' pattern",this)
             }
             return ts.ok();
         }
-        return new ts.Status(ts.Status.ERROR,0,"datetime-only should be string matching to  yyyy-mm-ddThh:mm:ss[.ff...] pattern ",this)
+        return new ts.Status(ts.Status.ERROR,0,"'datetime-only' instance should be string matching 'yyyy-mm-ddThh:mm:ss[.ff...]' pattern",this)
     }
     requiredType(){
         return ts.STRING;
@@ -115,24 +115,24 @@ export class DateTimeR extends ts.GenericTypeOf{
             if (!rfc2616){
                 var rfc3339Matches = value.match(r0)
                 if (!rfc3339Matches || rfc3339Matches.length < 3){
-                    return new ts.Status(ts.Status.ERROR,0,"valid rfc3339 formatted string is expected",this)
+                    return new ts.Status(ts.Status.ERROR,0,"Valid rfc3339 formatted string is expected",this)
                 } else {
                     var date = rfc3339Matches[1];
                     var time = rfc3339Matches[2];
                     if (!checkDate(date) || !checkTime(time)) {
-                        return new ts.Status(ts.Status.ERROR,0,"valid rfc3339 formatted string is expected",this)
+                        return new ts.Status(ts.Status.ERROR,0,"Valid rfc3339 formatted string is expected",this)
                     }
                 }
                 return ts.ok();
             }
             else{
                 if (!(value.match(r1)||value.match(r2)||value.match(r3))){
-                    return new ts.Status(ts.Status.ERROR,0,"valid rfc2616 formatted string is expected",this)
+                    return new ts.Status(ts.Status.ERROR,0,"Valid rfc2616 formatted string is expected",this)
                 }
             }
             return ts.ok();
         }
-        return new ts.Status(ts.Status.ERROR,0,"valid datetime formatted string is expected",this)
+        return new ts.Status(ts.Status.ERROR,0,"Valid datetime formatted string is expected",this)
     }
     requiredType(){
         return ts.STRING;
