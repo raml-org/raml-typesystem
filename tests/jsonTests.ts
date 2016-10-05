@@ -1505,7 +1505,7 @@ describe("Type collection parse and store",function(){
         var val= t.validateType(ts.builtInRegistry()).isOk();
         assert.isTrue(val);
     });
-    it ("date only negative",function(){
+    it ("date only negative 1",function(){
         var st={
 
 
@@ -1513,6 +1513,24 @@ describe("Type collection parse and store",function(){
                 t1:{
                     type:"date-only",
                     example: "19d92-12-02s"
+                },
+
+            }
+        };
+        var col=ps.parseJSONTypeCollection(st);
+        var t=col.getType("t1");
+        var status=t.validateType(ts.builtInRegistry());
+        var val=status .isOk();
+        assert.isTrue(!val);
+    });
+    it ("date only negative 2",function(){
+        var st={
+
+
+            types:{
+                t1:{
+                    type:"date-only",
+                    example: "1999-12-31T21:00:00"
                 },
 
             }

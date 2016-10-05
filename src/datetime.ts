@@ -1,12 +1,14 @@
 declare function require(path:string):any
 var date:{
-    isValid(value:string,pattern:string):boolean
+    isValid(value:string,pattern:string):boolean,
+    format(dateObj:Date, formatString:string, utc:boolean):string
+    parse(dateString:string, formatString:string, utc:boolean):Date
 } = require('date-and-time');
 
 import ts=require("./typesystem");
 
 function checkDate(dateStr : string) : boolean {
-    return date.isValid(dateStr,"YYYY-MM-DD")
+    return checkDateString(dateStr,"YYYY-MM-DD")
 }
 
 export class DateOnlyR extends ts.GenericTypeOf{
@@ -31,7 +33,7 @@ export class DateOnlyR extends ts.GenericTypeOf{
 }
 
 function checkTime(time : string): boolean {
-    return date.isValid("11 "+time.trim(),"YY HH:mm:ss");
+    return checkDateString("11 "+time.trim(),"YY HH:mm:ss");
 }
 
 export class TimeOnlyR extends ts.GenericTypeOf{
@@ -143,4 +145,13 @@ export class DateTimeR extends ts.GenericTypeOf{
     facetName(){
         return "should be datetime-only"
     }
+}
+
+function checkDateString(dateStr : string, dateFormat:string):boolean {
+    if(!date.isValid(dateStr,dateFormat)){
+        return false;
+    }
+    var d = date.parse(dateStr,dateFormat,false);
+    var ds = date.format(d,dateFormat,false);
+    return ds.trim() == dateStr.trim();
 }
