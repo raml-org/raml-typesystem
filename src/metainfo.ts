@@ -89,7 +89,7 @@ export class Annotation extends MetaInfo{
             }
         }
         var aTargets = tp.metaOfType(AllowedTargets);
-        var contextTarget = ofExample ? "ExampleSpec" : "TypeDeclaration";
+        var contextTarget = ofExample ? "Example" : "TypeDeclaration";
         if(aTargets.length>0) {
             var arr:string[] = [];
             var at = aTargets.filter(x=> {
