@@ -1,0 +1,41 @@
+{
+  "1": "'schema' and 'type' are mutually exclusive",
+  "2": "Can not override required property '{{propertyName}}' to be optional",
+  "3": "'{{typeName}}' has cyclic dependency",
+  "4": "Redefining a built in type: {{typeName}}",
+  "5": "Recurrent type definition",
+  "6": "Inheriting from unknown type",
+  "7": "Recurrent type as an option of union type",
+  "8": "Unknown type as an option of union type",
+  "9": "Recurrent array type definition",
+  "10": "Referring to unknown type '{{componentTypeName}}' as an array component type",
+  "11": "It is not allowed to mix RAML types with externals",
+  "12": "It is not allowed to mix RAML types with externals",
+  "13": "External types can not declare facet '{{name}}'",
+  "14": "Facet '{{name}}' can not be overriden",
+  "15": "Built in facet '{{name}}' can not be overriden",
+  "16": "Facet '{{name}}' can not start from '('",
+  "17": "'{{facetName}}' facet is prohibited for external types",
+  "18": "Specifying unknown facet: '{{facetName}}'",
+  "19": "Missing required facets: {{facetsList}}",
+  "20": "object is expected",
+  "21": "Null or undefined value is not allowed",
+  "22": "Can not discriminate types '{{name1}}' and '{{name2}}' without discriminator",
+  "23": "Types '{{name1}}' and '{{name2}}' have same discriminator value",
+  "24": "",
+  "25": "",
+  "26": "nothing",
+  "27": "{{typeName}} is expected",
+  "28": "integer is expected",
+  "29": "null is expected",
+  "30": "scalar is expected",
+  "31": "None of the '{{rootType}}' type known subtypes declare '{{value}}' as value of discriminating property '{{propName}}'.",
+  "32": "Instance of '{{rootType}}' subtype misses value of the discriminating property '{{propName}}'.",
+  "33": "",
+  "34": "",
+  "35": ""
+
+
+
+
+}

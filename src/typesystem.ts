@@ -10,9 +10,9 @@ export class Status implements tsInterfaces.IStatus {
 
     public static CODE_CONFLICTING_TYPE_KIND = 4;
 
-    public static CODE_INCORRECT_DISCRIMINATOR = 5;
+    public static CODE_INCORRECT_DISCRIMINATOR = 31;
 
-    public static CODE_MISSING_DISCRIMINATOR = 6;
+    public static CODE_MISSING_DISCRIMINATOR = 32;
 
     public static ERROR = 3;
 
@@ -178,6 +178,27 @@ export class Status implements tsInterfaces.IStatus {
 
 }
 
+export class MessageRegistry {
+
+    constructor(private data:any){}
+
+    private compiled:any = {};
+
+    message(_code:number, parameters: any):string {
+        var code = "" + _code;
+        var func = this.compiled[code];
+        if(!func){
+            var template = this.data[code];
+            if(template===undefined){
+                throw new Error("Unknow error code: " + code);
+            }
+            func = _.template( template, { interpolate: /\{\{(.+?)\}\}/g });
+            this.compiled[code] = func;
+        }
+        return func(parameters);
+    }
+}
+
 export function ok(){ return new Status(Status.OK,Status.OK,"",null)};
 export const SCHEMA_AND_TYPE=tsInterfaces.SCHEMA_AND_TYPE_EXTRA;
 export const GLOBAL=tsInterfaces.GLOBAL_EXTRA;
@@ -186,6 +207,17 @@ export const SOURCE_EXTRA = tsInterfaces.SOURCE_EXTRA;
 
 export function error(message:string,source:any,takeNodeFromSource:boolean=false){
     return new Status(Status.ERROR,0,message,source,takeNodeFromSource);
+}
+var messageRegistry = new MessageRegistry(require("../../resources/errorMessages"));
+
+export function error1(
+    code:number,
+    source:any,
+    params:any={},
+    severity:number = Status.ERROR,
+    takeNodeFromSource:boolean=false){
+    var message = messageRegistry.message(code,params);
+    return new Status(severity,0,message,source,takeNodeFromSource);
 }
 
 export abstract class TypeInformation implements tsInterfaces.ITypeFacet {
@@ -647,7 +679,7 @@ export abstract class AbstractType implements tsInterfaces.IParsedType, tsInterf
         }
 
         if (this.getExtra(SCHEMA_AND_TYPE)){
-            rs.addSubStatus(new Status(Status.ERROR,0, "'schema' and 'type' are mutually exclusive",this));
+            rs.addSubStatus(error1(1,this));
         }
         if (rs.isOk()) {
             this.validateMeta(tr).getErrors().forEach(x=>rs.addSubStatus(x));
@@ -675,15 +707,14 @@ export abstract class AbstractType implements tsInterfaces.IParsedType, tsInterf
                 if (x instanceof restr.PropertyIs){
                     var pr:restr.PropertyIs=x;
                     if (required.hasOwnProperty(pr.propertyName())){
-                        rs.addSubStatus(new Status(Status.ERROR,0,
-                            `Can not override required property '${pr.propertyName()}' to be optional`,this));
+                        rs.addSubStatus(error1(2, this,{ propertyName: pr.propertyName() }));
                     }
                 }
             })
             var propertyCycles=new PropertyCyclesValidator().validateType(this);
             if (propertyCycles.length>0){
                 propertyCycles.forEach(p=>{
-                    var st=new Status(Status.ERROR,0,`'${p}' has cyclic dependency`,this);
+                    var st = error1(3, this,{ typeName: p });
                     st.setValidationPath({name:p})
                     rs.addSubStatus(st);
                 })
@@ -701,25 +732,24 @@ export abstract class AbstractType implements tsInterfaces.IParsedType, tsInterf
     public validateHierarchy(rs:Status) {
         if (!this.isAnonymous()) {
             if (this.getExtra(tsInterfaces.TOP_LEVEL_EXTRA) && builtInRegistry().get(this.name())) {
-                rs.addSubStatus(new Status(Status.ERROR, 0, `Redefining a built in type: ${this.name()}`, this))
-
+                rs.addSubStatus(error1(4, this, { typeName: this.name() }));
             }
         }
 
         if (this.isSubTypeOf(RECURRENT)) {
-            rs.addSubStatus(new Status(Status.ERROR, 0, "Recurrent type definition",this),"type")
+            rs.addSubStatus(error1(5, this),"type")
         }
 
         if (this.isSubTypeOf(UNKNOWN)) {
-            rs.addSubStatus(new Status(Status.ERROR, 0, "Inheriting from unknown type",this),"type")
+            rs.addSubStatus(error1(6, this),"type")
         }
         if (this.isUnion()) {
             var tf = this.typeFamily();
             if (tf.some(x=>x.isSubTypeOf(RECURRENT))) {
-                rs.addSubStatus(new Status(Status.ERROR, 0, "Recurrent type as an option of union type",this),"type")
+                rs.addSubStatus(error1(7, this),"type")
             }
             if (tf.some(x=>x.isSubTypeOf(UNKNOWN))) {
-                rs.addSubStatus(new Status(Status.ERROR, 0, "Unknown type as an option of union type",this),"type")
+                rs.addSubStatus(error1(8, this),"type")
             }
         }
         if (this.isArray()) {
@@ -727,12 +757,12 @@ export abstract class AbstractType implements tsInterfaces.IParsedType, tsInterf
             var ps= this.getExtra(tsInterfaces.HAS_ITEMS)?"items":"type";
             if ((fs.indexOf(this)!=-1)||fs.some(x=>x===RECURRENT)){
 
-               rs.addSubStatus(new Status(Status.ERROR, 0, "Recurrent array type definition",this),ps)
+               rs.addSubStatus(error1(9, this),ps)
            }
            else  if (fs.some(x=>x===UNKNOWN)){
 
                 var componentTypeName = this.oneMeta(ComponentShouldBeOfType).value().name();
-                rs.addSubStatus(new Status(Status.ERROR, 0, `Referring to unknown type '${componentTypeName}' as an array component type`,this),ps)
+                rs.addSubStatus(error1(10, this, { componentTypeName: componentTypeName }),ps)
            }
         }
         var supers=this.superTypes();
@@ -750,19 +780,19 @@ export abstract class AbstractType implements tsInterfaces.IParsedType, tsInterf
             })
         }
         if (hasExternal&&hasNotExternal){
-            rs.addSubStatus(new Status(Status.ERROR, 0, "It is not allowed to mix RAML types with externals",this),"type")
+            rs.addSubStatus(error1(11, this));
         }
         if (this instanceof UnionType){
             var ut=<UnionType><any>this;
             ut.options().forEach(x=>{
                 if (x.isExternal()){
-                    rs.addSubStatus(new Status(Status.ERROR, 0, "It is not allowed to mix RAML types with externals",this),"type")
+                    rs.addSubStatus(error1(12, this));
                 }
             })
         }
         if (this.isExternal()){
             if (this.getExtra(tsInterfaces.HAS_FACETS)){
-                var fs=new Status(Status.ERROR, 0, `External types can not declare facet '${this.getExtra(tsInterfaces.HAS_FACETS)}'`,this);
+                var fs=error1(13, this, {name:this.getExtra(tsInterfaces.HAS_FACETS)});
                 fs.setValidationPath({ name:this.getExtra(tsInterfaces.HAS_FACETS)});
                 rs.addSubStatus(fs);
             }
@@ -818,17 +848,16 @@ export abstract class AbstractType implements tsInterfaces.IParsedType, tsInterf
                 if (fd.owner()==this){
                     var an=fd.actualName();
                     if (super_facets.hasOwnProperty(an)){
-                        rs.addSubStatus(new Status(Status.ERROR, 0, `Facet '${an}' can not be overriden`,this))
-
+                        rs.addSubStatus(error1(14, this, {name: an}));
                     }
 
                     var fp=fr.getInstance().facetPrototypeWithName(an);
                     if (fp&&fp.isApplicable(this)||an=="type"||fd.facetName()=="properties"||an=="schema"||an=="facets"||an=="uses"){
-                        rs.addSubStatus(new Status(Status.ERROR, 0, `Built in facet '${an}' can not be overriden`,this))
+                        rs.addSubStatus(error1(15, this, {name: an}));
                     }
 
                     if (an.charAt(0)=='('){
-                        rs.addSubStatus(new Status(Status.ERROR, 0, `Facet '${an}' can not start from '('`,this))
+                        rs.addSubStatus(error1(16, this, {name: an}));
                     }
                 }
             }
@@ -848,9 +877,12 @@ export abstract class AbstractType implements tsInterfaces.IParsedType, tsInterf
                     delete rfds[cd.facetName()];
                 }
                 else {
-                    var msg = this.isExternal() ? `'${cd.facetName()}' facet is prohibited for external types` 
-                            : `Specifying unknown facet: '${cd.facetName()}'`;
-                    rs.addSubStatus(new Status(Status.ERROR, 0, msg,cd,true))
+                    if(this.isExternal()){
+                        rs.addSubStatus(error1(17,cd, {facetName: cd.facetName()}, Status.ERROR, true));
+                    }
+                    else{
+                        rs.addSubStatus(error1(18,cd, {facetName: cd.facetName()}, Status.ERROR, true));
+                    }
                 }
             }
             // if (x instanceof MapPropertyIs){
@@ -869,7 +901,7 @@ export abstract class AbstractType implements tsInterfaces.IParsedType, tsInterf
             // }
         })
         if (Object.getOwnPropertyNames(rfds).length > 0) {
-            rs.addSubStatus(new Status(Status.ERROR, 0, "Missing required facets: " + Object.keys(rfds).map(x=>`'${x}'`).join(","),this))
+            rs.addSubStatus(error1(19,this, { facetsList: Object.keys(rfds).map(x=>`'${x}'`).join(",")}))
         }
     };
 
@@ -1168,7 +1200,7 @@ export abstract class AbstractType implements tsInterfaces.IParsedType, tsInterf
             var result = new Status(Status.OK, 0, "", this);
             if (!nullAllowed && (i === null || i === undefined)) {
                 if (!this.nullable) {
-                    return error("object is expected", this)
+                    return error1(20, this)
                 }
             }
             this.restrictions(true).forEach(x=>result.addSubStatus(x.check(i, path)));
@@ -1191,7 +1223,7 @@ export abstract class AbstractType implements tsInterfaces.IParsedType, tsInterf
         var g=autoCloseFlag;
         if (!nullAllowed&&(i===null||i===undefined)) {
             if (!this.nullable) {
-                return error("Null or undefined value is not allowed", this)
+                return error1(21, this)
             }
         }
         if (autoClose){
@@ -1293,7 +1325,7 @@ export abstract class AbstractType implements tsInterfaces.IParsedType, tsInterf
     }
 
     checkDiscriminator(t1:AbstractType, t2:AbstractType):Status {
-        var found = new Status(Status.ERROR, 0, `Can not discriminate types '${t1.name()}' and '${t2.name()}' without discriminator`,this);
+        var found = error1(22,this, {name1: t1.name(), name2: t2.name()});
         var oneMeta = t1.oneMeta(metaInfo.Discriminator);
         var anotherMeta = t2.oneMeta(metaInfo.Discriminator);
         if (oneMeta != null && anotherMeta != null && oneMeta.value() === (anotherMeta.value())) {
@@ -1311,8 +1343,7 @@ export abstract class AbstractType implements tsInterfaces.IParsedType, tsInterf
             if (d1 !== d2) {
                 return ok();
             }
-            found = new Status(Status.ERROR, 0,
-                `Types '${t1.name()}' and '${t2.name()}' have same discriminator value`,this);
+            found = error1(23,this, {name1: t1.name(), name2: t2.name()});
         }
         return found;
     }
@@ -1818,7 +1849,7 @@ export class NothingRestriction extends Constraint{
         if (i===null||i===undefined){
             return ok();
         }
-        return error("nothing ",this);
+        return error1(26,this);
     }
 
 
@@ -1882,7 +1913,7 @@ export class TypeOfRestriction extends GenericTypeOf{
             if (to === this.val) {
                 return ok();
             }
-            return error(this.val+" is expected",this);
+            return error1(27,this,{typeName: this.val});
 
     }
 
@@ -1930,7 +1961,7 @@ export class IntegerRestriction extends GenericTypeOf{
         if (typeof i=="number"&&is_int(i)){
             return ok();
         }
-        return error("integer is expected",this);
+        return error1(28,this);
     }
 
     requiredType(){
@@ -1954,7 +1985,7 @@ export class NullRestriction extends GenericTypeOf{
         if (i===null||i==undefined||i==="null"){
             return ok();
         }
-        return error("null is expected",this);
+        return error1(29,this);
     }
 
     requiredType(){
@@ -1981,7 +2012,7 @@ export class ScalarRestriction extends GenericTypeOf{
         if (typeof i==='number'||typeof i==='boolean'||typeof i==='string'){
             return ok();
         }
-        return error("scalar is expected",this);
+        return error1(30,this);
     }
 
     requiredType(){
@@ -2264,8 +2295,11 @@ function checkDescriminator(i:any,t:AbstractType,path?:IValidationPath){
             if (i.hasOwnProperty(dName)) {
                 var adVal = i[dName];
                 if (adVal != dVal) {
-                    var wrng = new Status(Status.WARNING, Status.CODE_INCORRECT_DISCRIMINATOR,
-                        `None of the '${owner.name()}' type known subtypes declare '${adVal}' as value of discriminating property '${dName}'.`, this);
+                    var wrng = error1(Status.CODE_INCORRECT_DISCRIMINATOR,this,{
+                        rootType: owner.name(),
+                        value: adVal,
+                        propName: dName                        
+                    },Status.WARNING);
                     //var wrng = new Status(Status.WARNING, Status.CODE_INCORRECT_DISCRIMINATOR, dVal, this);
                     wrng.setValidationPath({name: dName, child: path});
                     return wrng;
@@ -2273,8 +2307,10 @@ function checkDescriminator(i:any,t:AbstractType,path?:IValidationPath){
                 return ok();
             }
             else {
-                var err = new Status(Status.ERROR, Status.CODE_MISSING_DISCRIMINATOR,
-                    `Instance of '${owner.name()}' subtype misses value of the discriminating property '${dName}'.`, this);
+                var err = error1(Status.CODE_MISSING_DISCRIMINATOR,this,{
+                    rootType: owner.name(),
+                    propName: dName
+                });
                 //var err = new Status(Status.ERROR, Status.CODE_MISSING_DISCRIMINATOR, dVal, this);
                 err.setValidationPath(path);
                 return err;
