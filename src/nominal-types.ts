@@ -569,8 +569,8 @@ export class AbstractType extends Described implements ITypeDefinition{
      * Returns example for this type.
      * Returned example should be tested for being empty and being expandable.
      */
-    examples() : IExpandableExample[] {
-        return ebuilder.exampleFromNominal(this);
+    examples(collectFromSupertype?:boolean) : IExpandableExample[] {
+        return ebuilder.exampleFromNominal(this, collectFromSupertype);
     }
 
     /**

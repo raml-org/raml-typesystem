@@ -205,45 +205,67 @@ var toExample = function (owner: any, exampleObj:any, name:string=null,isSingle:
     
     return example;
 };
-export function exampleFromNominal(n:nm.ITypeDefinition):nm.IExpandableExample[]{
-    var tp=n.getAdapter(rt.InheritedType);
-    if (tp){
-        var result:nm.IExpandableExample[]=[]
-        var ms1=tp.oneMeta(meta.Examples);
-        if (ms1){
-            var vl=ms1.value();
-            if (vl && typeof vl === "object") {
-                var xmlValues: any;
-                
-                Object.keys(vl).forEach(key=> {
-                    var name = Array.isArray(vl) ? null : key;
-                    var exampleObj = vl[key];
-                    var example = toExample({asXMLString: () => {
-                        if(!xmlValues) {
-                            xmlValues = ms1.asXMLStrings();
-                        }
-                        
-                        return xmlValues[key];
-                    }}, exampleObj, name);
-                    result.push(example);
-                })
-            }
 
-        }
-        var ms=tp.oneMeta(meta.Example);
-        if (ms){
+function exampleFromInheritedType(inheritedType:rt.InheritedType) : nm.IExpandableExample[] {
+    var result:nm.IExpandableExample[]=[]
+    var ms1=inheritedType.oneMeta(meta.Examples);
+    if (ms1){
+        var vl=ms1.value();
+        if (vl && typeof vl === "object") {
+            var xmlValues: any;
 
-            var exampleV=ms.example();
-            if (exampleV!=null){
-                result.push(toExample(ms, ms.value(), undefined, true));
-            }
+            Object.keys(vl).forEach(key=> {
+                var name = Array.isArray(vl) ? null : key;
+                var exampleObj = vl[key];
+                var example = toExample({asXMLString: () => {
+                    if(!xmlValues) {
+                        xmlValues = ms1.asXMLStrings();
+                    }
+
+                    return xmlValues[key];
+                }}, exampleObj, name);
+                result.push(example);
+            })
         }
-        if(result.length>0) {
-            return result;
+
+    }
+    var ms=inheritedType.oneMeta(meta.Example);
+    if (ms){
+
+        var exampleV=ms.example();
+        if (exampleV!=null){
+            result.push(toExample(ms, ms.value(), undefined, true));
         }
     }
-    if (tp) {
-        return [new Example(example(tp),undefined,undefined,undefined,false,undefined,undefined,true)];
+
+    return result;
+}
+
+export function exampleFromNominal(nominalType:nm.ITypeDefinition,collectFromSupertype?:boolean):nm.IExpandableExample[]{
+    var originalInherited=nominalType.getAdapter(rt.InheritedType);
+    if (originalInherited){
+        var originalTypeExamples = exampleFromInheritedType(originalInherited);
+        if (originalTypeExamples && originalTypeExamples.length > 0) {
+            return originalTypeExamples;
+        }
+
+        if (collectFromSupertype && nominalType.isUserDefined() && !nominalType.isGenuineUserDefinedType()
+            && nominalType.genuineUserDefinedTypeInHierarchy()) {
+
+            var genuineNominal = nominalType.genuineUserDefinedTypeInHierarchy();
+            var genuineInherited = genuineNominal.getAdapter(rt.InheritedType)
+
+            if (genuineInherited) {
+                var genuineTypeExamples = exampleFromInheritedType(genuineInherited);
+                if (genuineTypeExamples && genuineTypeExamples.length > 0) {
+                    return genuineTypeExamples;
+                }
+            }
+        }
+    }
+    if (originalInherited) {
+        return [new Example(example(originalInherited),undefined,undefined,undefined,false,undefined,undefined,true)];
     }
     return [];
 }
+
