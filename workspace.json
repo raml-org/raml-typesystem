@@ -3,7 +3,6 @@
     "build" : "npm run build",
     "test" : "gulp test",
     "gitUrl" : "https://github.com/raml-org/raml-js-parser-2.git",
-    "gitBranch": "develop",
     "installTypings" : true
   },
   "raml-definition-system" : {
@@ -26,7 +25,6 @@
   "raml-json-validation" : {
     "build" : "npm run build",
     "gitUrl" : "https://github.com/dreamflyer/raml-json-validation.git",
-    "gitBranch" : false,
     "installTypings" : true
   },
   "ts-structure-parser" : {
