@@ -2062,7 +2062,7 @@ export class OrRestriction extends Constraint{
                         msg = `${ownerName}: ${msg}`;
                     }
                     if(this._extraOptionMessage){
-                        var st = error(this._extraMessage,{msg : msg});
+                        var st = error(this._extraOptionMessage,this,{msg : msg});
                         msg = st.getMessage();
                         code = st.getCode();
                     }
