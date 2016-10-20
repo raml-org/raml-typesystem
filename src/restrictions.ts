@@ -3,7 +3,7 @@ import ts=require("./typesystem");
 var messageRegistry = ts.messageRegistry;
 import su=require("./schemaUtil")
 import _= require("underscore");
-import {AndRestriction, messageRegistry} from "./typesystem";
+import {AndRestriction} from "./typesystem";
 import {Constraint} from "./typesystem";
 import {AbstractType} from "./typesystem";
 import {Status} from "./typesystem";
