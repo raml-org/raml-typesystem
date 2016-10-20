@@ -1,8 +1,9 @@
 /// <reference path="../typings/main.d.ts" />
-import ts=require("./typesystem")
+import ts=require("./typesystem");
+var messageRegistry = ts.messageRegistry;
 import su=require("./schemaUtil")
 import _= require("underscore");
-import {AndRestriction} from "./typesystem";
+import {AndRestriction, messageRegistry} from "./typesystem";
 import {Constraint} from "./typesystem";
 import {AbstractType} from "./typesystem";
 import {Status} from "./typesystem";
@@ -54,7 +55,8 @@ export abstract class MatchesProperty extends ts.Constraint{
             var st=t.validate(vl,false,false);
             if (!st.isOk()){
                 if (t.isUnknown()|| t.isRecurrent()){
-                    var s=ts.error(57,this,{typeName:t.name()});
+                    var s=ts.error(messageRegistry.VALIDATING_AGAINS_UNKNOWN,
+                        this,{typeName:t.name()});
                     s.setValidationPath(this.patchPath(q));
                     return s;
                 }
@@ -71,13 +73,13 @@ export abstract class MatchesProperty extends ts.Constraint{
 
     validateSelf(registry:ts.TypeRegistry):ts.Status {
         if (this._type.isExternal()){
-            var p=ts.error(58, this);
+            var p=ts.error(messageRegistry.EXTERNAL_IN_PROPERTY_DEFINITION, this);
             p.setValidationPath({name: this.propId()})
             return p;
         }
         if (this._type.isSubTypeOf(ts.UNKNOWN)||this._type.isSubTypeOf(ts.RECURRENT)){
             var actualUnknown = actualUnknownType(this._type);
-            var p= ts.error(59,this,{
+            var p= ts.error(messageRegistry.UNKNOWN_IN_PROPERTY_DEFINITION,this,{
                 propName: this.propId(),
                 typeName: actualUnknown.name()
             });
@@ -87,7 +89,7 @@ export abstract class MatchesProperty extends ts.Constraint{
         if (this._type.isAnonymous()){
             var st=this._type.validateType(registry);
             if (!st.isOk()){
-                var p= ts.error(60,this, {
+                var p= ts.error(messageRegistry.ERROR_IN_RANGE,this, {
                     propName: this.propId(),
                     msg: st.getMessage()
                 });
@@ -102,7 +104,7 @@ export abstract class MatchesProperty extends ts.Constraint{
         if (this._type.isUnion()){
            var ui= _.find(this._type.typeFamily(),x=>x.isSubTypeOf(ts.UNKNOWN));
            if (ui){
-               var p= ts.error(59,this,{
+               var p= ts.error(messageRegistry.UNKNOWN_IN_PROPERTY_DEFINITION,this,{
                    propName: this.propId(),
                    typeName: ui.name()
                });
@@ -129,7 +131,7 @@ export class MatchToSchema extends  ts.Constraint{
             try {
                 so = su.getJSONSchema(strVal, this.provider);
             } catch (e){
-                return ts.error(61,this,{msg: e.message});
+                return ts.error(messageRegistry.INCORRECT_SCHEMA,this,{msg: e.message});
             }
         }
         if (strVal.charAt(0)=="<"){
@@ -144,7 +146,7 @@ export class MatchToSchema extends  ts.Constraint{
                 so.validateObject(i);
             }catch(e){
                 if (e.message=="!_PERF_!"){
-                    return ts.error(62,this,{},ts.Status.WARNING);
+                    return ts.error(messageRegistry.UNABLE_TO_VALIDATE_XML,this,{},ts.Status.WARNING);
                 }
                 if (e.message=="Cannot assign to read only property '__$validated' of object"){
                     return ts.ok();
@@ -153,9 +155,10 @@ export class MatchToSchema extends  ts.Constraint{
                     return ts.ok();
                 }
                 if (e.message == "Maximum call stack size exceeded"){
-                    return ts.error(63,this);
+                    return ts.error(messageRegistry.CIRCULAR_REFS_IN_JSON_SCHEMA,this);
                 }
-                return ts.error(64, this, { msg : e.message });
+                return ts.error(messageRegistry.EXAMPLE_SCHEMA_FAILURE,
+                    this, { msg : e.message });
             }
             //validate using classical schema;
         }
@@ -214,7 +217,7 @@ export class KnownPropertyRestriction extends ts.Constraint{
                 if ((this.owner().hasPropertiesFacet()||mp.length>0) && unknownPropertyNames.length > 0) {
                     var s=new ts.Status(ts.Status.OK,0,"",this);
                     unknownPropertyNames.forEach(x=>{
-                        var err=ts.error(65,this,{propName:x});
+                        var err=ts.error(messageRegistry.UNKNOWN_PROPERTY,this,{propName:x});
                         err.setValidationPath({name:x});
                         s.addSubStatus(err)}
                     );
@@ -257,7 +260,8 @@ export class HasProperty extends ts.Constraint{
             if (i.hasOwnProperty(this.name)) {
                 return ts.ok();
             }
-            return ts.error(66,this,{propName:this.name});
+            return ts.error(messageRegistry.REQUIRED_PROPERTY_MISSING,
+                this,{propName:this.name});
         }
         return ts.ok();
     }
@@ -426,7 +430,7 @@ export class MapPropertyIs extends MatchesProperty{
     validateSelf(t:ts.TypeRegistry):ts.Status{
         var m=this.checkValue();
         if (m){
-            return ts.error(67,this,{ msg: m });
+            return ts.error(messageRegistry.INVALID_REGEXP,this,{ msg: m });
         }
         return super.validateSelf(t);
     }
@@ -640,7 +644,7 @@ export abstract class FacetRestriction<T> extends ts.Constraint{
                 typeNames = "[" + this.requiredTypes().map(requiredType=>requiredType.name()).join() + "]"
             }
 
-            var rs= ts.error(68,this,{
+            var rs= ts.error(messageRegistry.FACET_USAGE_RESTRICTION,this,{
                 facetName: this.facetName(),
                 typeNames: typeNames
             });
@@ -707,7 +711,7 @@ export abstract class MinMaxRestriction extends FacetRestriction<Number>{
         return ts.ok();
     }
     createError():ts.Status{
-        return new Status(Status.ERROR, 0, this.toString(),this);
+        return new Status(Status.ERROR, messageRegistry.MINMAX_RESTRICTION_VIOLATION.code, this.toString(),this);
     }
 
     minValue(){
@@ -722,16 +726,18 @@ export abstract class MinMaxRestriction extends FacetRestriction<Number>{
 
     checkValue():ts.Status{
         if (typeof this._value !="number"){
-            return ts.error(69,this,{ facetname: this.facetName()},ts.Status.ERROR,true);
+            return ts.error(messageRegistry.FACET_REQUIRE_NUMBER,
+                this,{ facetName: this.facetName()},ts.Status.ERROR,true);
         }
         if (this.isIntConstraint()){
             if (!is_int(this.value())){
-                return ts.error(70,this,{ facetname: this.facetName()},ts.Status.ERROR,true);
+                return ts.error(messageRegistry.FACET_REQUIRE_INTEGER,
+                    this,{ facetName: this.facetName()},ts.Status.ERROR,true);
             }
         }
         if (this.value()<this.minValue()){
-            return ts.error(71,this,{
-                facetname: this.facetName(),
+            return ts.error(messageRegistry.MIN_VALUE,this,{
+                facetName: this.facetName(),
                 minValue: this.minValue()
             },ts.Status.ERROR,true);
         }
@@ -812,7 +818,7 @@ export class MultipleOf extends FacetRestriction<Number>{
         if (typeof  o=='number'){
             var q=o/this.value();
             if (!is_int(q)){
-                return ts.error(72, this, { val1: o, val2 : this.value() });
+                return ts.error(messageRegistry.EVEN_RATIO, this, { val1: o, val2 : this.value() });
             }
         }
         return ts.ok();
@@ -827,7 +833,8 @@ export class MultipleOf extends FacetRestriction<Number>{
 
     checkValue():ts.Status{
         if (typeof this._value !="number"){
-            return ts.error(69,this,{ facetname: this.facetName()},ts.Status.ERROR,true);
+            return ts.error(messageRegistry.FACET_REQUIRE_NUMBER,
+                this,{ facetName: this.facetName()},ts.Status.ERROR,true);
         }
         return null;
     }
@@ -1002,7 +1009,7 @@ export class UniqueItems extends FacetRestriction<boolean>{
         if (Array.isArray(i)){
             var r:any[]=i;
             if (_.unique(r).length!= r.length){
-                return ts.error(73,this);
+                return ts.error(messageRegistry.MUST_BE_UNIQUE,this);
             }
         }
         return ts.ok()
@@ -1052,7 +1059,8 @@ export class ComponentShouldBeOfType extends FacetRestriction<ts.AbstractType>{
                 if (!ss.isOk()){
                     var t=this.type;
                     if (t.isUnknown()|| t.isRecurrent()){
-                        var s=ts.error(74,this,{typeName:t.name()});
+                        var s=ts.error(messageRegistry.ARRAY_AGAINST_UNKNOWN,
+                            this,{typeName:t.name()});
                         return s;
                     }
                 }
@@ -1066,20 +1074,21 @@ export class ComponentShouldBeOfType extends FacetRestriction<ts.AbstractType>{
         if (this.type.isAnonymous()) {
             var st = this.type.validateType(registry);
             if (!st.isOk()) {
-                return ts.error(75,this,{msg: st.getMessage()});
+                return ts.error(messageRegistry.INVALID_COMPONENT_TYPE,
+                    this,{msg: st.getMessage()});
             }
             return st;
         }
         if (this.type.isExternal()){
-            return ts.error(76,this);
+            return ts.error(messageRegistry.EXTERNAL_AS_COMPONENT,this);
         }
         if (this.type.isSubTypeOf(ts.UNKNOWN) || this.type.isSubTypeOf(ts.RECURRENT)) {
-            return ts.error(77,this,{ typeName: this.type.name()});
+            return ts.error(messageRegistry.UNKNOWN_AS_COMPONENT,this,{ typeName: this.type.name()});
         }
         if (this.type.isUnion()) {
             var ui = _.find(this.type.typeFamily(), x=>x.isSubTypeOf(ts.UNKNOWN));
             if (ui) {
-                return ts.error(77,this,{ typeName: ui.name()});
+                return ts.error(messageRegistry.UNKNOWN_AS_COMPONENT,this,{ typeName: ui.name()});
             }
         }
         return ts.ok();
@@ -1145,7 +1154,8 @@ export class Pattern extends FacetRestriction<string>{
                     }
                 }
                 if(!gotMatch){
-                    return ts.error(78,this,{value:this.value()});
+                    return ts.error(messageRegistry.PATTERN_VIOLATION,
+                        this,{value:this.value()});
                 }
             }catch (e){
 
@@ -1174,7 +1184,8 @@ export class Pattern extends FacetRestriction<string>{
             new RegExp(this._value);
         }
         catch (e){
-            return ts.error(67,this,{msg: e.message},ts.Status.ERROR,true);
+            return ts.error(messageRegistry.INVALID_REGEXP,
+                this,{msg: e.message},ts.Status.ERROR,true);
         }
         return null;
     }
@@ -1233,7 +1244,7 @@ export class Format extends FacetRestriction<string>{
 
             var found = _.find(allowedValues, allowedValue=>allowedValue==this.value());
             if (!found) {
-                return ts.error(79,this,{
+                return ts.error(messageRegistry.ALLOWED_FORMAT_VALUES,this,{
                     allowedValues : allowedValues.map(x=>`'${x}'`).join(", ")
                 }, ts.Status.ERROR, true);
             }
@@ -1268,7 +1279,7 @@ export class Enum extends FacetRestriction<string[]>{
             }
             if (!opts.some(x=>x == i)) {
                 var valStr = Array.isArray(this._value) ? this._value.map(x=>`'${x}'`).join(", ") : `'${this._value}'`;
-                return ts.error(80,this, {values: valStr});
+                return ts.error(messageRegistry.ENUM_RESTRICTION,this, {values: valStr});
             }
         }
         return ts.ok()
@@ -1292,7 +1303,7 @@ export class Enum extends FacetRestriction<string[]>{
     }
     checkValue():ts.Status{
         if (!this.owner().isSubTypeOf(this.requiredType())){
-            return ts.error(81,this,{
+            return ts.error(messageRegistry.ENUM_OWNER_TYPES,this,{
                 typeNames : this.requiredType().name()
             }, ts.Status.ERROR, true);
         }
@@ -1301,13 +1312,13 @@ export class Enum extends FacetRestriction<string[]>{
             var requiredSuperType = _.find(this.requiredTypes(), requiredType=>owner.isSubTypeOf(requiredType));
             if (!requiredSuperType) {
                 var typeNames = "[" + this.requiredTypes().map(requiredType=>`'${requiredType.name()}'`).join(", ") + "]";
-                return ts.error(81,this,{
+                return ts.error(messageRegistry.ENUM_OWNER_TYPES,this,{
                     typeNames : typeNames
                 }, ts.Status.ERROR, true);
             }
         }
         if(!Array.isArray(this._value)){
-            return ts.error(82,this,{}, ts.Status.ERROR, true);
+            return ts.error(messageRegistry.ENUM_ARRAY,this,{}, ts.Status.ERROR, true);
         }
         // if (_.uniq(this._value).length<this._value.length){
         //     return "enum facet can only contain unique items";

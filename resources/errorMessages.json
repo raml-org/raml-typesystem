@@ -1,98 +1,366 @@
 {
-  "1": "'schema' and 'type' are mutually exclusive",
-  "2": "Can not override required property '{{propertyName}}' to be optional",
-  "3": "'{{typeName}}' has cyclic dependency",
-  "4": "Redefining a built in type: {{typeName}}",
-  "5": "Recurrent type definition",
-  "6": "Inheriting from unknown type",
-  "7": "Recurrent type as an option of union type",
-  "8": "Unknown type as an option of union type",
-  "9": "Recurrent array type definition",
-  "10": "Referring to unknown type '{{componentTypeName}}' as an array component type",
-  "11": "It is not allowed to mix RAML types with externals",
-  "12": "It is not allowed to mix RAML types with externals",
-  "13": "External types can not declare facet '{{name}}'",
-  "14": "Facet '{{name}}' can not be overriden",
-  "15": "Built in facet '{{name}}' can not be overriden",
-  "16": "Facet '{{name}}' can not start from '('",
-  "17": "'{{facetName}}' facet is prohibited for external types",
-  "18": "Specifying unknown facet: '{{facetName}}'",
-  "19": "Missing required facets: {{facetsList}}",
-  "20": "object is expected",
-  "21": "Null or undefined value is not allowed",
-  "22": "Can not discriminate types '{{name1}}' and '{{name2}}' without discriminator",
-  "23": "Types '{{name1}}' and '{{name2}}' have same discriminator value",
-  "24": "",
-  "25": "",
-  "26": "nothing",
-  "27": "{{typeName}} is expected",
-  "28": "integer is expected",
-  "29": "null is expected",
-  "30": "scalar is expected",
-  "31": "None of the '{{rootType}}' type known subtypes declare '{{value}}' as value of discriminating property '{{propName}}'.",
-  "32": "Instance of '{{rootType}}' subtype misses value of the discriminating property '{{propName}}'.",
-  "33": "'date-only' instance should match 'yyyy-mm-dd' pattern",
-  "34": "'time-only' instance should match 'hh:mm:ss[.ff...]' pattern",
-  "35": "'datetime-only' instance should match 'yyyy-mm-ddThh:mm:ss[.ff...]' pattern",
-  "36": "Valid rfc3339 formatted string is expected",
-  "37": "Valid rfc2616 formatted string is expected",
-  "38": "Valid datetime formatted string is expected",
-  "39": "Using unknown annotation type: '{{facetName}}'",
-  "40": "Invalid annotation value {{msg}}",
-  "41": "Can not parse JSON example: {{msg}}",
-  "42": "Invalid XML.",
-  "43": "'strict' should be boolean",
-  "44": "Using invalid 'example': {{msg}}",
-  "45": "Value of required facet should be boolean",
-  "46": "'examples' value should be a map",
-  "47": "Using invalid 'defaultValue': {{msg}}",
-  "48": "You can not specify 'discriminator' for union types",
-  "49": "You only can use 'discriminator' with object types",
-  "50": "You can not specify 'discriminator' for inline type declarations",
-  "51": "Using unknown property '{{value}}' as discriminator",
-  "52": "It is only allowed to use scalar properties as discriminators",
-  "53": "You can not use 'discriminatorValue' without declaring 'discriminator'",
-  "54": "Using invalid 'disciminatorValue': {{msg}}",
-  "55": "'properties' should be a map",
-  "56": "'facets' should be a map",
-  "57": "Validating instance against unknown type: '{{typeName}}'",
-  "58": "It is not allowed to use external types in property definitions",
-  "59": "Property '{{propName}}' refers to unknown type '{{typeName}}'",
-  "60": "Property '{{propName}}' range type has error: {{msg}}",
-  "61": "Incorrect schema: {{msg}}",
-  "62": "Unable to validate example against schema (xmllint)",
-  "63": "JSON schema contains circular references",
-  "64": "Example does not conform to schema: {{msg}}",
-  "65": "Unknown property: '{{propName}}'",
-  "66": "Required property '{{propName}}' is missing",
-  "67": "{{msg}}",
-  "68": "{{facetName}} facet can only be used with {{typeNames}} types",
-  "69": "'{{facetName}}' value should be a number",
-  "69": "'{{facetName}}' value should be an integer",
-  "71": "'{{facetName}}' value should be at least {{minValue}}",
-  "72": "result of division of {{val1}} on {{val2}} should be integer",
-  "73": "items should be unique",
-  "74": "Array instance is validated against unknown type: '{{typeName}}'",
-  "75": "Component type has error: {{msg}}",
-  "76": "It is not allowed to use external types in component type definitions",
-  "77": "Component refers to unknown type {{typeName}}",
-  "78": "String should match to '{{value}}'",
-  "79": "Following format values are allowed: {{allowedValues}}",
-  "80": "value should be one of: {{values}}",
-  "81": "'enum' facet can only be used with: {{typeNames}}",
-  "82": "'enum' facet value must be defined by array",
-  "83": "",
-  "84": "",
-  "85": "",
-  "86": "",
-  "87": "",
-  "88": "",
-  "89": "",
-  "90": "",
-  "91": ""
-
-
-
-
-
+  "SCHEMA_AND_TYPE": {
+    "code" : 1,
+    "message" : "'schema' and 'type' are mutually exclusive"
+  },
+  "REQUIRED_OVERRIDE_OPTIONAL" : {
+    "code" : 2,
+    "message": "Can not override required property '{{propertyName}}' to be optional"
+  },
+  "CYCLIC_DEPENDENCY" : {
+    "code" : 3,
+    "message": "'{{typeName}}' has cyclic dependency"
+  },
+  "REDEFINIG_BUILDTIN" : {
+    "code" : 4,
+    "message": "Redefining a built in type: {{typeName}}"
+  },
+  "RECURRENT_DEFINITION" : {
+    "code" : 5,
+    "message": "Recurrent type definition"
+  },
+  "INHERITING_UNKNOWN_TYPE" : {
+    "code" : 6,
+    "message": "Inheriting from unknown type"
+  },
+  "RECURRENT_UNION_OPTION" : {
+    "code" : 7,
+    "message": "Recurrent type as an option of union type"
+  },
+  "UNKNOWN_UNION_OPTION" : {
+    "code" : 8,
+    "message": "Unknown type as an option of union type"
+  },
+  "RECURRENT_ARRAY_DEFINITION" : {
+    "code" : 9,
+    "message": "Recurrent array type definition"
+  },
+  "UNKNOWN_ARRAY_COMPONENT" : {
+    "code" : 10,
+    "message": "Referring to unknown type '{{componentTypeName}}' as an array component type"
+  },
+  "EXTERNALS_MIX" : {
+    "code" : 11,
+    "message": "It is not allowed to mix RAML types with externals"
+  },
+  "12" : {
+    "code" : 12,
+    "message": ""
+  },
+  "EXTERNAL_FACET" : {
+    "code" : 13,
+    "message": "External types can not declare facet '{{name}}'"
+  },
+  "OVERRIDE_FACET" : {
+    "code" : 14,
+    "message": "Facet '{{name}}' can not be overriden"
+  },
+  "OVERRIDE_BUILTIN_FACET" : {
+    "code" : 15,
+    "message": "Built in facet '{{name}}' can not be overriden"
+  },
+  "FACET_START_BRACKET" : {
+    "code" : 16,
+    "message": "Facet '{{name}}' can not start from '('"
+  },
+  "FACET_PROHIBITED_FOR_EXTERNALS" : {
+    "code" : 17,
+    "message": "'{{facetName}}' facet is prohibited for external types"
+  },
+  "UNKNOWN_FACET" : {
+    "code" : 18,
+    "message": "Specifying unknown facet: '{{facetName}}'"
+  },
+  "MISSING_REQUIRED_FACETS" : {
+    "code" : 19,
+    "message": "Missing required facets: {{facetsList}}"
+  },
+  "OBJECT_EXPECTED" : {
+    "code" : 20,
+    "message": "object is expected"
+  },
+  "NULL_NOT_ALLOWED" : {
+    "code" : 21,
+    "message": "Null or undefined value is not allowed"
+  },
+  "DISCRIMINATOR_NEEDED" : {
+    "code" : 22,
+    "message": "Can not discriminate types '{{name1}}' and '{{name2}}' without discriminator"
+  },
+  "SAME_DISCRIMINATOR_VALUE" : {
+    "code" : 23,
+    "message": "Types '{{name1}}' and '{{name2}}' have same discriminator value"
+  },
+  "24" : {
+    "code" : 24,
+    "message": ""
+  },
+  "25" : {
+    "code" : 25,
+    "message": ""
+  },
+  "NOTHING" : {
+    "code" : 26,
+    "message": "nothing"
+  },
+  "TYPE_EXPECTED" : {
+    "code" : 27,
+    "message": "{{typeName}} is expected"
+  },
+  "INTEGER_EXPECTED" : {
+    "code" : 28,
+    "message": "integer is expected"
+  },
+  "NULL_EXPECTED" : {
+    "code" : 29,
+    "message": "null is expected"
+  },
+  "SCALAR_EXPECTED" : {
+    "code" : 30,
+    "message": "scalar is expected"
+  },
+  "INCORRECT_DISCRIMINATOR" : {
+    "code" : 31,
+    "message": "None of the '{{rootType}}' type known subtypes declare '{{value}}' as value of discriminating property '{{propName}}'."
+  },
+  "MISSING_DISCRIMINATOR" : {
+    "code" : 32,
+    "message": "Instance of '{{rootType}}' subtype misses value of the discriminating property '{{propName}}'."
+  },
+  "INVALID_DATEONLY" : {
+    "code" : 33,
+    "message": "'date-only' instance should match 'yyyy-mm-dd' pattern"
+  },
+  "INVALID_TIMEONLY" : {
+    "code" : 34,
+    "message": "'time-only' instance should match 'hh:mm:ss[.ff...]' pattern"
+  },
+  "INVALID_DATETIMEONLY" : {
+    "code" : 35,
+    "message": "'datetime-only' instance should match 'yyyy-mm-ddThh:mm:ss[.ff...]' pattern"
+  },
+  "INVALID_RFC3339" : {
+    "code" : 36,
+    "message": "Valid rfc3339 formatted string is expected"
+  },
+  "INVALID_RFC2616" : {
+    "code" : 37,
+    "message": "Valid rfc2616 formatted string is expected"
+  },
+  "INVALID_DATTIME" : {
+    "code" : 38,
+    "message": "Valid datetime formatted string is expected"
+  },
+  "UNKNOWN_ANNOTATION" : {
+    "code" : 39,
+    "message": "Using unknown annotation type: '{{facetName}}'"
+  },
+  "INVALID_ANNOTATION_VALUE" : {
+    "code" : 40,
+    "message": "Invalid annotation value {{msg}}"
+  },
+  "CAN_NOT_PARSE_JSON" : {
+    "code" : 41,
+    "message": "Can not parse JSON example: {{msg}}"
+  },
+  "INVALID_XML" : {
+    "code" : 42,
+    "message": "Invalid XML."
+  },
+  "STRICT_BOOLEAN" : {
+    "code" : 43,
+    "message": "'strict' should be boolean"
+  },
+  "INVALID_EXMAPLE" : {
+    "code" : 44,
+    "message": "Using invalid 'example': {{msg}}"
+  },
+  "REQUIRED_BOOLEAN" : {
+    "code" : 45,
+    "message": "Value of 'required' facet should be boolean"
+  },
+  "EXMAPLES_MAP" : {
+    "code" : 46,
+    "message": "'examples' value should be a map"
+  },
+  "INVALID_DEFAULT_VALUE" : {
+    "code" : 47,
+    "message": "Using invalid 'defaultValue': {{msg}}"
+  },
+  "DISCRIMINATOR_FOR_UNION" : {
+    "code" : 48,
+    "message": "You can not specify 'discriminator' for union types"
+  },
+  "DISCRIMINATOR_FOR_OBJECT" : {
+    "code" : 49,
+    "message": "You only can use 'discriminator' with object types"
+  },
+  "DISCRIMINATOR_FOR_INLINE" : {
+    "code" : 50,
+    "message": "You can not specify 'discriminator' for inline type declarations"
+  },
+  "UNKNOWN_FOR_DISCRIMINATOR" : {
+    "code" : 51,
+    "message": "Using unknown property '{{value}}' as discriminator"
+  },
+  "SCALAR_FOR_DISCRIMINATOR" : {
+    "code" : 52,
+    "message": "It is only allowed to use scalar properties as discriminators"
+  },
+  "DISCRIMINATOR_VALUE_WITHOUT_DISCRIMINATOR" : {
+    "code" : 53,
+    "message": "You can not use 'discriminatorValue' without declaring 'discriminator'"
+  },
+  "INVALID_DISCRIMINATOR_VALUE" : {
+    "code" : 54,
+    "message": "Using invalid 'disciminatorValue': {{msg}}"
+  },
+  "PROPERTIES_MAP" : {
+    "code" : 55,
+    "message": "'properties' should be a map"
+  },
+  "FACETS_MAP" : {
+    "code" : 56,
+    "message": "'facets' should be a map"
+  },
+  "VALIDATING_AGAINS_UNKNOWN" : {
+    "code" : 57,
+    "message": "Validating instance against unknown type: '{{typeName}}'"
+  },
+  "EXTERNAL_IN_PROPERTY_DEFINITION" : {
+    "code" : 58,
+    "message": "It is not allowed to use external types in property definitions"
+  },
+  "UNKNOWN_IN_PROPERTY_DEFINITION" : {
+    "code" : 59,
+    "message": "Property '{{propName}}' refers to unknown type '{{typeName}}'"
+  },
+  "ERROR_IN_RANGE" : {
+    "code" : 60,
+    "message": "Property '{{propName}}' range type has error: {{msg}}"
+  },
+  "INCORRECT_SCHEMA" : {
+    "code" : 61,
+    "message": "Incorrect schema: {{msg}}"
+  },
+  "UNABLE_TO_VALIDATE_XML" : {
+    "code" : 62,
+    "message": "Unable to validate example against schema (xmllint)"
+  },
+  "CIRCULAR_REFS_IN_JSON_SCHEMA" : {
+    "code" : 63,
+    "message": "JSON schema contains circular references"
+  },
+  "EXAMPLE_SCHEMA_FAILURE" : {
+    "code" : 64,
+    "message": "Example does not conform to schema: {{msg}}"
+  },
+  "UNKNOWN_PROPERTY" : {
+    "code" : 65,
+    "message": "Unknown property: '{{propName}}'"
+  },
+  "REQUIRED_PROPERTY_MISSING" : {
+    "code" : 66,
+    "message": "Required property '{{propName}}' is missing"
+  },
+  "INVALID_REGEXP" : {
+    "code" : 67,
+    "message": "{{msg}}"
+  },
+  "FACET_USAGE_RESTRICTION" : {
+    "code" : 68,
+    "message": "{{facetName}} facet can only be used with {{typeNames}} types"
+  },
+  "FACET_REQUIRE_NUMBER" : {
+    "code" : 69,
+    "message": "'{{facetName}}' value should be a number"
+  },
+  "FACET_REQUIRE_INTEGER" : {
+    "code" : 70,
+    "message": "'{{facetName}}' value should be an integer"
+  },
+  "MIN_VALUE" : {
+    "code" : 71,
+    "message": "'{{facetName}}' value should be at least {{minValue}}"
+  },
+  "EVEN_RATIO" : {
+    "code" : 72,
+    "message": "result of division of {{val1}} on {{val2}} should be integer"
+  },
+  "MUST_BE_UNIQUE" : {
+    "code" : 73,
+    "message": "items should be unique"
+  },
+  "ARRAY_AGAINST_UNKNOWN" : {
+    "code" : 74,
+    "message": "Array instance is validated against unknown type: '{{typeName}}'"
+  },
+  "INVALID_COMPONENT_TYPE" : {
+    "code" : 75,
+    "message": "Component type has error: {{msg}}"
+  },
+  "EXTERNAL_AS_COMPONENT" : {
+    "code" : 76,
+    "message": "It is not allowed to use external types in component type definitions"
+  },
+  "UNKNOWN_AS_COMPONENT" : {
+    "code" : 77,
+    "message": "Component refers to unknown type {{typeName}}"
+  },
+  "PATTERN_VIOLATION" : {
+    "code" : 78,
+    "message": "String should match to '{{value}}'"
+  },
+  "ALLOWED_FORMAT_VALUES" : {
+    "code" : 79,
+    "message": "Following format values are allowed: {{allowedValues}}"
+  },
+  "ENUM_RESTRICTION" : {
+    "code" : 80,
+    "message": "value should be one of: {{values}}"
+  },
+  "ENUM_OWNER_TYPES" : {
+    "code" : 81,
+    "message": "'enum' facet can only be used with: {{typeNames}}"
+  },
+  "ENUM_ARRAY" : {
+    "code" : 82,
+    "message": "'enum' facet value must be defined by array"
+  },
+  "RESTRICTIONS_CONFLICT" : {
+    "code" : 83,
+    "message": null
+  },
+  "MINMAX_RESTRICTION_VIOLATION" : {
+    "code" : 84,
+    "message": null
+  },
+  "UNION_TYPE_FAILURE" : {
+    "code" : 85,
+    "message": "Union type options do not pass validation"
+  },
+  "UNION_TYPE_FAILURE_DETAILS" : {
+    "code" : 86,
+    "message": "Union type option does not pass validation ({{msg}})"
+  },
+  "INVALID_JSON_SCHEMA_DETAILS" : {
+    "code" : 87,
+    "message": "Invalid JSON schema: {{msg}}"
+  },
+  "INVALID_JSON_SCHEMA" : {
+    "code" : 88,
+    "message": "Invalid JSON schema"
+  },
+  "REFERENCE_NOT_FOUND" : {
+    "code" : 89,
+    "message": "Reference not found: {{ref}}"
+  },
+  "INVALID_XML_SCHEMA" : {
+    "code" : 90,
+    "message": "Invalid XML schema content"
+  },
+  "91" : {
+    "code": "91",
+    "message": ""
+  }
 }

@@ -12,6 +12,8 @@ import xmlUtil = require('./xmlUtil');
 import jsonUtil = require('./jsonUtil');
 
 var DOMParser = require('xmldom').DOMParser;
+import ts = require("./typesystem");
+import {messageRegistry} from "./typesystem";
 
 export class ValidationResult{
     result:any;
@@ -118,7 +120,7 @@ export class JSONSchemaObject {
         }
 
         if(!schema||schema.trim().length==0||schema.trim().charAt(0)!='{'){
-            throw new Error("Invalid JSON schema content");
+            throw new ts.ValidationError(messageRegistry.INVALID_JSON_SCHEMA);
         }
 
         var jsonSchemaObject: any;
@@ -126,7 +128,7 @@ export class JSONSchemaObject {
         try {
             var jsonSchemaObject = JSON.parse(schema);
         } catch(err){
-            throw new Error("It is not JSON schema(can not parse JSON: "+err.message+")");
+            throw new ts.ValidationError(messageRegistry.INVALID_JSON_SCHEMA_DETAILS,{msg:err.message});
         }
 
         if(!jsonSchemaObject){
@@ -145,7 +147,7 @@ export class JSONSchemaObject {
                 this.fixRequired(jsonSchemaObject);
             }
         } catch (e){
-            throw new Error('Can not parse schema'+schema)
+            throw new ts.ValidationError(messageRegistry.INVALID_JSON_SCHEMA_DETAILS,{msg:e.message});
         }
 
         delete jsonSchemaObject['$schema']
@@ -460,7 +462,7 @@ export class XMLSchemaObject {
 
     constructor(private schema:string){
         if(schema.charAt(0)!='<'){
-            throw new Error("Invalid JSON schema")
+            throw new Error("Invalid XML schema")
         }
 
         this.schemaObj = xmlUtil.getValidator(this.handleReferenceElement(schema));

@@ -4,6 +4,7 @@ var date:{
 } = require('date-and-time');
 
 import ts=require("./typesystem");
+var messageRegistry = ts.messageRegistry;
 
 function checkDate(dateStr : string) : boolean {
     return date.isValid(dateStr,"YYYY-MM-DD")
@@ -13,11 +14,11 @@ export class DateOnlyR extends ts.GenericTypeOf{
     check(value:any):ts.Status {
         if (typeof value=="string"){
             if (!checkDate(value)){
-                return ts.error(33,this);
+                return ts.error(messageRegistry.INVALID_DATEONLY,this);
             }
             return ts.ok();
         }
-        return ts.error(33,this);
+        return ts.error(messageRegistry.INVALID_DATEONLY,this);
     }
     requiredType(){
         return ts.STRING;
@@ -41,16 +42,16 @@ export class TimeOnlyR extends ts.GenericTypeOf{
             var regexp = /^([0-9][0-9]:[0-9][0-9]:[0-9][0-9])(.[0-9]+)?$/;
             var matches = value.match(regexp);
             if (!matches){
-                return ts.error(34,this);
+                return ts.error(messageRegistry.INVALID_TIMEONLY,this);
             }
 
             var hhmmssTime = matches[1];
             if (!checkTime(hhmmssTime)){
-                return ts.error(34,this);
+                return ts.error(messageRegistry.INVALID_TIMEONLY,this);
             }
             return ts.ok();
         }
-        return ts.error(34,this);
+        return ts.error(messageRegistry.INVALID_TIMEONLY,this);
     }
     requiredType(){
         return ts.STRING;
@@ -69,17 +70,17 @@ export class DateTimeOnlyR extends ts.GenericTypeOf{
             var regexp = /^(\d{4}-\d{2}-\d{2})T([0-9][0-9]:[0-9][0-9]:[0-9][0-9])(.[0-9]+)?$/;
             var matches = value.match(regexp);
             if (!matches || matches.length < 3){
-                return ts.error(35,this);
+                return ts.error(messageRegistry.INVALID_DATETIMEONLY,this);
             }
 
             var date = matches[1];
             var time = matches[2];
             if (!checkDate(date) || !checkTime(time)) {
-                return ts.error(35,this);
+                return ts.error(messageRegistry.INVALID_DATETIMEONLY,this);
             }
             return ts.ok();
         }
-        return ts.error(35,this);
+        return ts.error(messageRegistry.INVALID_DATETIMEONLY,this);
     }
     requiredType(){
         return ts.STRING;
@@ -115,24 +116,24 @@ export class DateTimeR extends ts.GenericTypeOf{
             if (!rfc2616){
                 var rfc3339Matches = value.match(r0)
                 if (!rfc3339Matches || rfc3339Matches.length < 3){
-                    return ts.error(36,this);
+                    return ts.error(messageRegistry.INVALID_RFC3339,this);
                 } else {
                     var date = rfc3339Matches[1];
                     var time = rfc3339Matches[2];
                     if (!checkDate(date) || !checkTime(time)) {
-                        return ts.error(36,this);
+                        return ts.error(messageRegistry.INVALID_RFC3339,this);
                     }
                 }
                 return ts.ok();
             }
             else{
                 if (!(value.match(r1)||value.match(r2)||value.match(r3))){
-                    return ts.error(37,this);
+                    return ts.error(messageRegistry.INVALID_RFC2616,this);
                 }
             }
             return ts.ok();
         }
-        return ts.error(38,this);
+        return ts.error(messageRegistry.INVALID_DATTIME,this);
     }
     requiredType(){
         return ts.STRING;

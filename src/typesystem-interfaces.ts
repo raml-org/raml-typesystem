@@ -60,6 +60,11 @@ export interface IStatus extends IHasExtra {
      * returns path to this status
      */
     getValidationPathAsString():string;
+
+    /**
+     * Numeric code
+     */
+    getCode():number
 }
 
 export enum MetaInformationKind {

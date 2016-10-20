@@ -1,5 +1,6 @@
 /// <reference path="../typings/main.d.ts" />
-import ts=require("./typesystem")
+import ts=require("./typesystem");
+var messageRegistry = ts.messageRegistry;
 import {Status} from "./typesystem";
 import {PropertyIs} from "./restrictions";
 import _=require("underscore")
@@ -79,7 +80,7 @@ export class Annotation extends MetaInfo{
     validateSelf(registry:ts.TypeRegistry):ts.Status {
         var tp=registry.get(this.facetName());
         if (!tp){
-            return ts.error(39,this,{facetName: this.facetName()});
+            return ts.error(messageRegistry.UNKNOWN_ANNOTATION,this,{facetName: this.facetName()});
         }
         var q=this.value();
         if (!q){
@@ -89,7 +90,7 @@ export class Annotation extends MetaInfo{
         }
         var valOwner=tp.validateDirect(q,true,false);
         if (!valOwner.isOk()){
-            var res = ts.error(40, this, { msg: valOwner.getMessage() });
+            var res = ts.error(messageRegistry.INVALID_ANNOTATION_VALUE, this, { msg: valOwner.getMessage() });
             res.addSubStatus(valOwner);
             res.setValidationPath({name:`(${this.facetName()})`});
             return res;
@@ -149,7 +150,7 @@ function parseExampleIfNeeded(val:any,type:ts.AbstractType):any{
                     return JSON.parse(exampleString);
                 } catch (e) {
                     if (type.isObject()||type.isArray()){
-                        var c = ts.error(41, this, { msg: e.message });
+                        var c = ts.error(messageRegistry.CAN_NOT_PARSE_JSON, this, { msg: e.message });
                         return c;
                     }
                 }
@@ -161,7 +162,7 @@ function parseExampleIfNeeded(val:any,type:ts.AbstractType):any{
                     var errors: Status[] = xmlio.getXmlErrors(jsonFromXml);
 
                     if(errors) {
-                        var error = ts.error(42, null);
+                        var error = ts.error(messageRegistry.INVALID_XML, null);
 
                         errors.forEach(child => error.addSubStatus(child));
                         
@@ -201,7 +202,7 @@ export class Example extends MetaInfo{
                     return ts.ok();
                 }
                 if (val.strict&&typeof val.strict!="boolean"){
-                    var s= ts.error(43,this);
+                    var s= ts.error(messageRegistry.STRICT_BOOLEAN,this);
                     s.setValidationPath({name: "example", child: {name: "strict"}})
                     return s;
                 }
@@ -220,7 +221,7 @@ export class Example extends MetaInfo{
             if (typeof this.value()==="string"){
 
             }
-            var c = ts.error(44, this, { msg : valOwner.getMessage() });
+            var c = ts.error(messageRegistry.INVALID_EXMAPLE, this, { msg : valOwner.getMessage() });
             valOwner.getErrors().forEach(x=>{c.addSubStatus(x);
                 if (isVal) {
                     x.setValidationPath({name: "example", child: {name: "value"}});
@@ -287,7 +288,7 @@ export class Required extends MetaInfo{
 
     validateSelf(registry:ts.TypeRegistry):ts.Status {
         if (typeof this.value()!=="boolean"){
-            return ts.error(45,this);
+            return ts.error(messageRegistry.REQUIRED_BOOLEAN,this);
         }
         return ts.ok();
     }
@@ -415,7 +416,7 @@ export class Examples extends MetaInfo{
             return rs;
         }
         else{
-            return ts.error(46,this);
+            return ts.error(messageRegistry.EXMAPLES_MAP,this);
         }
     }
 
@@ -451,7 +452,7 @@ export class Default extends MetaInfo{
     validateSelf(registry:ts.TypeRegistry):ts.Status {
         var valOwner=this.owner().validateDirect(this.value(),true);
         if (!valOwner.isOk()){
-            return ts.error(47, this , { msg : valOwner.getMessage() });
+            return ts.error(messageRegistry.INVALID_DEFAULT_VALUE, this , { msg : valOwner.getMessage() });
         }
         return ts.ok();
     }
@@ -478,21 +479,22 @@ export class Discriminator extends ts.TypeInformation{
     validateSelf(registry:ts.TypeRegistry):ts.Status {
         var result = ts.ok();
         if (this.owner().isUnion()){
-            result = ts.error(48, this);
+            result = ts.error(messageRegistry.DISCRIMINATOR_FOR_UNION, this);
         }
         else if (!this.owner().isSubTypeOf(ts.OBJECT)){
-            result = ts.error(49, this)
+            result = ts.error(messageRegistry.DISCRIMINATOR_FOR_OBJECT, this)
         }
         else if (this.owner().getExtra(ts.GLOBAL)===false){
-            result = ts.error(50, this)
+            result = ts.error(messageRegistry.DISCRIMINATOR_FOR_INLINE, this)
         }
         else {
             var prop = _.find(this.owner().meta(), x=>x instanceof PropertyIs && (<PropertyIs>x).propertyName() == this.value());
             if (!prop) {
-                result = ts.error(51, this, {value: this.value()}, ts.Status.WARNING);
+                result = ts.error(messageRegistry.UNKNOWN_FOR_DISCRIMINATOR,
+                    this, {value: this.value()}, ts.Status.WARNING);
             }
             else if (!prop.value().isScalar()) {
-                result = ts.error(52, this)
+                result = ts.error(messageRegistry.SCALAR_FOR_DISCRIMINATOR, this);
             }
         }
         result.setValidationPath({name:this.facetName()});
@@ -557,20 +559,22 @@ export class DiscriminatorValue extends ts.Constraint{
             return ts.ok();
         }
         if (!this.owner().isSubTypeOf(ts.OBJECT)){
-            return ts.error(49, this);
+            return ts.error(messageRegistry.DISCRIMINATOR_FOR_OBJECT, this);
         }
         if (this.owner().getExtra(ts.GLOBAL)===false){
-            return ts.error(50, this);
+            return ts.error(messageRegistry.DISCRIMINATOR_FOR_INLINE, this);
         }
         var ds=this.owner().oneMeta(Discriminator);
         if (!ds){
-            return ts.error(53, this);
+            return ts.error(messageRegistry.DISCRIMINATOR_VALUE_WITHOUT_DISCRIMINATOR, this);
         }
-        var prop=_.find(this.owner().meta(),x=>x instanceof PropertyIs&& (<PropertyIs>x).propertyName()==ds.value());
+        var prop=_.find(this.owner().meta(),x=>
+            x instanceof PropertyIs&& (<PropertyIs>x).propertyName()==ds.value());
         if (prop){
             var sm=prop.value().validate(this.value());
             if (!sm.isOk()){
-                return ts.error(54, this, { msg : sm.getMessage() });
+                return ts.error(messageRegistry.INVALID_DISCRIMINATOR_VALUE,
+                    this, { msg : sm.getMessage() });
             }
         }
         return ts.ok();
