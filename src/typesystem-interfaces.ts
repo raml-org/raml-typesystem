@@ -312,3 +312,54 @@ export interface IParsedType extends IHasExtra {
      */
     isRecurrent():boolean;
 }
+
+
+export interface ITypeValidationPlugin {
+
+    validate(t:IParsedType,reg:ITypeRegistry):IStatus[];
+
+    id():string;
+}
+
+export class TypeValidationPluginStatus{
+
+    constructor(private _status:IStatus, private _plugin:ITypeValidationPlugin){}
+
+    pliginId(){
+        return this._plugin.id();
+    }
+
+    status():IStatus{ return this._status; }
+
+    plugin():ITypeValidationPlugin{ return this._plugin; }
+}
+
+export function getTypeValidationPlugins():ITypeValidationPlugin[]{
+    var rv:any = (<any>global).ramlValidation;
+    if(rv) {
+        var typeValidators = <ITypeValidationPlugin[]>rv.typeValidators;
+        if (Array.isArray(typeValidators)) {
+            return <ITypeValidationPlugin[]>typeValidators;
+        }
+    }
+    return [];
+}
+
+export function applyTypeValidationPlugins(
+    t:IParsedType,reg:ITypeRegistry, skipOk:boolean = true):TypeValidationPluginStatus[] {
+
+    var result:TypeValidationPluginStatus[] = [];
+    var plugins = getTypeValidationPlugins();
+    for (var tv of plugins) {
+        var statuses:IStatus[] = tv.validate(t,reg);
+        if (statuses) {
+            statuses.forEach(x=> {
+                if (skipOk && x.isOk()) {
+                    return;
+                }
+                result.push(new TypeValidationPluginStatus(x, tv));
+            });
+        }
+    }
+    return result;
+}
