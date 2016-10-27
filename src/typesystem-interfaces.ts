@@ -313,27 +313,52 @@ export interface IParsedType extends IHasExtra {
     isRecurrent():boolean;
 }
 
-
+/**
+ * A model of custom type validation plugin
+ */
 export interface ITypeValidationPlugin {
 
+    /**
+     * @param t the type to be validated
+     * @param reg context type registry
+     */
     validate(t:IParsedType,reg:ITypeRegistry):IStatus[];
 
+    /**
+     * String ID of the plugin
+     */
     id():string;
 }
 
+/**
+ * Model object providing both result of applying type validation
+ * plugin and the plugin itself
+ */
 export class TypeValidationPluginStatus{
 
     constructor(private _status:IStatus, private _plugin:ITypeValidationPlugin){}
 
+    /**
+     * @returns ID of the validation plugin applied
+     */
     pliginId(){
         return this._plugin.id();
     }
 
+    /**
+     * Status object produced by the plugin
+     */
     status():IStatus{ return this._status; }
 
+    /**
+     * @returns the validation plugin applied
+     */
     plugin():ITypeValidationPlugin{ return this._plugin; }
 }
 
+/**
+ * Retrieve a list of registered type validation plugins
+ */
 export function getTypeValidationPlugins():ITypeValidationPlugin[]{
     var rv:any = (<any>global).ramlValidation;
     if(rv) {
@@ -345,6 +370,13 @@ export function getTypeValidationPlugins():ITypeValidationPlugin[]{
     return [];
 }
 
+/**
+ * Apply registered type validation plugins to the type
+ * @param t type to be validated
+ * @param reg context type registry
+ * @param skipOk whether to omit OK statuses
+ * @returns an array of {TypeValidationPluginStatus}
+ */
 export function applyTypeValidationPlugins(
     t:IParsedType,reg:ITypeRegistry, skipOk:boolean = true):TypeValidationPluginStatus[] {
 
@@ -362,4 +394,135 @@ export function applyTypeValidationPlugins(
         }
     }
     return result;
+}
+
+/**
+ * Model of annotation instance
+ */
+export interface IAnnotationInstance{
+
+    /**
+     * Annotation name
+     */
+    name():string;
+
+    /**
+     * Annotation value
+     */
+    value():any;
+
+    /**
+     * Annotation definition type
+     */
+    definition():IParsedType;
+}
+
+/**
+ * A model of annotated RAML element used as input for
+ * annotation validation plugins
+ */
+export interface IAnnotatedElement {
+
+    /**
+     * Element kind
+     */
+    kind():string;
+
+    /**
+     * Map view on the annotations applied
+     */
+    annotationsMap(): {[key:string]:IAnnotationInstance};
+
+    /**
+     * Array view on the annotations applied
+     */
+    annotations(): IAnnotationInstance[];
+
+    /**
+     * JSON representation of the entry
+     */
+    value(): any;
+
+    /**
+     * Element name
+     */
+    name(): string;
+
+    /**
+     * The element itself
+     */
+    entry():any;    
+    
+}
+
+/**
+ * A model of annotated RAML type facet
+ */
+export class AnnotatedFacet implements IAnnotatedElement{
+    
+    kind():string{ return "AnnotatedFacet"; }
+
+    annotationsMap(): {[key:string]:IAnnotationInstance}{  return {}; }
+
+    annotations(): IAnnotationInstance[]{ return []; }
+
+    /**
+     * Value of the facet serialized to JSON
+     */
+    value():any{ return null; }
+
+    /**
+     * Facet name
+     */
+    name():string{ return null; }
+
+    /**
+     * The facet itself
+     */
+    entry():ITypeFacet{ return null; }
+}
+
+/**
+ * A model of annotated RAML type
+ */
+export class AnnotatedType implements IAnnotatedElement{
+
+    kind():string{ return "AnnotatedType"; }
+
+    annotationsMap(): {[key:string]:IAnnotationInstance}{  return {}; }
+
+    annotations(): IAnnotationInstance[]{ return []; }
+
+    /**
+     * JSON representation of the type
+     */
+    value():any{ return null; }
+
+    /**
+     * Type name
+     */
+    name():string{ return null; }
+
+    /**
+     * The type itself
+     * @returns {IParsedType}
+     */
+    entry():IParsedType{ return null; }
+}
+
+/**
+ * Model of annotation validator for typesystem
+ */
+export interface AnnotationValidationPlugin {
+
+    /**
+     * validate annotated RAML element
+     */
+    processAnnotatedEntry(entry:IAnnotatedElement):IStatus;
+
+    /**
+     * String ID of the plugin
+     */
+    id():string;
+
 }
