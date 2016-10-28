@@ -782,6 +782,10 @@ export function parse(
         }
     }
     else{
+        var actual = tp.childWithKey("value");
+        if(actual){
+            tp = actual;
+        }
         if (tp.kind()==NodeKind.SCALAR){
             var valString = tp.value();
             if(valString==null||valString=="Null"||valString=="NULL"){
@@ -806,7 +810,12 @@ export function parse(
     var hasfacetsOrOtherStuffDoesNotAllowedInExternals:string=null;
 
     n.children().forEach(x=>{
+
         var key = x.key();
+        actual = x.childWithKey("value");
+        if(key!="example"&&actual){
+            x = actual;
+        }
         if (!key){
             return;
         }
@@ -887,6 +896,10 @@ export function parse(
         }
         var ap= n.childWithKey("additionalProperties");
         if (ap){
+            actual = ap.childWithKey("value");
+            if(actual){
+                ap = actual;
+            }
             result.addMeta(new KnownPropertyRestriction(ap.value()));
         }
     }

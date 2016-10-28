@@ -231,6 +231,10 @@ export abstract class TypeInformation implements tsInterfaces.ITypeFacet {
     }
 
     abstract kind() : tsInterfaces.MetaInformationKind
+
+    annotations():tsInterfaces.IAnnotationInstance[]{
+        return [];
+    }
 }
 var stack:RestrictionStackEntry=null;
 
