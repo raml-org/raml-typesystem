@@ -195,6 +195,8 @@ export abstract class TypeInformation implements tsInterfaces.ITypeFacet {
     _owner:AbstractType;
 
     _node:ParseNode;
+    
+    _annotations:tsInterfaces.IAnnotationInstance[] = [];
 
     node(){
         return this._node;
@@ -213,7 +215,11 @@ export abstract class TypeInformation implements tsInterfaces.ITypeFacet {
     }
 
     validateSelf(registry:TypeRegistry):Status{
-        return ok();
+        var result = ok();
+        for(var a of this._annotations){
+            result.addSubStatus(<Status>a.validateSelf(registry));
+        }
+        return result;
     }
     abstract facetName():string
     abstract value():any;
@@ -233,7 +239,11 @@ export abstract class TypeInformation implements tsInterfaces.ITypeFacet {
     abstract kind() : tsInterfaces.MetaInformationKind
 
     annotations():tsInterfaces.IAnnotationInstance[]{
-        return [];
+        return this._annotations;
+    }
+    
+    addAnnotation(a:tsInterfaces.IAnnotationInstance){
+        this._annotations.push(a);
     }
 }
 var stack:RestrictionStackEntry=null;

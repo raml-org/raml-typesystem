@@ -784,7 +784,10 @@ export function parse(
     else{
         var actual = tp.childWithKey("value");
         if(actual){
-            tp = actual;
+            var val = actual.value();
+            if(typeof(val)!="object"&&typeof(val)!="function") {
+                tp = actual;
+            }
         }
         if (tp.kind()==NodeKind.SCALAR){
             var valString = tp.value();
@@ -836,41 +839,55 @@ export function parse(
                 return;
             }
         }
+        var appendedInfo:ts.TypeInformation;
         if (key=="items"){
             if (result.isSubTypeOf(ts.ARRAY)){
                 var tp=parse(null, x,r,false,false,false);
-                actualResult.addMeta(new ComponentShouldBeOfType(tp));
+                appendedInfo = new ComponentShouldBeOfType(tp);
+                actualResult.addMeta(appendedInfo);
                 actualResult.putExtra(tsInterfaces.HAS_ITEMS,true)
+            }
+        }
+        else {
+            if (key === "facets") {
+                hasfacetsOrOtherStuffDoesNotAllowedInExternals = key;
                 return;
             }
-        }
+            else if (key == "default" || key == "xml" || key == "required") {
+                hasfacetsOrOtherStuffDoesNotAllowedInExternals = key;
+            }
+            else if (key.charAt(0) == '(' && key.charAt(key.length - 1) == ')') {
+                result.addMeta(new meta.Annotation(key.substr(1, key.length - 2), x.value()));
+                return;
+            }
+            appendedInfo = facetR.getInstance().buildFacet(key, x.value());
 
-        if (key==="facets"){
-            hasfacetsOrOtherStuffDoesNotAllowedInExternals=key;
-            return;
-        }
-        if (key=="default"||key=="xml"||key=="required"){
-            hasfacetsOrOtherStuffDoesNotAllowedInExternals=key;
-        }
-        if (key.charAt(0)=='('&& key.charAt(key.length-1)==')'){
-            result.addMeta(new meta.Annotation(key.substr(1, key.length-2), x.value()));
-            return;
-        }
-        var vl=facetR.getInstance().buildFacet(key, x.value());
-
-        //TODO remove "format" condition and use this check for all facets
-        if (vl && (key != "format" || testFacetAgainstType(vl, result))){
-            vl.setNode(x);
-            result.addMeta(vl);
-        }
-        else{
-            if (annotation&&key==="allowedTargets"){
-                result.addMeta(new meta.AllowedTargets(x.value()));
+            //TODO remove "format" condition and use this check for all facets
+            if (appendedInfo && (key != "format" || testFacetAgainstType(appendedInfo, result))) {
+                appendedInfo.setNode(x);
+                result.addMeta(appendedInfo);
             }
             else {
-                var customFacet = new meta.CustomFacet(key, x.value());
-                customFacet.setNode(x);
-                result.addMeta(customFacet);
+                if (annotation && key === "allowedTargets") {
+                    result.addMeta(new meta.AllowedTargets(x.value()));
+                }
+                else {
+                    var customFacet = new meta.CustomFacet(key, x.value());
+                    customFacet.setNode(x);
+                    result.addMeta(customFacet);
+                }
+            }
+        }
+        if(appendedInfo){
+            var children = x.children();
+            for (var ch of children) {
+                var key = ch.key();
+                if (key && key.charAt(0) == "(" && key.charAt(key.length - 1) == ")") {
+                    var aName = key.substring(1,key.length-1);
+                    var aInstance = new meta.Annotation(aName, ch.value());
+                    aInstance.setOwnerFacet(appendedInfo);
+                    appendedInfo.addAnnotation(aInstance);
+                }
             }
         }
     });

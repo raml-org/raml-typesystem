@@ -70,11 +70,13 @@ export class Usage extends MetaInfo{
         return tsInterfaces.MetaInformationKind.Usage;
     }
 }
-export class Annotation extends MetaInfo{
+export class Annotation extends MetaInfo implements tsInterfaces.IAnnotationInstance{
 
     constructor(name: string,value:any){
         super(name,value)
     }
+
+    private _ownerFacet:tsInterfaces.ITypeFacet;
 
     validateSelf(registry:ts.TypeRegistry,ofExample:boolean=false):ts.Status {
         var tp=registry.get(this.facetName());
@@ -120,6 +122,14 @@ export class Annotation extends MetaInfo{
 
     kind() : tsInterfaces.MetaInformationKind {
         return tsInterfaces.MetaInformationKind.Annotation;
+    }
+
+    ownerFacet(){
+        return this._ownerFacet;
+    }
+
+    setOwnerFacet(ownerFacet:tsInterfaces.ITypeFacet){
+        this._ownerFacet = ownerFacet;
     }
 }
 export class FacetDeclaration extends MetaInfo{
@@ -207,7 +217,7 @@ export class Example extends MetaInfo{
     }
 
     validateSelf(registry:ts.TypeRegistry):ts.Status {
-        var status = ts.ok();
+        var status = super.validateSelf(registry);
         status.addSubStatus(this.validateValue(registry));
         var aStatus = this.validateAnnotations(registry);
         aStatus.setValidationPath({name:this.facetName()});
@@ -309,10 +319,12 @@ export class Required extends MetaInfo{
     }
 
     validateSelf(registry:ts.TypeRegistry):ts.Status {
+        var status = super.validateSelf(registry);
         if (typeof this.value()!=="boolean"){
-            return new Status(Status.ERROR,0,"Value of required facet should be boolean",this);
+            status.addSubStatus(
+                new Status(Status.ERROR,0,"Value of required facet should be boolean",this));
         }
-        return ts.ok();
+        return status;
     }
 
     kind() : tsInterfaces.MetaInformationKind {
@@ -325,10 +337,6 @@ export class HasPropertiesFacet extends MetaInfo{
         super("hasPropertiesFacet",null);
     }
 
-    validateSelf(registry:ts.TypeRegistry):ts.Status {
-        return ts.ok();
-    }
-
     kind() : tsInterfaces.MetaInformationKind {
         return tsInterfaces.MetaInformationKind.HasPropertiesFacet;
     }
@@ -336,11 +344,6 @@ export class HasPropertiesFacet extends MetaInfo{
 export class AllowedTargets extends MetaInfo{
     constructor(value:any){
         super("allowedTargets",value)
-    }
-
-    validateSelf(registry:ts.TypeRegistry):ts.Status {
-
-        return ts.ok();
     }
 
     kind() : tsInterfaces.MetaInformationKind {
@@ -474,11 +477,13 @@ export class Default extends MetaInfo{
     }
 
     validateSelf(registry:ts.TypeRegistry):ts.Status {
+        var status = super.validateSelf(registry);
         var valOwner=this.owner().validateDirect(this.value(),true);
         if (!valOwner.isOk()){
-            return new Status(Status.ERROR,0,"Using invalid 'defaultValue': "+valOwner.getMessage(),this);
+            status.addSubStatus(
+                new Status(Status.ERROR,0,"Using invalid 'defaultValue': "+valOwner.getMessage(),this));
         }
-        return ts.ok();
+        return status;
     }
 
     kind() : tsInterfaces.MetaInformationKind {
@@ -501,7 +506,7 @@ export class Discriminator extends ts.TypeInformation{
     facetName(){return "discriminator"}
 
     validateSelf(registry:ts.TypeRegistry):ts.Status {
-        var result = ts.ok();
+        var result = super.validateSelf(registry);
         if (this.owner().isUnion()){
             result = new Status(Status.ERROR,0,"You can not specify 'discriminator' for union types",this)
         }
