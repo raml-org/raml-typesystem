@@ -62,9 +62,9 @@ export interface IStatus extends IHasExtra {
     getValidationPathAsString():string;
 
     /**
-     * Numeric code
+     * Unique identifier
      */
-    getCode():number
+    getCode():string
 }
 
 export enum MetaInformationKind {

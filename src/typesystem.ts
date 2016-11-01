@@ -3,7 +3,7 @@ import _=require("underscore")
 import su=require("./schemaUtil")
 import tsInterfaces = require("./typesystem-interfaces")
 import {ParseNode} from "./parse";
-export var messageRegistry = require("../../resources/errorMessages");
+export let messageRegistry = require("../../resources/errorMessages");
 
 export type IValidationPath = tsInterfaces.IValidationPath;
 
@@ -24,7 +24,7 @@ export class Status implements tsInterfaces.IStatus {
 
     public static WARNING = 2;
 
-    protected code:number;
+    protected code:string;
     protected message: string;
     protected severity:number;
     protected source:any;
@@ -96,7 +96,7 @@ export class Status implements tsInterfaces.IStatus {
         })
     }
 
-    public constructor(severity:number, code:number, message:string,source:any,private takeNodeFromSource:boolean=false) {
+    public constructor(severity:number, code:string, message:string,source:any,private takeNodeFromSource:boolean=false) {
         this.severity = severity;
         this.code = code;
         this.message = message;
@@ -144,7 +144,7 @@ export class Status implements tsInterfaces.IStatus {
     getCode(){
         return this.code;
     }
-    setCode(code:number){
+    setCode(code:string){
         this.code = code;
     }
     isWarning(){
@@ -182,19 +182,13 @@ export class Status implements tsInterfaces.IStatus {
 
 }
 
-export function ok(){ return new Status(Status.OK,Status.OK,"",null)};
+export function ok(){ return new Status(Status.OK,"","",null)};
 export const SCHEMA_AND_TYPE=tsInterfaces.SCHEMA_AND_TYPE_EXTRA;
 export const GLOBAL=tsInterfaces.GLOBAL_EXTRA;
 export const TOPLEVEL=tsInterfaces.TOP_LEVEL_EXTRA;
 export const SOURCE_EXTRA = tsInterfaces.SOURCE_EXTRA;
 
-export function error(
-    messageEntry:any,
-    source:any,
-    params:any={},
-    severity:number = Status.ERROR,
-    takeNodeFromSource:boolean=false){
-
+var messageText = function (messageEntry:any, params:any) {
     var func = messageEntry.func;
     if (!func) {
         var template = messageEntry.message;
@@ -202,6 +196,16 @@ export function error(
         messageEntry.func = func;
     }
     var message = func(params);
+    return message;
+};
+export function error(
+    messageEntry:any,
+    source:any,
+    params:any={},
+    severity:number = Status.ERROR,
+    takeNodeFromSource:boolean=false){
+
+    var message = messageText(messageEntry, params);
     return new Status(severity,messageEntry.code,message,source,takeNodeFromSource);
 }
 
@@ -628,7 +632,7 @@ export abstract class AbstractType implements tsInterfaces.IParsedType, tsInterf
     }
 
     validateType(tr:TypeRegistry=builtInRegistry()):Status{
-        var rs=new Status(Status.OK,0,"",this);
+        var rs=new Status(Status.OK,"","",this);
         this.validateHierarchy(rs);
         if (this.getExtra(tsInterfaces.PARSE_ERROR)){
             rs.addSubStatus(this.getExtra(tsInterfaces.PARSE_ERROR));
@@ -653,7 +657,7 @@ export abstract class AbstractType implements tsInterfaces.IParsedType, tsInterf
                                 rs.addSubStatus(error(ve.messageEntry,this,ve.parameters));
                             }
                             else {
-                                rs.addSubStatus(new Status(Status.ERROR, 0, e.message, this));
+                                rs.addSubStatus(new Status(Status.ERROR, "", e.message, this));
                             }
                         }
                     }
@@ -805,7 +809,7 @@ export abstract class AbstractType implements tsInterfaces.IParsedType, tsInterf
     }
 
     validateMeta(tr:TypeRegistry):Status{
-        var rs=new Status(Status.OK,0,"",this);
+        var rs=new Status(Status.OK,"","",this);
         this.declaredMeta().forEach(x=>{
             x.validateSelf(tr).getErrors().forEach(y=>rs.addSubStatus(y))
 
@@ -1198,7 +1202,7 @@ export abstract class AbstractType implements tsInterfaces.IParsedType, tsInterf
                 autoCloseFlag = true;
             }
             VALIDATED_TYPE = this;
-            var result = new Status(Status.OK, 0, "", this);
+            var result = new Status(Status.OK, "", "", this);
             if (!nullAllowed && (i === null || i === undefined)) {
                 if (!this.nullable) {
                     return error(messageRegistry.OBJECT_EXPECTED, this)
@@ -1295,7 +1299,7 @@ export abstract class AbstractType implements tsInterfaces.IParsedType, tsInterf
 
     canDoAc():Status{
         var tf:AbstractType[]= _.uniq(this.typeFamily());
-        var s=new Status(Status.OK,0,"",this);
+        var s=new Status(Status.OK,"","",this);
         for (var i=0;i<tf.length;i++){
             for (var j=0;j<tf.length;j++){
                 if (i!=j){
@@ -1745,7 +1749,7 @@ export class UnionType extends DerivedType{
 
     validateDirect(i:any,autoClose:boolean=false):Status {
 
-        var result=new Status(Status.OK,0,"",this);
+        var result=new Status(Status.OK,"","",this);
         this.restrictions().forEach(x=>result.addSubStatus(x.check(i,null)));
         return result;
     }
@@ -2036,7 +2040,7 @@ export class OrRestriction extends Constraint{
     }
 
     check(i:any,p:tsInterfaces.IValidationPath):Status {
-        var cs=new Status(Status.OK,0,"",this);
+        var cs=new Status(Status.OK,"","",this);
         var results:Status[]=[];
         for (var j=0;j<this.val.length;j++){
             var m=this.val[j].check(i,p);
@@ -2331,5 +2335,6 @@ export class ValidationError extends Error{
 
     constructor(public messageEntry:any, public parameters:any={}){
         super();
+        this.message = messageText(messageEntry,parameters);
     }
 }

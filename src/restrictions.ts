@@ -60,7 +60,7 @@ export abstract class MatchesProperty extends ts.Constraint{
                     s.setValidationPath(this.patchPath(q));
                     return s;
                 }
-                var s=new Status(Status.OK,0,"",this);
+                var s=new Status(Status.OK,"","",this);
                 st.getErrors().forEach(x=>s.addSubStatus(x));
                 s.setValidationPath(this.patchPath(q));
                 return s;
@@ -215,7 +215,7 @@ export class KnownPropertyRestriction extends ts.Constraint{
                 });
                 var unknownPropertyNames = Object.keys(nm);
                 if ((this.owner().hasPropertiesFacet()||mp.length>0) && unknownPropertyNames.length > 0) {
-                    var s=new ts.Status(ts.Status.OK,0,"",this);
+                    var s=new ts.Status(ts.Status.OK,"","",this);
                     unknownPropertyNames.forEach(x=>{
                         var err=ts.error(messageRegistry.UNKNOWN_PROPERTY,this,{propName:x});
                         err.setValidationPath({name:x});
@@ -478,7 +478,7 @@ export class MapPropertyIs extends MatchesProperty{
                         fixedProperties[(<PropertyIs>x).propertyName()] = true;
                     });
                 }
-                var rs:ts.Status = new ts.Status(ts.Status.OK, 0, "",this);
+                var rs:ts.Status = new ts.Status(ts.Status.OK, "", "",this);
                 for(var n of Object.getOwnPropertyNames(i)){
                     if(fixedProperties[n]){
                         continue;
@@ -567,7 +567,7 @@ export class AdditionalPropertyIs extends MatchesProperty{
     }
     check(i:any,p:ts.IValidationPath):ts.Status{
         var t=this.type;
-        var res=new ts.Status(ts.Status.OK,0,"",this);
+        var res=new ts.Status(ts.Status.OK,"","",this);
         if (i&&typeof i==="object") {
             Object.getOwnPropertyNames(i).forEach(n=> {
                 if (!this.match(n)) {
@@ -1051,7 +1051,7 @@ export class ComponentShouldBeOfType extends FacetRestriction<ts.AbstractType>{
     }
     check(i:any):ts.Status{
 
-        var rs=new ts.Status(ts.Status.OK,0,"",this);
+        var rs=new ts.Status(ts.Status.OK,"","",this);
         if (Array.isArray(i)){
             var ar:any[]=i;
             for (var j=0;j<ar.length;j++){
@@ -1250,7 +1250,7 @@ export class Format extends FacetRestriction<string>{
             }
         }
         catch (e){
-            return new Status(Status.ERROR, 0, e.message,this);
+            return new Status(Status.ERROR, "", e.message,this);
         }
         return null;
     }

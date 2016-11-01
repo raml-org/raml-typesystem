@@ -393,7 +393,7 @@ export class Examples extends MetaInfo{
 
     validateSelf(registry:ts.TypeRegistry):ts.Status {
         if (typeof this.value()==='object'){
-            var rs=new Status(Status.OK,0,"",this);
+            var rs=new Status(Status.OK,"","",this);
             var v=this.value();
             if (v) {
                 Object.keys(v).forEach(x=> {
@@ -408,7 +408,7 @@ export class Examples extends MetaInfo{
                                 return ;
                             }
                             if (v[x].strict&&typeof v[x].strict!="boolean"){
-                                var s= new Status(Status.ERROR,0,"'strict' should be boolean",this);
+                                var s= ts.error(messageRegistry.STRICT_BOOLEAN,this);
                                 s.setValidationPath({name: x, child: {name: "strict", child: {name: "strict"}}});
                                 return s;
                             }

@@ -394,16 +394,13 @@ export class JSONSchemaObject {
 
     private acceptErrors(key: any, errors: any[], throwImmediately = false): void {
         if(errors && errors.length>0){
-            var res= new Error("Content is not valid according to schema: "+errors.map(x=>x.message+" "+x.params).join(", "));
-
+            var msg = errors.map(x=>x.message+" "+x.params).join(", ");
+            var res= new ts.ValidationError(messageRegistry.CONTENT_DOES_NOT_MATCH_THE_SCHEMA,{msg : msg});
             (<any>res).errors=errors;
-
             globalCache.setValue(key, res);
-
             if(throwImmediately) {
                 throw res;
             }
-
             return;
         }
 
@@ -421,7 +418,7 @@ export class JSONSchemaObject {
             return this.provider.promiseResolve({
                 reference: reference,
                 content: null,
-                error: new Error(`Reference not found: '${reference}'`)
+                error: new ts.ValidationError(messageRegistry.REFERENCE_NOT_FOUND, {ref:reference})
             });
         }
 
@@ -462,7 +459,7 @@ export class XMLSchemaObject {
 
     constructor(private schema:string){
         if(schema.charAt(0)!='<'){
-            throw new Error("Invalid XML schema")
+            throw new ts.ValidationError(messageRegistry.INVALID_XML_SCHEMA);
         }
 
         this.schemaObj = xmlUtil.getValidator(this.handleReferenceElement(schema));
@@ -478,17 +475,16 @@ export class XMLSchemaObject {
         if(this.extraElementData) {
             var objectName = Object.keys(object)[0];
 
-            if(!this.extraElementData.type && !this.extraElementData.originalName) {
-                this.acceptErrors("key", [new Error(
-                    `Referenced type '${this.extraElementData.requestedName}' does not match '${objectName}' root node`)], true);
+            var err = new ts.ValidationError(messageRegistry.EXTERNAL_TYPE_ERROR,
+                { typeName : this.extraElementData.requestedName, objectName : objectName });
 
+            if(!this.extraElementData.type && !this.extraElementData.originalName) {
+                this.acceptErrors("key", [err], true);
                 return;
             }
 
             if(this.extraElementData.originalName && objectName !== this.extraElementData.originalName) {
-                this.acceptErrors("key", [new Error(
-                    `Referenced type '${this.extraElementData.requestedName}' does not match '${objectName}' root node`)], true);
-
+                this.acceptErrors("key", [err], true);
                 return;
             }
 
@@ -561,8 +557,8 @@ export class XMLSchemaObject {
     
     private acceptErrors(key: any, errors: any[], throwImmediately = false): void {
         if(errors && errors.length>0){
-            var res= new Error("Content is not valid according to schema: "+errors.map(x=>x.message).join(", "));
-
+            var msg = errors.map(x=>x.message).join(", ");
+            var res= new ts.ValidationError(messageRegistry.CONTENT_DOES_NOT_MATCH_THE_SCHEMA,{msg : msg});
             (<any>res).errors=errors;
 
             globalCache.setValue(key, res);
@@ -638,7 +634,7 @@ export function createSchema(content: string, provider: IContentProvider): Schem
         }
         catch (e) {
             if (useLint) {
-                globalCache.setValue(key, new Error("Can not parse schema"))
+                globalCache.setValue(key, new ts.ValidationError(messageRegistry.CAN_NOT_PARSE_SCHEMA));
             }
             return null;
         }

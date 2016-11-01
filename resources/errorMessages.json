@@ -362,5 +362,17 @@
   "INVALID_ANNOTATION_LOCATION" : {
     "code" : "INVALID_ANNOTATION_LOCATION",
     "message" : "Annotation '{{aName}}' can not be placed at this location, allowed targets are: {{aValues}}"
+  },
+  "CONTENT_DOES_NOT_MATCH_THE_SCHEMA" : {
+    "code" : "CONTENT_DOES_NOT_MATCH_THE_SCHEMA",
+    "message" : "Content is not valid according to schema: {{msg}}"
+  },
+  "EXTERNAL_TYPE_ERROR" : {
+    "code" : "EXTERNAL_TYPE_ERROR",
+    "message" : "Referenced type '{{typeName}}' does not match '{{objectName}}' root node"
+  },
+  "CAN_NOT_PARSE_SCHEMA" : {
+    "code" : "CAN_NOT_PARSE_SCHEMA",
+    "message": "Can not parse schema"
   }
 }
