@@ -358,5 +358,9 @@
   "INVALID_XML_SCHEMA" : {
     "code" : "INVALID_XML_SCHEMA",
     "message": "Invalid XML schema content"
+  },
+  "INVALID_ANNOTATION_LOCATION" : {
+    "code" : "INVALID_ANNOTATION_LOCATION",
+    "message" : "Annotation '{{aName}}' can not be placed at this location, allowed targets are: {{aValues}}"
   }
 }

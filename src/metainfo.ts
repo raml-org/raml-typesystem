@@ -104,8 +104,7 @@ export class Annotation extends MetaInfo{
             });
             if (at.length == 0) {
                 var list = arr.map(x=>`'${x}'`).join(", ");
-                var msg = `Annotation '${super.facetName()}' can not be placed at this location, allowed targets are: ${list}`;
-                var targetStatus = new Status(Status.ERROR, 0, msg, this);                
+                var targetStatus = ts.error(messageRegistry.INVALID_ANNOTATION_LOCATION, this, { aName: super.facetName(), aValues: list });                
                 result.addSubStatus(targetStatus);
             }
         }
