@@ -1,4 +1,5 @@
-import  ts=require("./typesystem")
+import  ts=require("./typesystem");
+var messageRegistry = ts.messageRegistry;
 import  tsInterfaces=require("./typesystem-interfaces")
 import  rs=require("./restrictions")
 import {AbstractType} from "./typesystem";
@@ -906,7 +907,7 @@ export function parse(
                 });
             }
             else{
-                var err=new ts.Status(ts.Status.ERROR,2,"'properties' should be a map",actualResult);
+                var err=ts.error(messageRegistry.PROPERTIES_MAP,actualResult);
                 err.setValidationPath({ name:"properties"})
                 result.putExtra(tsInterfaces.PARSE_ERROR,err);
             }
@@ -930,7 +931,7 @@ export function parse(
             });
         }
         else{
-            var err=new ts.Status(ts.Status.ERROR,2,"'facets' should be a map",actualResult);
+            var err=ts.error(messageRegistry.FACETS_MAP,actualResult);
             err.setValidationPath({ name:"facets"})
             result.putExtra(tsInterfaces.PARSE_ERROR,err);
         }
