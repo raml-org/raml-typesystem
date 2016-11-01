@@ -189,14 +189,27 @@ export const TOPLEVEL=tsInterfaces.TOP_LEVEL_EXTRA;
 export const SOURCE_EXTRA = tsInterfaces.SOURCE_EXTRA;
 
 var messageText = function (messageEntry:any, params:any) {
-    var func = messageEntry.func;
-    if (!func) {
-        var template = messageEntry.message;
-        func = _.template(template, {interpolate: /\{\{(.+?)\}\}/g});
-        messageEntry.func = func;
+    var result = "";
+    var msg = messageEntry.message;
+    var prev = 0;
+    for(var ind = msg.indexOf("{{"); ind >= 0 ; ind = msg.indexOf("{{",prev)){
+        result += msg.substring(prev,ind);
+        prev = msg.indexOf("}}",ind);
+        if(prev<0){
+            prev = ind;
+            break;
+        }
+        ind += "{{".length;
+        var paramName = msg.substring(ind,prev);
+        prev += "}}".length;
+        var paramValue = params[paramName];
+        if(paramValue===undefined){
+            throw new Error(`Message parameter '${paramName}' has no value specified.`);
+        }
+        result += paramValue;
     }
-    var message = func(params);
-    return message;
+    result += msg.substring(prev,msg.length);    
+    return result;
 };
 export function error(
     messageEntry:any,
