@@ -3,7 +3,7 @@
     "build" : "npm run build",
     "test" : "gulp test",
     "gitUrl" : "https://github.com/raml-org/raml-js-parser-2.git",
-    "gitBranch" : "messages-externalization",
+    "gitBranch": "develop",
     "installTypings" : true
   },
   "raml-definition-system" : {
@@ -20,12 +20,13 @@
   },
   "raml-xml-validation" : {
     "build" : "npm run build",
-    "gitUrl" : "https://github.com/mulesoft-labs/raml-xml-validation.git",
+    "gitUrl" : "https://github.com/dreamflyer/raml-xml-validation.git",
     "installTypings" : true
   },
   "raml-json-validation" : {
     "build" : "npm run build",
-    "gitUrl" : "https://github.com/mulesoft-labs/raml-json-validation.git",
+    "gitUrl" : "https://github.com/dreamflyer/raml-json-validation.git",
+    "gitBranch" : false,
     "installTypings" : true
   },
   "ts-structure-parser" : {

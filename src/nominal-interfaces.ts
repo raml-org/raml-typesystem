@@ -309,9 +309,11 @@ export interface ITypeDefinition extends INamedEntity,tsInterfaces.IHasExtra {
 
     /**
      * Returns examples for this type.
+     * @param collectFromSupertype - whether to get example from supertype if current type is
+     * redundant (pure link for the other type, contributing nothing itself).
      * Returned examples should be tested for being empty and being expandable.
      */
-    examples() : IExpandableExample[];
+    examples(collectFromSupertype?:boolean) : IExpandableExample[];
 
     /**
      * Returns whether this type is genuine user defined type.

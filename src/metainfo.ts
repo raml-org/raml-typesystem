@@ -77,25 +77,46 @@ export class Annotation extends MetaInfo{
         super(name,value)
     }
 
-    validateSelf(registry:ts.TypeRegistry):ts.Status {
+    validateSelf(registry:ts.TypeRegistry,ofExample:boolean=false):ts.Status {
         var tp=registry.get(this.facetName());
         if (!tp){
             return ts.error(messageRegistry.UNKNOWN_ANNOTATION,this,{facetName: this.facetName()});
         }
+        var result = ts.ok();
         var q=this.value();
         if (!q){
             if (tp.isString()){
                 q="";
             }
         }
+        var aTargets = tp.metaOfType(AllowedTargets);
+        var contextTarget = ofExample ? "Example" : "TypeDeclaration";
+        if(aTargets.length>0) {
+            var arr:string[] = [];
+            var at = aTargets.filter(x=> {
+                var val = x.value();
+                if (Array.isArray(val)) {
+                    arr = arr.concat(val);
+                    return val.indexOf(contextTarget) >= 0;
+                }
+                arr.push(val);
+                return val == contextTarget;
+            });
+            if (at.length == 0) {
+                var list = arr.map(x=>`'${x}'`).join(", ");
+                var msg = `Annotation '${super.facetName()}' can not be placed at this location, allowed targets are: ${list}`;
+                var targetStatus = new Status(Status.ERROR, 0, msg, this);                
+                result.addSubStatus(targetStatus);
+            }
+        }
         var valOwner=tp.validateDirect(q,true,false);
         if (!valOwner.isOk()){
             var res = ts.error(messageRegistry.INVALID_ANNOTATION_VALUE, this, { msg: valOwner.getMessage() });
             res.addSubStatus(valOwner);
-            res.setValidationPath({name:`(${this.facetName()})`});
-            return res;
+            result.addSubStatus(res);
         }
-        return ts.ok();
+        result.setValidationPath({name:`(${this.facetName()})`});
+        return result;
     }
 
     kind() : tsInterfaces.MetaInformationKind {
@@ -145,7 +166,7 @@ function parseExampleIfNeeded(val:any,type:ts.AbstractType):any{
         if (type.isObject() || type.isArray() || type.isExternal() || type.isUnion()){
             var exampleString:string=val;
             var firstChar = exampleString.trim().charAt(0);
-            if ((firstChar=="{" || firstChar=="[") ){
+            if (firstChar=="{" || firstChar=="[" || exampleString.trim()=="null" ){
                 try {
                     return JSON.parse(exampleString);
                 } catch (e) {
@@ -189,7 +210,9 @@ export class Example extends MetaInfo{
     validateSelf(registry:ts.TypeRegistry):ts.Status {
         var status = ts.ok();
         status.addSubStatus(this.validateValue(registry));
-        status.addSubStatus(this.validateAnnotations(registry));
+        var aStatus = this.validateAnnotations(registry);
+        aStatus.setValidationPath({name:this.facetName()});
+        status.addSubStatus(aStatus);
         return status;
     }
 
@@ -248,7 +271,7 @@ export class Example extends MetaInfo{
                     var aValue = val[ua];
                     var aName = ua.substring(1,ua.length-1);
                     var aInstance = new Annotation(aName,aValue);
-                    status.addSubStatus(aInstance.validateSelf(registry));
+                    status.addSubStatus(aInstance.validateSelf(registry,true));
                 }
             }
         }
@@ -406,7 +429,9 @@ export class Examples extends MetaInfo{
                             Object.keys(v[x]).forEach(key=> {
                                 if (key.charAt(0) == '(' && key.charAt(key.length - 1) == ')') {
                                     var a = new Annotation(key.substring(1, key.length - 1), v[x][key]);
-                                    rs.addSubStatus(a.validateSelf(registry));
+                                    var aRes = a.validateSelf(registry,true);
+                                    examplesPatchPath(aRes,true,x);
+                                    rs.addSubStatus(aRes);
                                 }
                             });
                         }
