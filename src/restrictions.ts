@@ -1071,27 +1071,29 @@ export class ComponentShouldBeOfType extends FacetRestriction<ts.AbstractType>{
         return rs;
     }
     validateSelf(registry:ts.TypeRegistry):ts.Status {
+        var st = super.validateSelf(registry);
         if (this.type.isAnonymous()) {
-            var st = this.type.validateType(registry);
-            if (!st.isOk()) {
-                return ts.error(messageRegistry.INVALID_COMPONENT_TYPE,
-                    this,{msg: st.getMessage()});
+            var typeStatus = this.type.validateType(registry);
+            if (!typeStatus.isOk()) {
+                st.addSubStatus(ts.error(messageRegistry.INVALID_COMPONENT_TYPE,
+                    this,{msg: st.getMessage()}));
             }
             return st;
         }
         if (this.type.isExternal()){
-            return ts.error(messageRegistry.EXTERNAL_AS_COMPONENT,this);
+            st.addSubStatus(ts.error(messageRegistry.EXTERNAL_AS_COMPONENT,this));
         }
-        if (this.type.isSubTypeOf(ts.UNKNOWN) || this.type.isSubTypeOf(ts.RECURRENT)) {
-            return ts.error(messageRegistry.UNKNOWN_AS_COMPONENT,this,{ typeName: this.type.name()});
+        else if (this.type.isSubTypeOf(ts.UNKNOWN) || this.type.isSubTypeOf(ts.RECURRENT)) {
+            st.addSubStatus(ts.error(messageRegistry.UNKNOWN_AS_COMPONENT,this,{ typeName: this.type.name()}));
         }
-        if (this.type.isUnion()) {
+        else if (this.type.isUnion()) {
             var ui = _.find(this.type.typeFamily(), x=>x.isSubTypeOf(ts.UNKNOWN));
             if (ui) {
-                return ts.error(messageRegistry.UNKNOWN_AS_COMPONENT,this,{ typeName: ui.name()});
+                st.addSubStatus(
+                    ts.error(messageRegistry.UNKNOWN_AS_COMPONENT,this,{ typeName: ui.name()}));
             }
         }
-        return ts.ok();
+        return st;
     }
     composeWith(t:ts.Constraint):ts.Constraint{
         if (t instanceof ComponentShouldBeOfType){

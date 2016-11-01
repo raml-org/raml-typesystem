@@ -217,7 +217,7 @@ export class Example extends MetaInfo{
     }
 
     validateSelf(registry:ts.TypeRegistry):ts.Status {
-        var status = super.validateSelf(registry);
+        var status = ts.ok();
         status.addSubStatus(this.validateValue(registry));
         var aStatus = this.validateAnnotations(registry);
         aStatus.setValidationPath({name:this.facetName()});
@@ -582,29 +582,33 @@ export class DiscriminatorValue extends ts.Constraint{
     facetName(){return "discriminatorValue"}
 
     validateSelf(registry:ts.TypeRegistry):ts.Status {
+        var st = super.validateSelf(registry);
         if(!this.strict){
-            return ts.ok();
+            return st;
         }
         if (!this.owner().isSubTypeOf(ts.OBJECT)){
-            return ts.error(messageRegistry.DISCRIMINATOR_FOR_OBJECT, this);
+            st.addSubStatus(ts.error(messageRegistry.DISCRIMINATOR_FOR_OBJECT, this));
+            return st;
         }
         if (this.owner().getExtra(ts.GLOBAL)===false){
-            return ts.error(messageRegistry.DISCRIMINATOR_FOR_INLINE, this);
+            st.addSubStatus(ts.error(messageRegistry.DISCRIMINATOR_FOR_INLINE, this));
+            return st;
         }
         var ds=this.owner().oneMeta(Discriminator);
         if (!ds){
-            return ts.error(messageRegistry.DISCRIMINATOR_VALUE_WITHOUT_DISCRIMINATOR, this);
+            st.addSubStatus(ts.error(messageRegistry.DISCRIMINATOR_VALUE_WITHOUT_DISCRIMINATOR, this));
+            return st;
         }
         var prop=_.find(this.owner().meta(),x=>
             x instanceof PropertyIs&& (<PropertyIs>x).propertyName()==ds.value());
         if (prop){
             var sm=prop.value().validate(this.value());
             if (!sm.isOk()){
-                return ts.error(messageRegistry.INVALID_DISCRIMINATOR_VALUE,
-                    this, { msg : sm.getMessage() });
+                st.addSubStatus(ts.error(messageRegistry.INVALID_DISCRIMINATOR_VALUE,
+                    this, { msg : sm.getMessage() }));
             }
         }
-        return ts.ok();
+        return st;
     }
 
     requiredType(){

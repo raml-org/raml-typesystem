@@ -813,10 +813,11 @@ export function parse(
     var actualResult=result;
     var hasfacetsOrOtherStuffDoesNotAllowedInExternals:string=null;
 
-    n.children().forEach(x=>{
+    n.children().forEach(x1=>{
 
-        var key = x.key();
-        actual = x.childWithKey("value");
+        var key = x1.key();
+        actual = x1.childWithKey("value");
+        var x = x1;
         if(key!="example"&&actual){
             x = actual;
         }
@@ -880,7 +881,7 @@ export function parse(
             }
         }
         if(appendedInfo){
-            var children = x.children();
+            var children = x1.children();
             for (var ch of children) {
                 var key = ch.key();
                 if (key && key.charAt(0) == "(" && key.charAt(key.length - 1) == ")") {
