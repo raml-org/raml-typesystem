@@ -241,7 +241,7 @@ export function getXmlErrors(root: any): Status[] {
         return null;
     }
 
-    return errors.map(error => new Status(Status.ERROR, 0, <string>error, {}))
+    return errors.map(error => new Status(Status.ERROR, "", <string>error, {}))
 }
 
 function actualType(type: ts.AbstractType): ts.AbstractType {
