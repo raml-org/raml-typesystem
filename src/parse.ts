@@ -689,6 +689,18 @@ function testFacetAgainstType(facet : ts.TypeInformation, type : ts.AbstractType
     }
 }
 
+function appendAnnotations(appendedInfo:ts.TypeInformation, childNode:ParseNode) {
+    var children = childNode.children();
+    for (var ch of children) {
+        var key = ch.key();
+        if (key && key.charAt(0) == "(" && key.charAt(key.length - 1) == ")") {
+            var aName = key.substring(1, key.length - 1);
+            var aInstance = new meta.Annotation(aName, ch.value());
+            aInstance.setOwnerFacet(appendedInfo);
+            appendedInfo.addAnnotation(aInstance);
+        }
+    }
+}
 /**
  * parses a type from a JSON structure
  * @param name
@@ -813,11 +825,11 @@ export function parse(
     var actualResult=result;
     var hasfacetsOrOtherStuffDoesNotAllowedInExternals:string=null;
 
-    n.children().forEach(x1=>{
+    n.children().forEach(childNode=>{
 
-        var key = x1.key();
-        actual = x1.childWithKey("value");
-        var x = x1;
+        var key = childNode.key();
+        actual = childNode.childWithKey("value");
+        var x = childNode;
         if(key!="example"&&actual){
             x = actual;
         }
@@ -848,7 +860,11 @@ export function parse(
                 appendedInfo = new ComponentShouldBeOfType(tp);
                 actualResult.addMeta(appendedInfo);
                 actualResult.putExtra(tsInterfaces.HAS_ITEMS,true)
-            }
+                if(actual){
+                    appendAnnotations(appendedInfo, childNode);
+                }
+                return appendedInfo;
+            }            
         }
         else {
             if (key === "facets") {
@@ -881,16 +897,7 @@ export function parse(
             }
         }
         if(appendedInfo){
-            var children = x1.children();
-            for (var ch of children) {
-                var key = ch.key();
-                if (key && key.charAt(0) == "(" && key.charAt(key.length - 1) == ")") {
-                    var aName = key.substring(1,key.length-1);
-                    var aInstance = new meta.Annotation(aName, ch.value());
-                    aInstance.setOwnerFacet(appendedInfo);
-                    appendedInfo.addAnnotation(aInstance);
-                }
-            }
+            appendAnnotations(appendedInfo, childNode);
         }
     });
     if(result.metaOfType(meta.DiscriminatorValue).length==0){

@@ -251,8 +251,12 @@ export abstract class TypeInformation implements tsInterfaces.ITypeFacet {
     validateSelf(registry:TypeRegistry):Status{
         var result = ok();
         for(var a of this._annotations){
-            result.addSubStatus(<Status>a.validateSelf(registry));
+            var aStatus = <Status>a.validateSelf(registry);
+            if(!aStatus.isOk()) {
+                result.addSubStatus(aStatus);
+            }
         }
+        result.setValidationPath({name:this.facetName()});
         return result;
     }
     abstract facetName():string

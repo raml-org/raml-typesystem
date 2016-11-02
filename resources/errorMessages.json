@@ -179,6 +179,10 @@
     "code" : "REQUIRED_BOOLEAN",
     "message": "Value of 'required' facet should be boolean"
   },
+  "UNIQUE_ITEMS_BOOLEAN" : {
+    "code" : "UNIQUE_ITEMS_BOOLEAN",
+    "message": "Value of 'uniqueItems' facet should be boolean"
+  },
   "EXMAPLES_MAP" : {
     "code" : "EXMAPLES_MAP",
     "message": "'examples' value should be a map"

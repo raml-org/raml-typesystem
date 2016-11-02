@@ -319,11 +319,12 @@ export class Required extends MetaInfo{
     }
 
     validateSelf(registry:ts.TypeRegistry):ts.Status {
-        var status = super.validateSelf(registry);
+        var result = super.validateSelf(registry);
         if (typeof this.value()!=="boolean"){
-            return ts.error(messageRegistry.REQUIRED_BOOLEAN,this);
+            result =  ts.error(messageRegistry.REQUIRED_BOOLEAN,this);
+            result.setValidationPath({name:this.facetName()});
         }
-        return status;
+        return result;
     }
 
     kind() : tsInterfaces.MetaInformationKind {
@@ -476,12 +477,13 @@ export class Default extends MetaInfo{
     }
 
     validateSelf(registry:ts.TypeRegistry):ts.Status {
-        var status = super.validateSelf(registry);
+        var result = super.validateSelf(registry);
         var valOwner=this.owner().validateDirect(this.value(),true);
         if (!valOwner.isOk()){
-            return ts.error(messageRegistry.INVALID_DEFAULT_VALUE, this , { msg : valOwner.getMessage() });
+            result =  ts.error(messageRegistry.INVALID_DEFAULT_VALUE, this , { msg : valOwner.getMessage() });
+            result.setValidationPath({name:this.facetName()});
         }
-        return status;
+        return result;
     }
 
     kind() : tsInterfaces.MetaInformationKind {
@@ -524,7 +526,9 @@ export class Discriminator extends ts.TypeInformation{
                 result = ts.error(messageRegistry.SCALAR_FOR_DISCRIMINATOR, this);
             }
         }
-        result.setValidationPath({name:this.facetName()});
+        if(!result.getValidationPath()) {
+            result.setValidationPath({name: this.facetName()});
+        }
         return result;
     }
 
@@ -583,30 +587,31 @@ export class DiscriminatorValue extends ts.Constraint{
 
     validateSelf(registry:ts.TypeRegistry):ts.Status {
         var st = super.validateSelf(registry);
-        if(!this.strict){
-            return st;
-        }
-        if (!this.owner().isSubTypeOf(ts.OBJECT)){
-            st.addSubStatus(ts.error(messageRegistry.DISCRIMINATOR_FOR_OBJECT, this));
-            return st;
-        }
-        if (this.owner().getExtra(ts.GLOBAL)===false){
-            st.addSubStatus(ts.error(messageRegistry.DISCRIMINATOR_FOR_INLINE, this));
-            return st;
-        }
-        var ds=this.owner().oneMeta(Discriminator);
-        if (!ds){
-            st.addSubStatus(ts.error(messageRegistry.DISCRIMINATOR_VALUE_WITHOUT_DISCRIMINATOR, this));
-            return st;
-        }
-        var prop=_.find(this.owner().meta(),x=>
-            x instanceof PropertyIs&& (<PropertyIs>x).propertyName()==ds.value());
-        if (prop){
-            var sm=prop.value().validate(this.value());
-            if (!sm.isOk()){
-                st.addSubStatus(ts.error(messageRegistry.INVALID_DISCRIMINATOR_VALUE,
-                    this, { msg : sm.getMessage() }));
+        if(this.strict) {
+            var ds = this.owner().oneMeta(Discriminator);
+            if (!this.owner().isSubTypeOf(ts.OBJECT)) {
+                st.addSubStatus(ts.error(messageRegistry.DISCRIMINATOR_FOR_OBJECT, this));
             }
+            else if (this.owner().getExtra(ts.GLOBAL) === false) {
+                st.addSubStatus(ts.error(messageRegistry.DISCRIMINATOR_FOR_INLINE, this));
+            }
+            else if (!ds) {
+                st.addSubStatus(ts.error(messageRegistry.DISCRIMINATOR_VALUE_WITHOUT_DISCRIMINATOR, this));
+            }
+            else {
+                var prop = _.find(this.owner().meta(), x=>
+                x instanceof PropertyIs && (<PropertyIs>x).propertyName() == ds.value());
+                if (prop) {
+                    var sm = prop.value().validate(this.value());
+                    if (!sm.isOk()) {
+                        st.addSubStatus(ts.error(messageRegistry.INVALID_DISCRIMINATOR_VALUE,
+                            this, {msg: sm.getMessage()}));
+                    }
+                }
+            }
+        }
+        if(!st.getValidationPath()) {
+            st.setValidationPath({name: this.facetName()});
         }
         return st;
     }
