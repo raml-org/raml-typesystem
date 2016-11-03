@@ -590,6 +590,8 @@ export abstract class AbstractType implements tsInterfaces.IParsedType, tsInterf
 
     protected extras:{ [name:string]:any}={};
 
+    protected supertypeAnnotations:{[aName:string]:tsInterfaces.IAnnotationInstance}[];
+
     getExtra(name:string):any{
         return this.extras[name];
     }
@@ -661,6 +663,23 @@ export abstract class AbstractType implements tsInterfaces.IParsedType, tsInterf
     superTypes():AbstractType[]{
         return [];
     }
+    
+    addSupertypeAnnotation(arr:tsInterfaces.IAnnotationInstance[],ind:number){
+        if(!arr||arr.length==0){
+            return;
+        }
+        if(!this.supertypeAnnotations){
+            this.supertypeAnnotations = [];
+        }
+        var aMap = this.supertypeAnnotations[ind];
+        if(!aMap){
+            aMap = {};
+            this.supertypeAnnotations[ind] = aMap;
+        }
+        for(var a of arr) {
+            aMap[a.facetName()] = a;
+        }
+    }
 
     validateType(tr:TypeRegistry=builtInRegistry()):Status{
         var rs=new Status(Status.OK,"","",this);
@@ -698,7 +717,11 @@ export abstract class AbstractType implements tsInterfaces.IParsedType, tsInterf
             if (rs.isOk()) {
                 this.superTypes().forEach(x=> {
                     if (x.isAnonymous()) {
-                        rs.addSubStatus(x.validateType(tr))
+                        var superStatus = x.validateType(tr);
+                        if(!superStatus.isOk()) {
+                            superStatus.setValidationPath({name:"type"});
+                            rs.addSubStatus(superStatus)
+                        }
                     }
                 })
             }
@@ -746,6 +769,20 @@ export abstract class AbstractType implements tsInterfaces.IParsedType, tsInterf
                     rs.addSubStatus(st);
                 })
 
+            }
+        }
+
+        if (this.supertypeAnnotations) {
+            for (var i = 0 ; i < this.supertypeAnnotations.length ; i++) {
+                var aMap = this.supertypeAnnotations[i];
+                for (var aName of Object.keys(aMap)) {
+                    var a = aMap[aName];
+                    var aStatus = <Status>a.validateSelf(tr);
+                    if (!aStatus.isOk()) {
+                        aStatus.setValidationPath({name: "type", child: {name: i}});
+                        rs.addSubStatus(aStatus);
+                    }
+                }
             }
         }
 

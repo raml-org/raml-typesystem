@@ -776,6 +776,7 @@ export function parse(
             shAndType=true;
         }
     }
+    var typePropAnnotations:tsInterfaces.IAnnotationInstance[][] = [];
     if (!tp||ignoreTypeAttr){
         if (defaultsToAny){
             if (n.childWithKey("properties")) {
@@ -795,12 +796,17 @@ export function parse(
         }
     }
     else{
+        var sAnnotations:ParseNode[][] = [];
         var actual = tp.childWithKey("value");
-        if(actual){
-            var val = actual.value();
-            if(typeof(val)!="object"&&typeof(val)!="function") {
-                tp = actual;
-            }
+        if(actual&&(actual.kind()==NodeKind.SCALAR||actual.kind()==NodeKind.ARRAY)){
+            sAnnotations = [ tp.children().filter(x=>{
+                var key = x.key();
+                if(!key){
+                    return false;
+                }
+                return key.charAt(0) == "(" && key.charAt(key.length - 1) == ")";
+            }) ]
+            tp = actual;
         }
         if (tp.kind()==NodeKind.SCALAR){
             var valString = tp.value();
@@ -812,13 +818,45 @@ export function parse(
             }
         }
         else if (tp.kind()==NodeKind.ARRAY){
-            superTypes=tp.children().map(x=>x.value()).map(y=>typeExpressions.parseToType(""+y,r, provider));
+            superTypes=tp.children().map(x=>{
+                var actual = x.childWithKey("value");
+                if(actual&&(actual.kind()==NodeKind.SCALAR||actual.kind()==NodeKind.ARRAY)){
+                    sAnnotations.push(x.children().filter(x=>{
+                        var key = x.key();
+                        if(!key){
+                            return false;
+                        }
+                        return key.charAt(0) == "(" && key.charAt(key.length - 1) == ")";
+                    }));
+                    x = actual;
+                }
+                else{
+                    sAnnotations.push([]);
+                }
+                return x.value();
+            }).map(y=>typeExpressions.parseToType(""+y,r, provider));
         }
         else if (tp.kind()==NodeKind.MAP){
             superTypes=[parse("",tp,r,false,false,false)];
         }
+        if(sAnnotations.length>0 && sAnnotations.filter(x=>x.length>0).length>0) {
+            for(var aArr of sAnnotations){
+                var aiArr:meta.Annotation[] = [];
+                typePropAnnotations.push(aiArr);
+                for(var ann of aArr) {
+                    var key = ann.key();
+                    var aName = key.substring(1, key.length - 1);
+                    var aInstance = new meta.Annotation(aName, ann.value());
+                    aiArr.push(aInstance);
+                }
+            }
+        }
     }
     var result=ts.derive(name,superTypes);
+    for(var i = 0 ; i < typePropAnnotations.length ; i++){
+        var aArr1:tsInterfaces.IAnnotationInstance[] = typePropAnnotations[i];
+        result.addSupertypeAnnotation(aArr1,i);
+    }
     if (r instanceof AccumulatingRegistry){
         result = contributeToAccumulatingRegistry(result, r);
     }

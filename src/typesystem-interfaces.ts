@@ -1,5 +1,5 @@
 export interface IValidationPath{
-    name: string
+    name: string|number
     child?:IValidationPath
 }
 
