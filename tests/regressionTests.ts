@@ -491,7 +491,7 @@ describe("Simple validation testing",function() {
         });
         var t=tp.getType("a");
         var st=t.validateType(ts.builtInRegistry());
-        assert.isTrue(st.getErrors().length===0);
+        assert.isTrue(st.getErrors().length===2);
     });
     it("properties is map", function () {
         var tp = ps.parseJSONTypeCollection({

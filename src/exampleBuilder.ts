@@ -78,11 +78,14 @@ class Example implements nm.IExpandableExample{
         private _displayName:string=undefined,
         private _description:string=undefined,
         private _strict:boolean=true,
-        private _annotations:any=undefined,
+        private _annotations:{[key:string]:meta.Annotation}={},
         private _isSingle:boolean=false,
         private _empty:boolean=false){
 
     }
+
+    private _scalarsAnnotations:
+        {[pName:string]:{[aName:string]:meta.Annotation}} = {};
 
     isEmpty():boolean {
         return this._empty;
@@ -164,12 +167,25 @@ class Example implements nm.IExpandableExample{
         return this._displayName;
     }
 
-    annotations():any{
+    annotations():{[key:string]:meta.Annotation}{
         return this._annotations;
     }
 
     name():string{
         return this._name;
+    }
+
+    scalarsAnnotations():{[pName:string]:{[aName:string]:meta.Annotation}}{
+        return this._scalarsAnnotations;
+    }
+
+    registerScalarAnnotatoion(a:meta.Annotation,pName:string){
+        var aMap = this._scalarsAnnotations[pName];
+        if(!aMap){
+            aMap = {};
+            this._scalarsAnnotations[pName] = aMap;
+        }
+        aMap[a.facetName()] = a;
     }
 
 }
@@ -182,20 +198,23 @@ var toExample = function (owner: any, exampleObj:any, name:string=null,isSingle:
             example = new Example(val, name, undefined, undefined, true, undefined, isSingle);
         }
         else {
-            var displayName = exampleObj.displayName;
-            var description = exampleObj.description;
-            var strict:boolean = exampleObj.strict;
-            var aObj:any = null;
-            var annotationNames = Object.keys(exampleObj).filter(x=>x.charAt(0) == "(");
-            if (annotationNames.length > 0) {
-                aObj = {};
-                for (var aName of annotationNames) {
-                    var aVal = exampleObj[aName];
-                    aName = aName.substring(1, aName.length - 1);
-                    aObj[aName] = aVal;
-                }
-            }
+            var displayName = scalarValue(exampleObj, "displayName");
+            var description = scalarValue(exampleObj, "description");
+            var strict:boolean = scalarValue(exampleObj, "strict");
+            var aObj:{[key:string]:meta.Annotation} = {};
+            scalarAnnotaitons(exampleObj).forEach(x=>{
+                aObj[x.facetName()] = x;
+            });
             example = new Example(val, name, displayName, description, strict, aObj, isSingle);
+            for(var a of scalarAnnotaitons(exampleObj["displayName"])){
+                example.registerScalarAnnotatoion(a,"displayName");
+            }
+            for(var a of scalarAnnotaitons(exampleObj["description"])){
+                example.registerScalarAnnotatoion(a,"description");
+            }
+            for(var a of scalarAnnotaitons(exampleObj["strict"])){
+                example.registerScalarAnnotatoion(a,"strict");
+            }
         }
     }
     
@@ -205,6 +224,28 @@ var toExample = function (owner: any, exampleObj:any, name:string=null,isSingle:
     
     return example;
 };
+
+function scalarValue(obj:any,propName:string):any{
+    var pVal = obj[propName];
+    if(pVal !=null && typeof(pVal)=="object"){
+        return pVal["value"];
+    }
+    return pVal;
+}
+function scalarAnnotaitons(obj:any):meta.Annotation[]{
+    var result:meta.Annotation[] = [];
+    if(!obj){
+        return result;
+    }
+    for(var aKey of Object.keys(obj).filter(
+        x=>x.length>0&&x.charAt(0)=="("&&x.charAt(x.length-1)==")")){
+        var aName = aKey.substring(1,aKey.length-1);
+        var aVal = obj[aKey];
+        var a = new meta.Annotation(aName,aVal);
+        result.push(a);
+    }
+    return result;
+}
 
 function exampleFromInheritedType(inheritedType:rt.InheritedType) : nm.IExpandableExample[] {
     var result:nm.IExpandableExample[]=[]

@@ -211,6 +211,13 @@ function parseExampleIfNeeded(val:any,type:ts.AbstractType):any{
     }
     return val;
 }
+
+var exampleScalarProperties = [
+    {propName: "strict", propType: "boolean", messageEntry:messageRegistry.STRICT_BOOLEAN},
+    {propName: "displayName", propType: "string", messageEntry:messageRegistry.DISPLAY_NAME_STRING},
+    {propName: "description", propType: "string", messageEntry:messageRegistry.DESCRIPTION_STRING}
+];
+
 export class Example extends MetaInfo{
     constructor(value:any){
         super("example",value)
@@ -228,15 +235,42 @@ export class Example extends MetaInfo{
     validateValue(registry:ts.TypeRegistry):ts.Status {
         var val=this.value();
         var isVal=false;
+        var result = ts.ok();
         if (typeof val==="object"&&val){
             if (val.value){
-                if (val.strict===false){
-                    return ts.ok();
+                
+
+                for(var y of exampleScalarProperties) {
+                    var propName = y.propName;
+                    var propType = y.propType;
+                    var propObj = val[propName];
+                    if (propObj&&typeof propObj!=propType){
+                        if(typeof(propObj)=="object") {
+                            Object.keys(propObj).forEach(key=> {
+                                if (key.charAt(0) == '(' && key.charAt(key.length - 1) == ')') {
+                                    var a = new Annotation(key.substring(1, key.length - 1), propObj[key]);
+                                    var aRes = a.validateSelf(registry, true);
+                                    aRes.setValidationPath({
+                                            name: "example",
+                                            child: {name: propName, child: {name: key}}
+                                        });
+                                    result.addSubStatus(aRes);
+                                }
+                            });
+                        }
+
+                        if(!propObj.value&&typeof propObj.value!=propType) {
+                            var s = ts.error(y.messageEntry, this);
+                            var vp = propObj.value ? {name: "value"} : null;
+                            s.setValidationPath({name: "example", child: {name: propName, child: vp}});
+                            result.addSubStatus(s);
+                        }
+                    }
+                    
                 }
-                if (val.strict&&typeof val.strict!="boolean"){
-                    var s= ts.error(messageRegistry.STRICT_BOOLEAN,this);
-                    s.setValidationPath({name: "example", child: {name: "strict"}})
-                    return s;
+                
+                if (val.strict===false||(typeof(val.strict)=="object"&&val.strict.value===false)){
+                    return result;
                 }
                 val=val.value;
                 isVal=true;
@@ -244,9 +278,10 @@ export class Example extends MetaInfo{
             }
         }
         var rr=parseExampleIfNeeded(val,this.owner());
-        if (rr instanceof ts.Status){
-            rr.setValidationPath({name: "example"})
-            return rr;
+        if (rr instanceof ts.Status && !rr.isOk()){
+            rr.setValidationPath({name: "example"});
+            result.addSubStatus(rr);
+            return result;
         }
         var valOwner=this.owner().validateDirect(rr,true,false);
         if (!valOwner.isOk()){
@@ -263,9 +298,9 @@ export class Example extends MetaInfo{
                 }
             });
 
-            return c;
+            result.addSubStatus(c);
         }
-        return ts.ok();
+        return result;
     }
 
     validateAnnotations(registry:ts.TypeRegistry):ts.Status {
@@ -400,20 +435,31 @@ export class Examples extends MetaInfo{
             var v=this.value();
             if (v) {
                 Object.keys(v).forEach(x=> {
-                    if (v[x]) {
-                        var val=v[x].value;
+                    var exampleObj = v[x];
+                    if (exampleObj) {
+                        if (typeof exampleObj=="object"&&exampleObj.value) {
+                            Object.keys(exampleObj).forEach(key=> {
+                                if (key.charAt(0) == '(' && key.charAt(key.length - 1) == ')') {
+                                    var a = new Annotation(key.substring(1, key.length - 1), v[x][key]);
+                                    var aRes = a.validateSelf(registry,true);
+                                    aRes.setValidationPath(
+                                        {name:"examples",child:{name: x, child: {name: key}}});
+                                    rs.addSubStatus(aRes);
+                                }
+                            });
+                        }
+                        var val=exampleObj.value;
                         var noVal=!val;
                         if (noVal){
-                            val=v[x];
+                            val=exampleObj;
                         }
                         else{
-                            if (v[x].strict===false){
-                                return ;
+                            for(var y of exampleScalarProperties) {
+                                this.checkScalarProperty(exampleObj, x, y, registry,rs);
                             }
-                            if (v[x].strict&&typeof v[x].strict!="boolean"){
-                                var s= ts.error(messageRegistry.STRICT_BOOLEAN,this);
-                                s.setValidationPath({name: x, child: {name: "strict", child: {name: "strict"}}});
-                                return s;
+                            if (exampleObj.strict===false||(
+                                typeof(exampleObj.strict)=="object" && exampleObj.strict.value === false)){
+                                return ;
                             }
                         }
                         var example = parseExampleIfNeeded(val, this.owner());
@@ -427,16 +473,6 @@ export class Examples extends MetaInfo{
                             rs.addSubStatus(ex);
                             examplesPatchPath(ex,noVal,x)
                         });
-                        if (typeof v[x]=="object"&&v[x].value) {
-                            Object.keys(v[x]).forEach(key=> {
-                                if (key.charAt(0) == '(' && key.charAt(key.length - 1) == ')') {
-                                    var a = new Annotation(key.substring(1, key.length - 1), v[x][key]);
-                                    var aRes = a.validateSelf(registry,true);
-                                    examplesPatchPath(aRes,true,x);
-                                    rs.addSubStatus(aRes);
-                                }
-                            });
-                        }
                     }
                 });
             }
@@ -444,6 +480,45 @@ export class Examples extends MetaInfo{
         }
         else{
             return ts.error(messageRegistry.EXMAPLES_MAP,this);
+        }
+    }
+
+    private checkScalarProperty(
+        exampleObj:any,
+        exampleName:string,
+        y:any,
+        registry:ts.TypeRegistry,
+        status:Status) {
+        
+        var propName = y.propName;
+        var propType = y.propType;
+        var propObj = exampleObj[propName];
+
+        if (propObj && typeof propObj != propType) {
+            var vp:tsInterfaces.IValidationPath = null;
+            if (typeof(propObj) == "object") {
+                vp = {name: "value"};
+                Object.keys(propObj).forEach(key=> {
+                    if (key.charAt(0) == '(' && key.charAt(key.length - 1) == ')') {
+                        var a = new Annotation(key.substring(1, key.length - 1), exampleObj[propName][key]);
+                        var aRes = a.validateSelf(registry, true);
+                        aRes.setValidationPath(
+                            {
+                                name: "examples",
+                                child: {name: exampleName, child: {name: propName, child: {name: key}}}
+                            });
+                        status.addSubStatus(aRes);
+                    }
+                });
+            }
+            if (!propObj.value && typeof(propObj.value) != propType) {
+                var s = ts.error(y.messageEntry, this);
+                s.setValidationPath({
+                    name: "examples",
+                    child: {name: exampleName, child: {name: propName, child: vp}}
+                });
+                status.addSubStatus(s);
+            }
         }
     }
 

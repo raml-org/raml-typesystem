@@ -171,6 +171,14 @@
     "code" : "STRICT_BOOLEAN",
     "message": "'strict' should be boolean"
   },
+  "DISPLAY_NAME_STRING" : {
+    "code" : "DISPLAY_NAME_STRING",
+    "message": "'displayName' should be string"
+  },
+  "DESCRIPTION_STRING" : {
+    "code" : "DESCRIPTION_STRING",
+    "message": "'description' should be string"
+  },
   "INVALID_EXMAPLE" : {
     "code" : "INVALID_EXMAPLE",
     "message": "Using invalid 'example': {{msg}}"
