@@ -234,7 +234,7 @@ function scalarValue(obj:any,propName:string):any{
 }
 function scalarAnnotaitons(obj:any):meta.Annotation[]{
     var result:meta.Annotation[] = [];
-    if(!obj){
+    if(!obj || typeof(obj)!="object"){
         return result;
     }
     for(var aKey of Object.keys(obj).filter(
