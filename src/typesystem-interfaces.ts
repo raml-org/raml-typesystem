@@ -1,5 +1,5 @@
 export interface IValidationPath{
-    name: string
+    name: string|number
     child?:IValidationPath
 }
 
@@ -129,6 +129,27 @@ export interface ITypeFacet {
      * Returns kind of meta-information this instance represents.
      */
     kind() : MetaInformationKind
+
+    /**
+     * Annotations applied to the facet
+     */
+    annotations():IAnnotationInstance[]
+}
+
+/**
+ * Model of annotation instances applied to types or their facets
+ */
+export interface IAnnotationInstance extends ITypeFacet {
+
+    /**
+     * Returns owner facet for annotations applied to facets
+     */
+    ownerFacet():ITypeFacet
+
+    /**
+     * Returns owner type for annotations applied to types
+     */
+    owner():IParsedType
 }
 
 export interface IParsedTypeCollection {

@@ -624,6 +624,7 @@ export abstract class FacetRestriction<T> extends ts.Constraint{
 
     validateSelf(registry:ts.TypeRegistry):ts.Status{
         
+        var superStatus = super.validateSelf(registry);
         var ownerIsCorrect = false;
         if (this.checkOwner(this.requiredType())) {
             if (this.requiredTypes() && this.requiredTypes().length > 0) {
@@ -637,6 +638,7 @@ export abstract class FacetRestriction<T> extends ts.Constraint{
             }
         }
 
+        var rs:ts.Status;
         if (!ownerIsCorrect){
 
             var typeNames = this.requiredType().name();
@@ -649,15 +651,28 @@ export abstract class FacetRestriction<T> extends ts.Constraint{
                 typeNames: typeNames
             });
 
-            rs.setValidationPath({name:this.facetName()});
+        }
+        else {
+            rs = this.checkValue();
+        }
+        if (rs&&!rs.isOk()) {
+            rs.setValidationPath({name: this.facetName()});
             return rs;
         }
-        var rs=this.checkValue();
-        if (rs){
-            rs.setValidationPath({name:this.facetName()});
-            return rs;
+        var statuses = [superStatus,rs].filter(x=>x&&!x.isOk());
+        if(statuses.length==0) {
+            return ts.ok();
         }
-        return ts.ok();
+        else if(statuses.length==1){
+            return statuses[0];
+        }
+        else{
+            var result = ts.ok();
+            for(var status of statuses){
+                result.addSubStatus(status);
+            }
+            return result;
+        }
     }
 
 }
@@ -1029,6 +1044,9 @@ export class UniqueItems extends FacetRestriction<boolean>{
         return this._value;
     }
     checkValue():ts.Status{
+        if(typeof(this._value) != "boolean" ){
+            return ts.error(messageRegistry.UNIQUE_ITEMS_BOOLEAN,this);
+        }
         return null;
     }
     toString(){
@@ -1071,27 +1089,29 @@ export class ComponentShouldBeOfType extends FacetRestriction<ts.AbstractType>{
         return rs;
     }
     validateSelf(registry:ts.TypeRegistry):ts.Status {
+        var st = super.validateSelf(registry);
         if (this.type.isAnonymous()) {
-            var st = this.type.validateType(registry);
-            if (!st.isOk()) {
-                return ts.error(messageRegistry.INVALID_COMPONENT_TYPE,
-                    this,{msg: st.getMessage()});
+            var typeStatus = this.type.validateType(registry);
+            if (!typeStatus.isOk()) {
+                st.addSubStatus(ts.error(messageRegistry.INVALID_COMPONENT_TYPE,
+                    this,{msg: st.getMessage()}));
             }
             return st;
         }
         if (this.type.isExternal()){
-            return ts.error(messageRegistry.EXTERNAL_AS_COMPONENT,this);
+            st.addSubStatus(ts.error(messageRegistry.EXTERNAL_AS_COMPONENT,this));
         }
-        if (this.type.isSubTypeOf(ts.UNKNOWN) || this.type.isSubTypeOf(ts.RECURRENT)) {
-            return ts.error(messageRegistry.UNKNOWN_AS_COMPONENT,this,{ typeName: this.type.name()});
+        else if (this.type.isSubTypeOf(ts.UNKNOWN) || this.type.isSubTypeOf(ts.RECURRENT)) {
+            st.addSubStatus(ts.error(messageRegistry.UNKNOWN_AS_COMPONENT,this,{ typeName: this.type.name()}));
         }
-        if (this.type.isUnion()) {
+        else if (this.type.isUnion()) {
             var ui = _.find(this.type.typeFamily(), x=>x.isSubTypeOf(ts.UNKNOWN));
             if (ui) {
-                return ts.error(messageRegistry.UNKNOWN_AS_COMPONENT,this,{ typeName: ui.name()});
+                st.addSubStatus(
+                    ts.error(messageRegistry.UNKNOWN_AS_COMPONENT,this,{ typeName: ui.name()}));
             }
         }
-        return ts.ok();
+        return st;
     }
     composeWith(t:ts.Constraint):ts.Constraint{
         if (t instanceof ComponentShouldBeOfType){
