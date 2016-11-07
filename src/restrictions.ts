@@ -57,12 +57,12 @@ export abstract class MatchesProperty extends ts.Constraint{
                 if (t.isUnknown()|| t.isRecurrent()){
                     var s=ts.error(messageRegistry.VALIDATING_AGAINS_UNKNOWN,
                         this,{typeName:t.name()});
-                    s.setValidationPath(this.patchPath(q));
+                    ts.setValidationPath(s,this.patchPath(q));
                     return s;
                 }
                 var s=new Status(Status.OK,"","",this);
                 st.getErrors().forEach(x=>s.addSubStatus(x));
-                s.setValidationPath(this.patchPath(q));
+                ts.setValidationPath(s,this.patchPath(q));
                 return s;
             }
         return ts.ok();
@@ -74,7 +74,7 @@ export abstract class MatchesProperty extends ts.Constraint{
     validateSelf(registry:ts.TypeRegistry):ts.Status {
         if (this._type.isExternal()){
             var p=ts.error(messageRegistry.EXTERNAL_IN_PROPERTY_DEFINITION, this);
-            p.setValidationPath({name: this.propId()})
+            ts.setValidationPath(p,{name: this.propId()})
             return p;
         }
         if (this._type.isSubTypeOf(ts.UNKNOWN)||this._type.isSubTypeOf(ts.RECURRENT)){
@@ -83,7 +83,7 @@ export abstract class MatchesProperty extends ts.Constraint{
                 propName: this.propId(),
                 typeName: actualUnknown.name()
             });
-            p.setValidationPath({name: this.propId(), child: { name: "type"}})
+            ts.setValidationPath(p,{name: this.propId(), child: { name: "type"}})
             return p;
         }
         if (this._type.isAnonymous()){
@@ -95,7 +95,7 @@ export abstract class MatchesProperty extends ts.Constraint{
                 });
                 st.getErrors().forEach(y=>{p.addSubStatus(y)});
 
-                p.setValidationPath({name: this.propId()});
+                ts.setValidationPath(p,{name: this.propId()});
                 return p;
             }
             return st;
@@ -108,7 +108,7 @@ export abstract class MatchesProperty extends ts.Constraint{
                    propName: this.propId(),
                    typeName: ui.name()
                });
-               p.setValidationPath({name: this.propId()})
+               ts.setValidationPath(p,{name: this.propId()})
                return p;
            }
         }
@@ -218,7 +218,7 @@ export class KnownPropertyRestriction extends ts.Constraint{
                     var s=new ts.Status(ts.Status.OK,"","",this);
                     unknownPropertyNames.forEach(x=>{
                         var err=ts.error(messageRegistry.UNKNOWN_PROPERTY,this,{propName:x});
-                        err.setValidationPath({name:x});
+                        ts.setValidationPath(err,{name:x});
                         s.addSubStatus(err)}
                     );
                     return s;
@@ -656,7 +656,7 @@ export abstract class FacetRestriction<T> extends ts.Constraint{
             rs = this.checkValue();
         }
         if (rs&&!rs.isOk()) {
-            rs.setValidationPath({name: this.facetName()});
+            ts.setValidationPath(rs,{name: this.facetName()});
             return rs;
         }
         var statuses = [superStatus,rs].filter(x=>x&&!x.isOk());
@@ -1082,7 +1082,7 @@ export class ComponentShouldBeOfType extends FacetRestriction<ts.AbstractType>{
                         return s;
                     }
                 }
-                ss.setValidationPath({ name:""+j});
+                ts.setValidationPath(ss,{ name:""+j});
                 rs.addSubStatus(ss);
             }
         }

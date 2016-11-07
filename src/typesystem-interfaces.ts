@@ -22,7 +22,7 @@ export interface IStatus extends IHasExtra {
     
 
     /**
-     * retur2ns true if status does not have errors
+     * returns true if status does not have errors
      */
     isOk():boolean
 
@@ -35,9 +35,15 @@ export interface IStatus extends IHasExtra {
      */
     isError():boolean
     /**
+     * return true if this status is just information
+     */
+    isInfo():boolean
+    /**
      * returns human readable message associated with this status
      */
     getMessage():string
+
+    setMessage(m:string):void;
 
     /**
      * returns an array of nested statuses
@@ -56,6 +62,8 @@ export interface IStatus extends IHasExtra {
 
     getValidationPath():IValidationPath;
 
+    setValidationPath(p:IValidationPath):void;
+
     /**
      * returns path to this status
      */
@@ -65,6 +73,10 @@ export interface IStatus extends IHasExtra {
      * Unique identifier
      */
     getCode():string
+
+    setCode(c:string):void;
+
+    getSeverity(): number;
 }
 
 export enum MetaInformationKind {
@@ -356,31 +368,6 @@ export interface ITypeValidationPlugin {
     id():string;
 }
 
-/**
- * Model object providing both result of applying type validation
- * plugin and the plugin itself
- */
-export class TypeValidationPluginStatus{
-
-    constructor(private _status:IStatus, private _plugin:ITypeValidationPlugin){}
-
-    /**
-     * @returns ID of the validation plugin applied
-     */
-    pliginId(){
-        return this._plugin.id();
-    }
-
-    /**
-     * Status object produced by the plugin
-     */
-    status():IStatus{ return this._status; }
-
-    /**
-     * @returns the validation plugin applied
-     */
-    plugin():ITypeValidationPlugin{ return this._plugin; }
-}
 
 /**
  * Retrieve a list of registered type validation plugins
@@ -388,7 +375,7 @@ export class TypeValidationPluginStatus{
 export function getTypeValidationPlugins():ITypeValidationPlugin[]{
     var rv:any = (<any>global).ramlValidation;
     if(rv) {
-        var typeValidators = <ITypeValidationPlugin[]>rv.typeValidators;
+        var typeValidators = rv.typeValidators;
         if (Array.isArray(typeValidators)) {
             return <ITypeValidationPlugin[]>typeValidators;
         }
@@ -404,18 +391,17 @@ export function getTypeValidationPlugins():ITypeValidationPlugin[]{
  * @returns an array of {TypeValidationPluginStatus}
  */
 export function applyTypeValidationPlugins(
-    t:IParsedType,reg:ITypeRegistry, skipOk:boolean = true):TypeValidationPluginStatus[] {
+    t:IParsedType,reg:ITypeRegistry):IStatus[] {
 
-    var result:TypeValidationPluginStatus[] = [];
     var plugins = getTypeValidationPlugins();
+    var result:IStatus[] = [];
     for (var tv of plugins) {
         var statuses:IStatus[] = tv.validate(t,reg);
         if (statuses) {
             statuses.forEach(x=> {
-                if (skipOk && x.isOk()) {
-                    return;
+                if (!x.isOk()) {
+                    result.push(x);
                 }
-                result.push(new TypeValidationPluginStatus(x, tv));
             });
         }
     }
@@ -423,7 +409,7 @@ export function applyTypeValidationPlugins(
 }
 
 /**
- * Model of annotation instance
+ * Model of annotation instance used as input fo validation plugins
  */
 export interface IAnnotationInstance{
 
@@ -442,6 +428,24 @@ export interface IAnnotationInstance{
      */
     definition():IParsedType;
 }
+
+/**
+ * Model of annotation validator for typesystem
+ */
+export interface IAnnotationValidationPlugin {
+
+    /**
+     * validate annotated RAML element
+     */
+    processAnnotatedEntry(entry:IAnnotatedElement):IStatus[];
+
+    /**
+     * String ID of the plugin
+     */
+    id():string;
+
+}
+
 
 /**
  * A model of annotated RAML element used as input for
@@ -477,78 +481,44 @@ export interface IAnnotatedElement {
     /**
      * The element itself
      */
-    entry():any;    
-    
+    entry():any;
+
 }
 
 /**
- * A model of annotated RAML type facet
+ * Retrieve a list of registered type validation plugins
  */
-export class AnnotatedFacet implements IAnnotatedElement{
-    
-    kind():string{ return "AnnotatedFacet"; }
-
-    annotationsMap(): {[key:string]:IAnnotationInstance}{  return {}; }
-
-    annotations(): IAnnotationInstance[]{ return []; }
-
-    /**
-     * Value of the facet serialized to JSON
-     */
-    value():any{ return null; }
-
-    /**
-     * Facet name
-     */
-    name():string{ return null; }
-
-    /**
-     * The facet itself
-     */
-    entry():ITypeFacet{ return null; }
+export function getAnnotationValidationPlugins():IAnnotationValidationPlugin[]{
+    var rv:any = (<any>global).ramlValidation;
+    if(rv) {
+        var typeValidators = rv.annotationValidators;
+        if (Array.isArray(typeValidators)) {
+            return <IAnnotationValidationPlugin[]>typeValidators;
+        }
+    }
+    return [];
 }
 
 /**
- * A model of annotated RAML type
+ * Apply registered type validation plugins to the type
+ * @param t type to be validated
+ * @param reg context type registry
+ * @param skipOk whether to omit OK statuses
+ * @returns an array of {TypeValidationPluginStatus}
  */
-export class AnnotatedType implements IAnnotatedElement{
+export function applyAnnotationValidationPlugins(e:IAnnotatedElement):IStatus[] {
 
-    kind():string{ return "AnnotatedType"; }
-
-    annotationsMap(): {[key:string]:IAnnotationInstance}{  return {}; }
-
-    annotations(): IAnnotationInstance[]{ return []; }
-
-    /**
-     * JSON representation of the type
-     */
-    value():any{ return null; }
-
-    /**
-     * Type name
-     */
-    name():string{ return null; }
-
-    /**
-     * The type itself
-     * @returns {IParsedType}
-     */
-    entry():IParsedType{ return null; }
-}
-
-/**
- * Model of annotation validator for typesystem
- */
-export interface AnnotationValidationPlugin {
-
-    /**
-     * validate annotated RAML element
-     */
-    processAnnotatedEntry(entry:IAnnotatedElement):IStatus;
-
-    /**
-     * String ID of the plugin
-     */
-    id():string;
-
+    var plugins = getAnnotationValidationPlugins();
+    var result:IStatus[] = [];
+    for (var tv of plugins) {
+        var statuses:IStatus[] = tv.processAnnotatedEntry(e);
+        if (statuses) {
+            statuses.forEach(x=> {
+                if (!x.isOk()) {
+                    result.push(x);
+                }
+            });
+        }
+    }
+    return result;
 }

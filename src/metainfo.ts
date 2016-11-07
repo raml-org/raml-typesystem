@@ -116,7 +116,7 @@ export class Annotation extends MetaInfo implements tsInterfaces.IAnnotation{
             res.addSubStatus(valOwner);
             result.addSubStatus(res);
         }
-        result.setValidationPath({name:`(${this.facetName()})`});
+        ts.setValidationPath(result,{name:`(${this.facetName()})`});
         return result;
     }
 
@@ -227,7 +227,7 @@ export class Example extends MetaInfo{
         var status = ts.ok();
         status.addSubStatus(this.validateValue(registry));
         var aStatus = this.validateAnnotations(registry);
-        aStatus.setValidationPath({name:this.facetName()});
+        ts.setValidationPath(aStatus,{name:this.facetName()});
         status.addSubStatus(aStatus);
         return status;
     }
@@ -250,7 +250,7 @@ export class Example extends MetaInfo{
                                 if (key.charAt(0) == '(' && key.charAt(key.length - 1) == ')') {
                                     var a = new Annotation(key.substring(1, key.length - 1), propObj[key]);
                                     var aRes = a.validateSelf(registry, true);
-                                    aRes.setValidationPath({
+                                    ts.setValidationPath(aRes,{
                                             name: "example",
                                             child: {name: propName, child: {name: key}}
                                         });
@@ -262,7 +262,7 @@ export class Example extends MetaInfo{
                         if(!propObj.value&&typeof propObj.value!=propType) {
                             var s = ts.error(y.messageEntry, this);
                             var vp = propObj.value ? {name: "value"} : null;
-                            s.setValidationPath({name: "example", child: {name: propName, child: vp}});
+                            ts.setValidationPath(s,{name: "example", child: {name: propName, child: vp}});
                             result.addSubStatus(s);
                         }
                     }
@@ -279,7 +279,7 @@ export class Example extends MetaInfo{
         }
         var rr=parseExampleIfNeeded(val,this.owner());
         if (rr instanceof ts.Status && !rr.isOk()){
-            rr.setValidationPath({name: "example"});
+            ts.setValidationPath(rr,{name: "example"});
             result.addSubStatus(rr);
             return result;
         }
@@ -291,10 +291,10 @@ export class Example extends MetaInfo{
             var c = ts.error(messageRegistry.INVALID_EXMAPLE, this, { msg : valOwner.getMessage() });
             valOwner.getErrors().forEach(x=>{c.addSubStatus(x);
                 if (isVal) {
-                    x.setValidationPath({name: "example", child: {name: "value"}});
+                    ts.setValidationPath(x,{name: "example", child: {name: "value"}});
                 }
                 else{
-                    x.setValidationPath({name: "example"});
+                    ts.setValidationPath(x,{name: "example"});
                 }
             });
 
@@ -357,7 +357,7 @@ export class Required extends MetaInfo{
         var result = super.validateSelf(registry);
         if (typeof this.value()!=="boolean"){
             result =  ts.error(messageRegistry.REQUIRED_BOOLEAN,this);
-            result.setValidationPath({name:this.facetName()});
+            ts.setValidationPath(result,{name:this.facetName()});
         }
         return result;
     }
@@ -442,7 +442,7 @@ export class Examples extends MetaInfo{
                                 if (key.charAt(0) == '(' && key.charAt(key.length - 1) == ')') {
                                     var a = new Annotation(key.substring(1, key.length - 1), v[x][key]);
                                     var aRes = a.validateSelf(registry,true);
-                                    aRes.setValidationPath(
+                                    ts.setValidationPath(aRes,
                                         {name:"examples",child:{name: x, child: {name: key}}});
                                     rs.addSubStatus(aRes);
                                 }
@@ -502,7 +502,7 @@ export class Examples extends MetaInfo{
                     if (key.charAt(0) == '(' && key.charAt(key.length - 1) == ')') {
                         var a = new Annotation(key.substring(1, key.length - 1), exampleObj[propName][key]);
                         var aRes = a.validateSelf(registry, true);
-                        aRes.setValidationPath(
+                        ts.setValidationPath(aRes,
                             {
                                 name: "examples",
                                 child: {name: exampleName, child: {name: propName, child: {name: key}}}
@@ -513,7 +513,7 @@ export class Examples extends MetaInfo{
             }
             if (!propObj.value && typeof(propObj.value) != propType) {
                 var s = ts.error(y.messageEntry, this);
-                s.setValidationPath({
+                ts.setValidationPath(s,{
                     name: "examples",
                     child: {name: exampleName, child: {name: propName, child: vp}}
                 });
@@ -526,12 +526,12 @@ export class Examples extends MetaInfo{
         return tsInterfaces.MetaInformationKind.Examples;
     }
 }
-function examplesPatchPath(example:ts.Status,noVal:boolean,x: string):void{
+function examplesPatchPath(example:tsInterfaces.IStatus,noVal:boolean,x: string):void{
     if (noVal){
-        example.setValidationPath({ name: "examples",child:{name: x}});
+        ts.setValidationPath(example,{ name: "examples",child:{name: x}});
     }
     else {
-        example.setValidationPath({ name: "examples",child:{name: x, child: {name: "value"}}});
+        ts.setValidationPath(example,{ name: "examples",child:{name: x, child: {name: "value"}}});
     }
 }
 
@@ -556,7 +556,7 @@ export class Default extends MetaInfo{
         var valOwner=this.owner().validateDirect(this.value(),true);
         if (!valOwner.isOk()){
             result =  ts.error(messageRegistry.INVALID_DEFAULT_VALUE, this , { msg : valOwner.getMessage() });
-            result.setValidationPath({name:this.facetName()});
+            ts.setValidationPath(result,{name:this.facetName()});
         }
         return result;
     }
@@ -602,7 +602,7 @@ export class Discriminator extends ts.TypeInformation{
             }
         }
         if(!result.getValidationPath()) {
-            result.setValidationPath({name: this.facetName()});
+            ts.setValidationPath(result,{name: this.facetName()});
         }
         return result;
     }
@@ -642,7 +642,7 @@ export class DiscriminatorValue extends ts.Constraint{
                         propName: dName
                     }, Status.WARNING );
                     //var wrng = new Status(Status.WARNING, Status.CODE_INCORRECT_DISCRIMINATOR, dVal, this);
-                    wrng.setValidationPath({name: dName, child: path});
+                    ts.setValidationPath(wrng,{name: dName, child: path});
                     return wrng;
                 }
                 return ts.ok();
@@ -653,7 +653,7 @@ export class DiscriminatorValue extends ts.Constraint{
                     propName: dName
                 });
                 //var err = new Status(Status.ERROR, Status.CODE_MISSING_DISCRIMINATOR, dVal, this);
-                err.setValidationPath(path);
+                ts.setValidationPath(err,path);
                 return err;
             }
         }
@@ -686,7 +686,7 @@ export class DiscriminatorValue extends ts.Constraint{
             }
         }
         if(!st.getValidationPath()) {
-            st.setValidationPath({name: this.facetName()});
+            ts.setValidationPath(st,{name: this.facetName()});
         }
         return st;
     }
