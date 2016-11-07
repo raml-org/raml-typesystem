@@ -1,5 +1,5 @@
 export interface IValidationPath{
-    name: string
+    name: string|number
     child?:IValidationPath
 }
 
@@ -60,6 +60,11 @@ export interface IStatus extends IHasExtra {
      * returns path to this status
      */
     getValidationPathAsString():string;
+
+    /**
+     * Unique identifier
+     */
+    getCode():string
 }
 
 export enum MetaInformationKind {
@@ -124,6 +129,27 @@ export interface ITypeFacet {
      * Returns kind of meta-information this instance represents.
      */
     kind() : MetaInformationKind
+
+    /**
+     * Annotations applied to the facet
+     */
+    annotations():IAnnotation[]
+}
+
+/**
+ * Model of annotation instances applied to types or their facets
+ */
+export interface IAnnotation extends ITypeFacet {
+
+    /**
+     * Returns owner facet for annotations applied to facets
+     */
+    ownerFacet():ITypeFacet
+
+    /**
+     * Returns owner type for annotations applied to types
+     */
+    owner():IParsedType
 }
 
 export interface IParsedTypeCollection {

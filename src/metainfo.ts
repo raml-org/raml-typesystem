@@ -1,5 +1,6 @@
 /// <reference path="../typings/main.d.ts" />
-import ts=require("./typesystem")
+import ts=require("./typesystem");
+var messageRegistry = ts.messageRegistry;
 import {Status} from "./typesystem";
 import {PropertyIs} from "./restrictions";
 import _=require("underscore")
@@ -70,16 +71,18 @@ export class Usage extends MetaInfo{
         return tsInterfaces.MetaInformationKind.Usage;
     }
 }
-export class Annotation extends MetaInfo{
+export class Annotation extends MetaInfo implements tsInterfaces.IAnnotation{
 
     constructor(name: string,value:any){
         super(name,value)
     }
 
+    private _ownerFacet:tsInterfaces.ITypeFacet;
+
     validateSelf(registry:ts.TypeRegistry,ofExample:boolean=false):ts.Status {
         var tp=registry.get(this.facetName());
         if (!tp){
-            return new Status(Status.ERROR,0,`Using unknown annotation type: '${this.facetName()}'`,this);
+            return ts.error(messageRegistry.UNKNOWN_ANNOTATION,this,{facetName: this.facetName()});
         }
         var result = ts.ok();
         var q=this.value();
@@ -103,14 +106,13 @@ export class Annotation extends MetaInfo{
             });
             if (at.length == 0) {
                 var list = arr.map(x=>`'${x}'`).join(", ");
-                var msg = `Annotation '${super.facetName()}' can not be placed at this location, allowed targets are: ${list}`;
-                var targetStatus = new Status(Status.ERROR, 0, msg, this);                
+                var targetStatus = ts.error(messageRegistry.INVALID_ANNOTATION_LOCATION, this, { aName: super.facetName(), aValues: list });                
                 result.addSubStatus(targetStatus);
             }
         }
         var valOwner=tp.validateDirect(q,true,false);
         if (!valOwner.isOk()){
-            var res=new Status(Status.OK,0,"Invalid annotation value "+valOwner.getMessage(),this);
+            var res = ts.error(messageRegistry.INVALID_ANNOTATION_VALUE, this, { msg: valOwner.getMessage() });
             res.addSubStatus(valOwner);
             result.addSubStatus(res);
         }
@@ -120,6 +122,14 @@ export class Annotation extends MetaInfo{
 
     kind() : tsInterfaces.MetaInformationKind {
         return tsInterfaces.MetaInformationKind.Annotation;
+    }
+
+    ownerFacet(){
+        return this._ownerFacet;
+    }
+
+    setOwnerFacet(ownerFacet:tsInterfaces.ITypeFacet){
+        this._ownerFacet = ownerFacet;
     }
 }
 export class FacetDeclaration extends MetaInfo{
@@ -170,7 +180,7 @@ function parseExampleIfNeeded(val:any,type:ts.AbstractType):any{
                     return JSON.parse(exampleString);
                 } catch (e) {
                     if (type.isObject()||type.isArray()){
-                        var c= new Status(Status.ERROR,0,"Can not parse JSON example: "+e.message,this);
+                        var c = ts.error(messageRegistry.CAN_NOT_PARSE_JSON, this, { msg: e.message });
                         return c;
                     }
                 }
@@ -182,7 +192,7 @@ function parseExampleIfNeeded(val:any,type:ts.AbstractType):any{
                     var errors: Status[] = xmlio.getXmlErrors(jsonFromXml);
 
                     if(errors) {
-                        var error = new Status(Status.ERROR, 0, 'Invalid XML.', {});
+                        var error = ts.error(messageRegistry.INVALID_XML, null);
 
                         errors.forEach(child => error.addSubStatus(child));
                         
@@ -201,6 +211,13 @@ function parseExampleIfNeeded(val:any,type:ts.AbstractType):any{
     }
     return val;
 }
+
+var exampleScalarProperties = [
+    {propName: "strict", propType: "boolean", messageEntry:messageRegistry.STRICT_BOOLEAN},
+    {propName: "displayName", propType: "string", messageEntry:messageRegistry.DISPLAY_NAME_STRING},
+    {propName: "description", propType: "string", messageEntry:messageRegistry.DESCRIPTION_STRING}
+];
+
 export class Example extends MetaInfo{
     constructor(value:any){
         super("example",value)
@@ -218,15 +235,42 @@ export class Example extends MetaInfo{
     validateValue(registry:ts.TypeRegistry):ts.Status {
         var val=this.value();
         var isVal=false;
+        var result = ts.ok();
         if (typeof val==="object"&&val){
             if (val.value){
-                if (val.strict===false){
-                    return ts.ok();
+                
+
+                for(var y of exampleScalarProperties) {
+                    var propName = y.propName;
+                    var propType = y.propType;
+                    var propObj = val[propName];
+                    if (propObj&&typeof propObj!=propType){
+                        if(typeof(propObj)=="object") {
+                            Object.keys(propObj).forEach(key=> {
+                                if (key.charAt(0) == '(' && key.charAt(key.length - 1) == ')') {
+                                    var a = new Annotation(key.substring(1, key.length - 1), propObj[key]);
+                                    var aRes = a.validateSelf(registry, true);
+                                    aRes.setValidationPath({
+                                            name: "example",
+                                            child: {name: propName, child: {name: key}}
+                                        });
+                                    result.addSubStatus(aRes);
+                                }
+                            });
+                        }
+
+                        if(!propObj.value&&typeof propObj.value!=propType) {
+                            var s = ts.error(y.messageEntry, this);
+                            var vp = propObj.value ? {name: "value"} : null;
+                            s.setValidationPath({name: "example", child: {name: propName, child: vp}});
+                            result.addSubStatus(s);
+                        }
+                    }
+                    
                 }
-                if (val.strict&&typeof val.strict!="boolean"){
-                    var s= new Status(Status.ERROR,0,"'strict' should be boolean",this);
-                    s.setValidationPath({name: "example", child: {name: "strict"}})
-                    return s;
+                
+                if (val.strict===false||(typeof(val.strict)=="object"&&val.strict.value===false)){
+                    return result;
                 }
                 val=val.value;
                 isVal=true;
@@ -234,16 +278,17 @@ export class Example extends MetaInfo{
             }
         }
         var rr=parseExampleIfNeeded(val,this.owner());
-        if (rr instanceof ts.Status){
-            rr.setValidationPath({name: "example"})
-            return rr;
+        if (rr instanceof ts.Status && !rr.isOk()){
+            rr.setValidationPath({name: "example"});
+            result.addSubStatus(rr);
+            return result;
         }
         var valOwner=this.owner().validateDirect(rr,true,false);
         if (!valOwner.isOk()){
             if (typeof this.value()==="string"){
 
             }
-            var c= new Status(Status.ERROR,0,"Using invalid 'example': "+valOwner.getMessage(),this);
+            var c = ts.error(messageRegistry.INVALID_EXMAPLE, this, { msg : valOwner.getMessage() });
             valOwner.getErrors().forEach(x=>{c.addSubStatus(x);
                 if (isVal) {
                     x.setValidationPath({name: "example", child: {name: "value"}});
@@ -253,9 +298,9 @@ export class Example extends MetaInfo{
                 }
             });
 
-            return c;
+            result.addSubStatus(c);
         }
-        return ts.ok();
+        return result;
     }
 
     validateAnnotations(registry:ts.TypeRegistry):ts.Status {
@@ -309,10 +354,12 @@ export class Required extends MetaInfo{
     }
 
     validateSelf(registry:ts.TypeRegistry):ts.Status {
+        var result = super.validateSelf(registry);
         if (typeof this.value()!=="boolean"){
-            return new Status(Status.ERROR,0,"Value of required facet should be boolean",this);
+            result =  ts.error(messageRegistry.REQUIRED_BOOLEAN,this);
+            result.setValidationPath({name:this.facetName()});
         }
-        return ts.ok();
+        return result;
     }
 
     kind() : tsInterfaces.MetaInformationKind {
@@ -325,10 +372,6 @@ export class HasPropertiesFacet extends MetaInfo{
         super("hasPropertiesFacet",null);
     }
 
-    validateSelf(registry:ts.TypeRegistry):ts.Status {
-        return ts.ok();
-    }
-
     kind() : tsInterfaces.MetaInformationKind {
         return tsInterfaces.MetaInformationKind.HasPropertiesFacet;
     }
@@ -336,11 +379,6 @@ export class HasPropertiesFacet extends MetaInfo{
 export class AllowedTargets extends MetaInfo{
     constructor(value:any){
         super("allowedTargets",value)
-    }
-
-    validateSelf(registry:ts.TypeRegistry):ts.Status {
-
-        return ts.ok();
     }
 
     kind() : tsInterfaces.MetaInformationKind {
@@ -393,24 +431,35 @@ export class Examples extends MetaInfo{
 
     validateSelf(registry:ts.TypeRegistry):ts.Status {
         if (typeof this.value()==='object'){
-            var rs=new Status(Status.OK,0,"",this);
+            var rs=new Status(Status.OK,"","",this);
             var v=this.value();
             if (v) {
                 Object.keys(v).forEach(x=> {
-                    if (v[x]) {
-                        var val=v[x].value;
+                    var exampleObj = v[x];
+                    if (exampleObj) {
+                        if (typeof exampleObj=="object"&&exampleObj.value) {
+                            Object.keys(exampleObj).forEach(key=> {
+                                if (key.charAt(0) == '(' && key.charAt(key.length - 1) == ')') {
+                                    var a = new Annotation(key.substring(1, key.length - 1), v[x][key]);
+                                    var aRes = a.validateSelf(registry,true);
+                                    aRes.setValidationPath(
+                                        {name:"examples",child:{name: x, child: {name: key}}});
+                                    rs.addSubStatus(aRes);
+                                }
+                            });
+                        }
+                        var val=exampleObj.value;
                         var noVal=!val;
                         if (noVal){
-                            val=v[x];
+                            val=exampleObj;
                         }
                         else{
-                            if (v[x].strict===false){
-                                return ;
+                            for(var y of exampleScalarProperties) {
+                                this.checkScalarProperty(exampleObj, x, y, registry,rs);
                             }
-                            if (v[x].strict&&typeof v[x].strict!="boolean"){
-                                var s= new Status(Status.ERROR,0,"'strict' should be boolean",this);
-                                s.setValidationPath({name: x, child: {name: "strict", child: {name: "strict"}}});
-                                return s;
+                            if (exampleObj.strict===false||(
+                                typeof(exampleObj.strict)=="object" && exampleObj.strict.value === false)){
+                                return ;
                             }
                         }
                         var example = parseExampleIfNeeded(val, this.owner());
@@ -424,23 +473,52 @@ export class Examples extends MetaInfo{
                             rs.addSubStatus(ex);
                             examplesPatchPath(ex,noVal,x)
                         });
-                        if (typeof v[x]=="object"&&v[x].value) {
-                            Object.keys(v[x]).forEach(key=> {
-                                if (key.charAt(0) == '(' && key.charAt(key.length - 1) == ')') {
-                                    var a = new Annotation(key.substring(1, key.length - 1), v[x][key]);
-                                    var aRes = a.validateSelf(registry,true);
-                                    examplesPatchPath(aRes,true,x);
-                                    rs.addSubStatus(aRes);
-                                }
-                            });
-                        }
                     }
                 });
             }
             return rs;
         }
         else{
-            return new Status(Status.ERROR,0,"'examples' value should be a map",this);
+            return ts.error(messageRegistry.EXMAPLES_MAP,this);
+        }
+    }
+
+    private checkScalarProperty(
+        exampleObj:any,
+        exampleName:string,
+        y:any,
+        registry:ts.TypeRegistry,
+        status:Status) {
+        
+        var propName = y.propName;
+        var propType = y.propType;
+        var propObj = exampleObj[propName];
+
+        if (propObj && typeof propObj != propType) {
+            var vp:tsInterfaces.IValidationPath = null;
+            if (typeof(propObj) == "object") {
+                vp = {name: "value"};
+                Object.keys(propObj).forEach(key=> {
+                    if (key.charAt(0) == '(' && key.charAt(key.length - 1) == ')') {
+                        var a = new Annotation(key.substring(1, key.length - 1), exampleObj[propName][key]);
+                        var aRes = a.validateSelf(registry, true);
+                        aRes.setValidationPath(
+                            {
+                                name: "examples",
+                                child: {name: exampleName, child: {name: propName, child: {name: key}}}
+                            });
+                        status.addSubStatus(aRes);
+                    }
+                });
+            }
+            if (!propObj.value && typeof(propObj.value) != propType) {
+                var s = ts.error(y.messageEntry, this);
+                s.setValidationPath({
+                    name: "examples",
+                    child: {name: exampleName, child: {name: propName, child: vp}}
+                });
+                status.addSubStatus(s);
+            }
         }
     }
 
@@ -474,11 +552,13 @@ export class Default extends MetaInfo{
     }
 
     validateSelf(registry:ts.TypeRegistry):ts.Status {
+        var result = super.validateSelf(registry);
         var valOwner=this.owner().validateDirect(this.value(),true);
         if (!valOwner.isOk()){
-            return new Status(Status.ERROR,0,"Using invalid 'defaultValue': "+valOwner.getMessage(),this);
+            result =  ts.error(messageRegistry.INVALID_DEFAULT_VALUE, this , { msg : valOwner.getMessage() });
+            result.setValidationPath({name:this.facetName()});
         }
-        return ts.ok();
+        return result;
     }
 
     kind() : tsInterfaces.MetaInformationKind {
@@ -501,26 +581,29 @@ export class Discriminator extends ts.TypeInformation{
     facetName(){return "discriminator"}
 
     validateSelf(registry:ts.TypeRegistry):ts.Status {
-        var result = ts.ok();
+        var result = super.validateSelf(registry);
         if (this.owner().isUnion()){
-            result = new Status(Status.ERROR,0,"You can not specify 'discriminator' for union types",this)
+            result = ts.error(messageRegistry.DISCRIMINATOR_FOR_UNION, this);
         }
         else if (!this.owner().isSubTypeOf(ts.OBJECT)){
-            result = new Status(Status.ERROR,0,"You only can use 'discriminator' with object types",this);
+            result = ts.error(messageRegistry.DISCRIMINATOR_FOR_OBJECT, this)
         }
         else if (this.owner().getExtra(ts.GLOBAL)===false){
-            result = new Status(Status.ERROR,0,"You can not specify 'discriminator' for inline type declarations",this)
+            result = ts.error(messageRegistry.DISCRIMINATOR_FOR_INLINE, this)
         }
         else {
             var prop = _.find(this.owner().meta(), x=>x instanceof PropertyIs && (<PropertyIs>x).propertyName() == this.value());
             if (!prop) {
-                result = new Status(Status.ERROR, 0, "Using unknown property '" + this.value() + "' as discriminator", this, true);
+                result = ts.error(messageRegistry.UNKNOWN_FOR_DISCRIMINATOR,
+                    this, {value: this.value()}, ts.Status.WARNING);
             }
             else if (!prop.value().isScalar()) {
-                result = new Status(Status.ERROR, 0, "It is only allowed to use scalar properties as discriminators", this);
+                result = ts.error(messageRegistry.SCALAR_FOR_DISCRIMINATOR, this);
             }
         }
-        result.setValidationPath({name:this.facetName()});
+        if(!result.getValidationPath()) {
+            result.setValidationPath({name: this.facetName()});
+        }
         return result;
     }
 
@@ -553,8 +636,11 @@ export class DiscriminatorValue extends ts.Constraint{
             if (i.hasOwnProperty(dName)) {
                 var adVal = i[dName];
                 if (adVal != dVal) {
-                    var wrng = new Status(Status.WARNING, Status.CODE_INCORRECT_DISCRIMINATOR,
-                        `None of the '${owner.name()}' type known subtypes declare '${adVal}' as value of discriminating property '${dName}'.`, this);
+                    var wrng = ts.error(Status.CODE_INCORRECT_DISCRIMINATOR, this, {
+                        rootType : owner.name(),
+                        value: adVal,
+                        propName: dName
+                    }, Status.WARNING );
                     //var wrng = new Status(Status.WARNING, Status.CODE_INCORRECT_DISCRIMINATOR, dVal, this);
                     wrng.setValidationPath({name: dName, child: path});
                     return wrng;
@@ -562,8 +648,10 @@ export class DiscriminatorValue extends ts.Constraint{
                 return ts.ok();
             }
             else {
-                var err = new Status(Status.ERROR, Status.CODE_MISSING_DISCRIMINATOR,
-                    `Instance of '${owner.name()}' subtype misses value of the discriminating property '${dName}'.`, this);
+                var err = ts.error(Status.CODE_MISSING_DISCRIMINATOR, this, {
+                    rootType: owner.name(),
+                    propName: dName
+                });
                 //var err = new Status(Status.ERROR, Status.CODE_MISSING_DISCRIMINATOR, dVal, this);
                 err.setValidationPath(path);
                 return err;
@@ -573,27 +661,34 @@ export class DiscriminatorValue extends ts.Constraint{
     facetName(){return "discriminatorValue"}
 
     validateSelf(registry:ts.TypeRegistry):ts.Status {
-        if(!this.strict){
-            return ts.ok();
-        }
-        if (!this.owner().isSubTypeOf(ts.OBJECT)){
-            return new Status(Status.ERROR,0,"You only can use 'discriminator' with object types",this)
-        }
-        if (this.owner().getExtra(ts.GLOBAL)===false){
-            return new Status(Status.ERROR,0,"You only can use 'discriminator' with top level type definitions",this)
-        }
-        var ds=this.owner().oneMeta(Discriminator);
-        if (!ds){
-            return new Status(Status.ERROR,0,"You can not use 'discriminatorValue' without declaring 'discriminator'",this)
-        }
-        var prop=_.find(this.owner().meta(),x=>x instanceof PropertyIs&& (<PropertyIs>x).propertyName()==ds.value());
-        if (prop){
-            var sm=prop.value().validate(this.value());
-            if (!sm.isOk()){
-                return new Status(Status.ERROR,0,"Using invalid 'disciminatorValue': "+sm.getMessage(),this);
+        var st = super.validateSelf(registry);
+        if(this.strict) {
+            var ds = this.owner().oneMeta(Discriminator);
+            if (!this.owner().isSubTypeOf(ts.OBJECT)) {
+                st.addSubStatus(ts.error(messageRegistry.DISCRIMINATOR_FOR_OBJECT, this));
+            }
+            else if (this.owner().getExtra(ts.GLOBAL) === false) {
+                st.addSubStatus(ts.error(messageRegistry.DISCRIMINATOR_FOR_INLINE, this));
+            }
+            else if (!ds) {
+                st.addSubStatus(ts.error(messageRegistry.DISCRIMINATOR_VALUE_WITHOUT_DISCRIMINATOR, this));
+            }
+            else {
+                var prop = _.find(this.owner().meta(), x=>
+                x instanceof PropertyIs && (<PropertyIs>x).propertyName() == ds.value());
+                if (prop) {
+                    var sm = prop.value().validate(this.value());
+                    if (!sm.isOk()) {
+                        st.addSubStatus(ts.error(messageRegistry.INVALID_DISCRIMINATOR_VALUE,
+                            this, {msg: sm.getMessage()}));
+                    }
+                }
             }
         }
-        return ts.ok();
+        if(!st.getValidationPath()) {
+            st.setValidationPath({name: this.facetName()});
+        }
+        return st;
     }
 
     requiredType(){
