@@ -776,7 +776,7 @@ export function parse(
             shAndType=true;
         }
     }
-    var typePropAnnotations:tsInterfaces.IAnnotationInstance[][] = [];
+    var typePropAnnotations:tsInterfaces.IAnnotation[][] = [];
     if (!tp||ignoreTypeAttr){
         if (defaultsToAny){
             if (n.childWithKey("properties")) {
@@ -854,7 +854,7 @@ export function parse(
     }
     var result=ts.derive(name,superTypes);
     for(var i = 0 ; i < typePropAnnotations.length ; i++){
-        var aArr1:tsInterfaces.IAnnotationInstance[] = typePropAnnotations[i];
+        var aArr1:tsInterfaces.IAnnotation[] = typePropAnnotations[i];
         result.addSupertypeAnnotation(aArr1,i);
     }
     if (r instanceof AccumulatingRegistry){

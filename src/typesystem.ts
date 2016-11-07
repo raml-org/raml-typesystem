@@ -230,7 +230,7 @@ export abstract class TypeInformation implements tsInterfaces.ITypeFacet {
 
     _node:ParseNode;
     
-    _annotations:tsInterfaces.IAnnotationInstance[] = [];
+    _annotations:tsInterfaces.IAnnotation[] = [];
 
     node(){
         return this._node;
@@ -276,11 +276,11 @@ export abstract class TypeInformation implements tsInterfaces.ITypeFacet {
 
     abstract kind() : tsInterfaces.MetaInformationKind
 
-    annotations():tsInterfaces.IAnnotationInstance[]{
+    annotations():tsInterfaces.IAnnotation[]{
         return this._annotations;
     }
     
-    addAnnotation(a:tsInterfaces.IAnnotationInstance){
+    addAnnotation(a:tsInterfaces.IAnnotation){
         this._annotations.push(a);
     }
 }
@@ -590,7 +590,7 @@ export abstract class AbstractType implements tsInterfaces.IParsedType, tsInterf
 
     protected extras:{ [name:string]:any}={};
 
-    protected supertypeAnnotations:{[aName:string]:tsInterfaces.IAnnotationInstance}[];
+    protected supertypeAnnotations:{[aName:string]:tsInterfaces.IAnnotation}[];
 
     getExtra(name:string):any{
         return this.extras[name];
@@ -664,7 +664,7 @@ export abstract class AbstractType implements tsInterfaces.IParsedType, tsInterf
         return [];
     }
     
-    addSupertypeAnnotation(arr:tsInterfaces.IAnnotationInstance[],ind:number){
+    addSupertypeAnnotation(arr:tsInterfaces.IAnnotation[], ind:number){
         if(!arr||arr.length==0){
             return;
         }

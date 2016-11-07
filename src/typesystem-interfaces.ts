@@ -133,13 +133,13 @@ export interface ITypeFacet {
     /**
      * Annotations applied to the facet
      */
-    annotations():IAnnotationInstance[]
+    annotations():IAnnotation[]
 }
 
 /**
  * Model of annotation instances applied to types or their facets
  */
-export interface IAnnotationInstance extends ITypeFacet {
+export interface IAnnotation extends ITypeFacet {
 
     /**
      * Returns owner facet for annotations applied to facets

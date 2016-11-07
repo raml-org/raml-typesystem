@@ -71,7 +71,7 @@ export class Usage extends MetaInfo{
         return tsInterfaces.MetaInformationKind.Usage;
     }
 }
-export class Annotation extends MetaInfo implements tsInterfaces.IAnnotationInstance{
+export class Annotation extends MetaInfo implements tsInterfaces.IAnnotation{
 
     constructor(name: string,value:any){
         super(name,value)
