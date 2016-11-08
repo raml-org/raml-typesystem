@@ -230,7 +230,7 @@ export abstract class TypeInformation implements tsInterfaces.ITypeFacet {
             }
         }
         var facetEntry = new AnnotatedFacet(this,registry);
-        var aPluginStatuses = tsInterfaces.applyAnnotationValidationPlugins(facetEntry);
+        var aPluginStatuses = applyAnnotationValidationPlugins(facetEntry);
         for(var ps of aPluginStatuses){
             result.addSubStatus(ps);
         }
@@ -763,12 +763,12 @@ export abstract class AbstractType implements tsInterfaces.IParsedType, tsInterf
                 }
             }
         }
-        var pluginStatuses = tsInterfaces.applyTypeValidationPlugins(this,tr);
+        var pluginStatuses = applyTypeValidationPlugins(this,tr);
         for(var ps of pluginStatuses){
             rs.addSubStatus(ps);
         }
         var typeEntry = new AnnotatedType(this,tr);
-        var aPluginStatuses = tsInterfaces.applyAnnotationValidationPlugins(typeEntry);
+        var aPluginStatuses = applyAnnotationValidationPlugins(typeEntry);
         for(var ps of aPluginStatuses){
             rs.addSubStatus(ps);
         }
@@ -2500,7 +2500,14 @@ export class AnnotatedType implements tsInterfaces.IAnnotatedElement{
     annotationsMap(): {[key:string]:tsInterfaces.IAnnotationInstance}{
         if(!this._annotationsMap){
             this._annotationsMap = {};
-            this.annotations().forEach(x=>this._annotationsMap[x.name()]=x);
+            this.annotations().forEach(x=>{
+                var n = x.name();
+                var ind = n.lastIndexOf(".");
+                if(ind>=0){
+                    n = n.substring(ind+1);
+                }
+                this._annotationsMap[n]=x
+            });
         }
         return this._annotationsMap;
     }
@@ -2560,4 +2567,60 @@ export class AnnotationInstance implements tsInterfaces.IAnnotationInstance{
     annotation():tsInterfaces.IAnnotation{
         return this.actual;
     }
+}
+
+
+/**
+ * Apply registered type validation plugins to the type
+ * @param t type to be validated
+ * @param reg context type registry
+ * @param skipOk whether to omit OK issues
+ * @returns an array of {tsInterfaces.IStatus}
+ */
+export function applyAnnotationValidationPlugins(e:tsInterfaces.IAnnotatedElement):Status[] {
+
+    var plugins = tsInterfaces.getAnnotationValidationPlugins();
+    var result:Status[] = [];
+    for (var tv of plugins) {
+        var issues:tsInterfaces.PluginValidationIssue[] = tv.process(e);
+        if (issues) {
+            issues.forEach(x=> {
+                result.push(toStatus(x,tv.id(),e.entry()));
+            });
+        }
+    }
+    return result;
+}
+
+
+/**
+ * Apply registered type validation plugins to the type
+ * @param t type to be validated
+ * @param reg context type registry
+ * @param skipOk whether to omit OK issues
+ * @returns an array of {tsInterfaces.IStatus}
+ */
+export function applyTypeValidationPlugins(
+    t:tsInterfaces.IParsedType,reg:tsInterfaces.ITypeRegistry):Status[] {
+
+    var plugins = tsInterfaces.getTypeValidationPlugins();
+    var result:Status[] = [];
+    for (var tv of plugins) {
+        var issues:tsInterfaces.PluginValidationIssue[] = tv.process(t,reg);
+        if (issues) {
+            issues.forEach(x=> {
+                result.push(toStatus(x,tv.id(),t));
+            });
+        }
+    }
+    return result;
+}
+
+function toStatus(pvi:tsInterfaces.PluginValidationIssue,pluginId:string,src:any):Status{
+    var severity = pvi.isWarning ? Status.WARNING : Status.ERROR;
+    var issueCode = pvi.issueCode || pluginId;
+    var message = pvi.message || `The ${pluginId} plugin reports an error`;
+    var status = new Status(severity,issueCode,message,src);
+    status.setValidationPath(pvi.path);
+    return status;
 }

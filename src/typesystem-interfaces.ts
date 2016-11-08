@@ -360,7 +360,7 @@ export interface ITypeValidationPlugin {
      * @param t the type to be validated
      * @param reg context type registry
      */
-    validate(t:IParsedType,reg:ITypeRegistry):IStatus[];
+    process(t:IParsedType, reg:ITypeRegistry):PluginValidationIssue[];
 
     /**
      * String ID of the plugin
@@ -384,31 +384,6 @@ export function getTypeValidationPlugins():ITypeValidationPlugin[]{
 }
 
 /**
- * Apply registered type validation plugins to the type
- * @param t type to be validated
- * @param reg context type registry
- * @param skipOk whether to omit OK statuses
- * @returns an array of {TypeValidationPluginStatus}
- */
-export function applyTypeValidationPlugins(
-    t:IParsedType,reg:ITypeRegistry):IStatus[] {
-
-    var plugins = getTypeValidationPlugins();
-    var result:IStatus[] = [];
-    for (var tv of plugins) {
-        var statuses:IStatus[] = tv.validate(t,reg);
-        if (statuses) {
-            statuses.forEach(x=> {
-                if (!x.isOk()) {
-                    result.push(x);
-                }
-            });
-        }
-    }
-    return result;
-}
-
-/**
  * Model of annotation instance used as input fo validation plugins
  */
 export interface IAnnotationInstance{
@@ -429,6 +404,14 @@ export interface IAnnotationInstance{
     definition():IParsedType;
 }
 
+export interface PluginValidationIssue{
+
+    issueCode?:string,
+    message?:string,
+    isWarning?:boolean
+    path?:IValidationPath
+}
+
 /**
  * Model of annotation validator for typesystem
  */
@@ -437,7 +420,7 @@ export interface IAnnotationValidationPlugin {
     /**
      * validate annotated RAML element
      */
-    processAnnotatedEntry(entry:IAnnotatedElement):IStatus[];
+    process(entry:IAnnotatedElement):PluginValidationIssue[];
 
     /**
      * String ID of the plugin
@@ -491,34 +474,10 @@ export interface IAnnotatedElement {
 export function getAnnotationValidationPlugins():IAnnotationValidationPlugin[]{
     var rv:any = (<any>global).ramlValidation;
     if(rv) {
-        var typeValidators = rv.annotationValidators;
-        if (Array.isArray(typeValidators)) {
-            return <IAnnotationValidationPlugin[]>typeValidators;
+        var typesystemAnnotationValidators = rv.typesystemAnnotationValidators;
+        if (Array.isArray(typesystemAnnotationValidators)) {
+            return <IAnnotationValidationPlugin[]>typesystemAnnotationValidators;
         }
     }
     return [];
-}
-
-/**
- * Apply registered type validation plugins to the type
- * @param t type to be validated
- * @param reg context type registry
- * @param skipOk whether to omit OK statuses
- * @returns an array of {TypeValidationPluginStatus}
- */
-export function applyAnnotationValidationPlugins(e:IAnnotatedElement):IStatus[] {
-
-    var plugins = getAnnotationValidationPlugins();
-    var result:IStatus[] = [];
-    for (var tv of plugins) {
-        var statuses:IStatus[] = tv.processAnnotatedEntry(e);
-        if (statuses) {
-            statuses.forEach(x=> {
-                if (!x.isOk()) {
-                    result.push(x);
-                }
-            });
-        }
-    }
-    return result;
 }
