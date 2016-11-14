@@ -2,7 +2,7 @@
 import _=require("underscore")
 import su=require("./schemaUtil")
 import tsInterfaces = require("./typesystem-interfaces")
-import {ParseNode} from "./parse";
+
 export let messageRegistry = require("../../resources/errorMessages");
 
 export type IValidationPath = tsInterfaces.IValidationPath;
@@ -29,7 +29,7 @@ export class Status implements tsInterfaces.IStatus {
     protected severity:number;
     protected source:any;
 
-    protected subStatus:Status[] = [];
+    protected subStatus:tsInterfaces.IStatus[] = [];
 
     protected vp:tsInterfaces.IValidationPath
 
@@ -53,47 +53,8 @@ export class Status implements tsInterfaces.IStatus {
         return s;
     }
 
-    patchPath(p:tsInterfaces.IValidationPath):tsInterfaces.IValidationPath{
-        if (!p){
-            return null;
-        }
-        else{
-            var c=p;
-            var r:tsInterfaces.IValidationPath=null;
-            var cp:tsInterfaces.IValidationPath=null;
-            while (c){
-                if (!r){
-                    r={name: c.name};
-                    cp=r;
-                    c= c.child;
-                    cp=r;
-                }
-                else{
-                    var news= {name: c.name};
-                    cp.child=news;
-                    c= c.child;
-                    cp=news;
-                }
-            }
-            return r;
-        }
-    }
     setValidationPath(_c:tsInterfaces.IValidationPath){
-        if (this.vp){
-            var c=this.patchPath(_c);
-            var m=c;
-            while (m.child){
-                m= m.child;
-            }
-            m.child=this.vp;
-            this.vp=c;
-        }
-        else {
-            this.vp = _c;
-        }
-        this.subStatus.forEach(x=>{
-            x.setValidationPath(_c);
-        })
+        this.vp = _c;
     }
 
     public constructor(severity:number, code:string, message:string,source:any,private takeNodeFromSource:boolean=false) {
@@ -104,20 +65,32 @@ export class Status implements tsInterfaces.IStatus {
 
     }
 
-    addSubStatus(st:Status,pathName:string=null) {
+    addSubStatus(st:tsInterfaces.IStatus,pathName:string=null) {
         if (pathName){
-            st.setValidationPath({name: pathName})
+            setValidationPath(st,{name: pathName})
         }
         this.subStatus.push(st);
-        if (this.severity < st.severity) {
-            this.severity = st.severity;
-            this.message = st.message;
+        var otherSeverity = Status.OK;
+        if(!st.isOk()) {
+            if (st.isError()) {
+                otherSeverity = Status.ERROR;
+            }
+            else if(st.isWarning()){
+                otherSeverity = Status.WARNING;
+            }
+            else if(st.isInfo()){
+                otherSeverity = Status.INFO;
+            }
+        }
+        if (this.severity < otherSeverity) {
+            this.severity = otherSeverity;
+            this.message = st.getMessage();
         }
     }
-    getErrors():Status[]{
+    getErrors():tsInterfaces.IStatus[]{
         if (this.isError()||this.isWarning()){
             if (this.subStatus.length>0){
-                var rs:Status[]=[];
+                var rs:tsInterfaces.IStatus[]=[];
                 this.subStatus.forEach(x=>rs=rs.concat(x.getErrors()));
                 return rs;
             }
@@ -126,7 +99,7 @@ export class Status implements tsInterfaces.IStatus {
         return [];
     }
 
-    getSubStatuses():Status[]{
+    getSubStatuses():tsInterfaces.IStatus[]{
         return this.subStatus;
     }
     getSeverity(){
@@ -228,15 +201,15 @@ export abstract class TypeInformation implements tsInterfaces.ITypeFacet {
 
     _owner:AbstractType;
 
-    _node:ParseNode;
+    _node:parse.ParseNode;
     
-    _annotations:tsInterfaces.IAnnotationInstance[] = [];
+    _annotations:tsInterfaces.IAnnotation[] = [];
 
     node(){
         return this._node;
     }
 
-    setNode(node:ParseNode){
+    setNode(node:parse.ParseNode){
         this._node = node;
     }
 
@@ -256,7 +229,12 @@ export abstract class TypeInformation implements tsInterfaces.ITypeFacet {
                 result.addSubStatus(aStatus);
             }
         }
-        result.setValidationPath({name:this.facetName()});
+        var facetEntry = new AnnotatedFacet(this,registry);
+        var aPluginStatuses = applyAnnotationValidationPlugins(facetEntry);
+        for(var ps of aPluginStatuses){
+            result.addSubStatus(ps);
+        }
+        setValidationPath(result,{name:this.facetName()});
         return result;
     }
     abstract facetName():string
@@ -276,11 +254,11 @@ export abstract class TypeInformation implements tsInterfaces.ITypeFacet {
 
     abstract kind() : tsInterfaces.MetaInformationKind
 
-    annotations():tsInterfaces.IAnnotationInstance[]{
+    annotations():tsInterfaces.IAnnotation[]{
         return this._annotations;
     }
     
-    addAnnotation(a:tsInterfaces.IAnnotationInstance){
+    addAnnotation(a:tsInterfaces.IAnnotation){
         this._annotations.push(a);
     }
 }
@@ -543,7 +521,7 @@ export class RestrictionsConflict extends Status{
                 }
                 rse = rse.pop();
             }
-            this.setValidationPath(path.pop());
+            setValidationPath(this,path.pop());
             var arc = restr.anotherRestrictionComponent();
             if(arc) {
                 typeInfo = ` between types '${typePath(<AbstractType>this.source)}' and '${typePath(<AbstractType>arc)}'`;
@@ -590,7 +568,7 @@ export abstract class AbstractType implements tsInterfaces.IParsedType, tsInterf
 
     protected extras:{ [name:string]:any}={};
 
-    protected supertypeAnnotations:{[aName:string]:tsInterfaces.IAnnotationInstance}[];
+    protected supertypeAnnotations:{[aName:string]:tsInterfaces.IAnnotation}[];
 
     getExtra(name:string):any{
         return this.extras[name];
@@ -664,7 +642,7 @@ export abstract class AbstractType implements tsInterfaces.IParsedType, tsInterf
         return [];
     }
     
-    addSupertypeAnnotation(arr:tsInterfaces.IAnnotationInstance[],ind:number){
+    addSupertypeAnnotation(arr:tsInterfaces.IAnnotation[], ind:number){
         if(!arr||arr.length==0){
             return;
         }
@@ -719,7 +697,7 @@ export abstract class AbstractType implements tsInterfaces.IParsedType, tsInterf
                     if (x.isAnonymous()) {
                         var superStatus = x.validateType(tr);
                         if(!superStatus.isOk()) {
-                            superStatus.setValidationPath({name:"type"});
+                            setValidationPath(superStatus,{name:"type"});
                             rs.addSubStatus(superStatus)
                         }
                     }
@@ -765,7 +743,7 @@ export abstract class AbstractType implements tsInterfaces.IParsedType, tsInterf
             if (propertyCycles.length>0){
                 propertyCycles.forEach(p=>{
                     var st = error(messageRegistry.CYCLIC_DEPENDENCY, this,{ typeName: p });
-                    st.setValidationPath({name:p})
+                    setValidationPath(st,{name:p})
                     rs.addSubStatus(st);
                 })
 
@@ -779,13 +757,21 @@ export abstract class AbstractType implements tsInterfaces.IParsedType, tsInterf
                     var a = aMap[aName];
                     var aStatus = <Status>a.validateSelf(tr);
                     if (!aStatus.isOk()) {
-                        aStatus.setValidationPath({name: "type", child: {name: i}});
+                        setValidationPath(aStatus,{name: "type", child: {name: i}});
                         rs.addSubStatus(aStatus);
                     }
                 }
             }
         }
-
+        var pluginStatuses = applyTypeValidationPlugins(this,tr);
+        for(var ps of pluginStatuses){
+            rs.addSubStatus(ps);
+        }
+        var typeEntry = new AnnotatedType(this,tr);
+        var aPluginStatuses = applyAnnotationValidationPlugins(typeEntry);
+        for(var ps of aPluginStatuses){
+            rs.addSubStatus(ps);
+        }
         return rs;
     }
 
@@ -859,7 +845,7 @@ export abstract class AbstractType implements tsInterfaces.IParsedType, tsInterf
             if (this.getExtra(tsInterfaces.HAS_FACETS)){
                 var fs=error(messageRegistry.EXTERNAL_FACET, this,
                     {name:this.getExtra(tsInterfaces.HAS_FACETS)});
-                fs.setValidationPath({ name:this.getExtra(tsInterfaces.HAS_FACETS)});
+                setValidationPath(fs,{ name:this.getExtra(tsInterfaces.HAS_FACETS)});
                 rs.addSubStatus(fs);
             }
         }
@@ -1282,7 +1268,7 @@ export abstract class AbstractType implements tsInterfaces.IParsedType, tsInterf
                 cp.patchOwner(this);
                 cp.check(i).getErrors().forEach(x=> {
                     var rs = new Status(Status.WARNING, x.getCode(), x.getMessage(), this);
-                    rs.setValidationPath(x.getValidationPath())
+                    setValidationPath(rs,x.getValidationPath())
                     result.addSubStatus(rs);
                 });
             }
@@ -2378,7 +2364,7 @@ function checkDescriminator(i:any,t:AbstractType,path?:IValidationPath){
                         propName: dName                        
                     },Status.WARNING);
                     //var wrng = new Status(Status.WARNING, Status.CODE_INCORRECT_DISCRIMINATOR, dVal, this);
-                    wrng.setValidationPath({name: dName, child: path});
+                    setValidationPath(wrng,{name: dName, child: path});
                     return wrng;
                 }
                 return ok();
@@ -2389,7 +2375,7 @@ function checkDescriminator(i:any,t:AbstractType,path?:IValidationPath){
                     propName: dName
                 });
                 //var err = new Status(Status.ERROR, Status.CODE_MISSING_DISCRIMINATOR, dVal, this);
-                err.setValidationPath(path);
+                setValidationPath(err,path);
                 return err;
             }
         }
@@ -2405,4 +2391,236 @@ export class ValidationError extends Error{
         super();
         this.message = messageText(messageEntry,parameters);
     }
+}
+
+export function setValidationPath(_s:tsInterfaces.IStatus,_c:tsInterfaces.IValidationPath){
+    if (_s.getValidationPath()){
+        var c=patchPath(_c);
+        var m=c;
+        while (m.child){
+            m= m.child;
+        }
+        m.child=_s.getValidationPath();
+        _s.setValidationPath(c);
+    }
+    else {
+        _s.setValidationPath(_c);
+    }
+    _s.getSubStatuses().forEach(x=>{
+        setValidationPath(x,_c);
+    })
+}
+
+export function patchPath(p:tsInterfaces.IValidationPath):tsInterfaces.IValidationPath{
+    if (!p){
+        return null;
+    }
+    else{
+        var c=p;
+        var r:tsInterfaces.IValidationPath=null;
+        var cp:tsInterfaces.IValidationPath=null;
+        while (c){
+            if (!r){
+                r={name: c.name};
+                cp=r;
+                c= c.child;
+                cp=r;
+            }
+            else{
+                var news= {name: c.name};
+                cp.child=news;
+                c= c.child;
+                cp=news;
+            }
+        }
+        return r;
+    }
+}
+
+
+
+/**
+ * A model of annotated RAML type facet
+ */
+export class AnnotatedFacet implements tsInterfaces.IAnnotatedElement{
+
+    constructor(protected _facet:TypeInformation, protected reg:tsInterfaces.ITypeRegistry){}
+
+    kind():string{ return "AnnotatedFacet"; }
+
+    private _annotations:tsInterfaces.IAnnotationInstance[];
+
+    private _annotationsMap:{[key:string]:tsInterfaces.IAnnotationInstance};
+
+    annotationsMap(): {[key:string]:tsInterfaces.IAnnotationInstance}{
+        if(!this._annotationsMap){
+            this._annotationsMap = {};
+            this.annotations().forEach(x=>this._annotationsMap[x.name()]=x);
+        }
+        return this._annotationsMap;
+    }
+
+    annotations(): tsInterfaces.IAnnotationInstance[]{
+        if(!this._annotations){
+            this._annotations = this._facet.annotations().map(
+                x=>new AnnotationInstance(<tsInterfaces.IAnnotation><any>x,this.reg));
+        }
+        return this._annotations;
+    }
+
+    /**
+     * Value of the facet serialized to JSON
+     */
+    value():any{ return this._facet.value(); }
+
+    /**
+     * Facet name
+     */
+    name():string{ return this._facet.facetName(); }
+
+    /**
+     * The facet itself
+     */
+    entry():tsInterfaces.ITypeFacet{ return this._facet; }
+}
+import parse = require("./parse");
+/**
+ * A model of annotated RAML type
+ */
+export class AnnotatedType implements tsInterfaces.IAnnotatedElement{
+
+    constructor(private _type:AbstractType,protected reg:tsInterfaces.ITypeRegistry){}
+    
+    private _annotations:tsInterfaces.IAnnotationInstance[];
+
+    private _annotationsMap:{[key:string]:tsInterfaces.IAnnotationInstance};
+
+    kind():string{ return "AnnotatedType"; }
+
+    annotationsMap(): {[key:string]:tsInterfaces.IAnnotationInstance}{
+        if(!this._annotationsMap){
+            this._annotationsMap = {};
+            this.annotations().forEach(x=>{
+                var n = x.name();
+                var ind = n.lastIndexOf(".");
+                if(ind>=0){
+                    n = n.substring(ind+1);
+                }
+                this._annotationsMap[n]=x
+            });
+        }
+        return this._annotationsMap;
+    }
+
+    annotations(): tsInterfaces.IAnnotationInstance[]{
+        if(!this._annotations){
+            this._annotations = this._type.meta().filter(x=>
+                x.kind()==tsInterfaces.MetaInformationKind.Annotation).map(
+                x=>new AnnotationInstance(<tsInterfaces.IAnnotation><any>x,this.reg));
+        }
+        return this._annotations;
+    }
+
+    /**
+     * JSON representation of the type
+     */
+    value():any{ return parse.storeAsJSON(this._type); }
+
+    /**
+     * Type name
+     */
+    name():string{ return this._type.name(); }
+
+    /**
+     * The type itself
+     * @returns {IParsedType}
+     */
+    entry():tsInterfaces.IParsedType{ return this._type; }
+}
+
+export class AnnotationInstance implements tsInterfaces.IAnnotationInstance{
+    
+    constructor(protected actual:tsInterfaces.IAnnotation,reg:tsInterfaces.ITypeRegistry){}
+
+    name():string{
+        return this.actual.facetName();
+    }
+
+    /**
+     * Annotation value
+     */
+    value():any{
+        return this.actual.value();
+    }
+
+    /**
+     * Annotation definition type
+     */
+    definition():tsInterfaces.IParsedType{
+        var tp=registry.get(this.actual.facetName());
+        return tp;
+    }
+
+    /**
+     * Actual annotation model
+     */
+    annotation():tsInterfaces.IAnnotation{
+        return this.actual;
+    }
+}
+
+
+/**
+ * Apply registered type validation plugins to the type
+ * @param t type to be validated
+ * @param reg context type registry
+ * @param skipOk whether to omit OK issues
+ * @returns an array of {tsInterfaces.IStatus}
+ */
+export function applyAnnotationValidationPlugins(e:tsInterfaces.IAnnotatedElement):Status[] {
+
+    var plugins = tsInterfaces.getAnnotationValidationPlugins();
+    var result:Status[] = [];
+    for (var tv of plugins) {
+        var issues:tsInterfaces.PluginValidationIssue[] = tv.process(e);
+        if (issues) {
+            issues.forEach(x=> {
+                result.push(toStatus(x,tv.id(),e.entry()));
+            });
+        }
+    }
+    return result;
+}
+
+
+/**
+ * Apply registered type validation plugins to the type
+ * @param t type to be validated
+ * @param reg context type registry
+ * @param skipOk whether to omit OK issues
+ * @returns an array of {tsInterfaces.IStatus}
+ */
+export function applyTypeValidationPlugins(
+    t:tsInterfaces.IParsedType,reg:tsInterfaces.ITypeRegistry):Status[] {
+
+    var plugins = tsInterfaces.getTypeValidationPlugins();
+    var result:Status[] = [];
+    for (var tv of plugins) {
+        var issues:tsInterfaces.PluginValidationIssue[] = tv.process(t,reg);
+        if (issues) {
+            issues.forEach(x=> {
+                result.push(toStatus(x,tv.id(),t));
+            });
+        }
+    }
+    return result;
+}
+
+function toStatus(pvi:tsInterfaces.PluginValidationIssue,pluginId:string,src:any):Status{
+    var severity = pvi.isWarning ? Status.WARNING : Status.ERROR;
+    var issueCode = pvi.issueCode || pluginId;
+    var message = pvi.message || `The ${pluginId} plugin reports an error`;
+    var status = new Status(severity,issueCode,message,src);
+    status.setValidationPath(pvi.path);
+    return status;
 }

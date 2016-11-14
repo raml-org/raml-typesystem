@@ -22,7 +22,7 @@ export interface IStatus extends IHasExtra {
     
 
     /**
-     * retur2ns true if status does not have errors
+     * returns true if status does not have errors
      */
     isOk():boolean
 
@@ -35,9 +35,15 @@ export interface IStatus extends IHasExtra {
      */
     isError():boolean
     /**
+     * return true if this status is just information
+     */
+    isInfo():boolean
+    /**
      * returns human readable message associated with this status
      */
     getMessage():string
+
+    setMessage(m:string):void;
 
     /**
      * returns an array of nested statuses
@@ -56,6 +62,8 @@ export interface IStatus extends IHasExtra {
 
     getValidationPath():IValidationPath;
 
+    setValidationPath(p:IValidationPath):void;
+
     /**
      * returns path to this status
      */
@@ -65,6 +73,10 @@ export interface IStatus extends IHasExtra {
      * Unique identifier
      */
     getCode():string
+
+    setCode(c:string):void;
+
+    getSeverity(): number;
 }
 
 export enum MetaInformationKind {
@@ -133,13 +145,13 @@ export interface ITypeFacet {
     /**
      * Annotations applied to the facet
      */
-    annotations():IAnnotationInstance[]
+    annotations():IAnnotation[]
 }
 
 /**
  * Model of annotation instances applied to types or their facets
  */
-export interface IAnnotationInstance extends ITypeFacet {
+export interface IAnnotation extends ITypeFacet {
 
     /**
      * Returns owner facet for annotations applied to facets
@@ -337,4 +349,135 @@ export interface IParsedType extends IHasExtra {
      * returns true if this type has recurrent definition;
      */
     isRecurrent():boolean;
+}
+
+/**
+ * A model of custom type validation plugin
+ */
+export interface ITypeValidationPlugin {
+
+    /**
+     * @param t the type to be validated
+     * @param reg context type registry
+     */
+    process(t:IParsedType, reg:ITypeRegistry):PluginValidationIssue[];
+
+    /**
+     * String ID of the plugin
+     */
+    id():string;
+}
+
+
+/**
+ * Retrieve a list of registered type validation plugins
+ */
+export function getTypeValidationPlugins():ITypeValidationPlugin[]{
+    var rv:any = (<any>global).ramlValidation;
+    if(rv) {
+        var typeValidators = rv.typeValidators;
+        if (Array.isArray(typeValidators)) {
+            return <ITypeValidationPlugin[]>typeValidators;
+        }
+    }
+    return [];
+}
+
+/**
+ * Model of annotation instance used as input fo validation plugins
+ */
+export interface IAnnotationInstance{
+
+    /**
+     * Annotation name
+     */
+    name():string;
+
+    /**
+     * Annotation value
+     */
+    value():any;
+
+    /**
+     * Annotation definition type
+     */
+    definition():IParsedType;
+}
+
+export interface PluginValidationIssue{
+
+    issueCode?:string,
+    message?:string,
+    isWarning?:boolean
+    path?:IValidationPath
+}
+
+/**
+ * Model of annotation validator for typesystem
+ */
+export interface IAnnotationValidationPlugin {
+
+    /**
+     * validate annotated RAML element
+     */
+    process(entry:IAnnotatedElement):PluginValidationIssue[];
+
+    /**
+     * String ID of the plugin
+     */
+    id():string;
+
+}
+
+
+/**
+ * A model of annotated RAML element used as input for
+ * annotation validation plugins
+ */
+export interface IAnnotatedElement {
+
+    /**
+     * Element kind
+     */
+    kind():string;
+
+    /**
+     * Map view on the annotations applied
+     */
+    annotationsMap(): {[key:string]:IAnnotationInstance};
+
+    /**
+     * Array view on the annotations applied
+     */
+    annotations(): IAnnotationInstance[];
+
+    /**
+     * JSON representation of the entry
+     */
+    value(): any;
+
+    /**
+     * Element name
+     */
+    name(): string;
+
+    /**
+     * The element itself
+     */
+    entry():any;
+
+}
+
+/**
+ * Retrieve a list of registered type validation plugins
+ */
+export function getAnnotationValidationPlugins():IAnnotationValidationPlugin[]{
+    var rv:any = (<any>global).ramlValidation;
+    if(rv) {
+        var typesystemAnnotationValidators = rv.typesystemAnnotationValidators;
+        if (Array.isArray(typesystemAnnotationValidators)) {
+            return <IAnnotationValidationPlugin[]>typesystemAnnotationValidators;
+        }
+    }
+    return [];
 }
