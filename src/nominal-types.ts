@@ -367,7 +367,7 @@ export class AbstractType extends Described implements ITypeDefinition{
         var mm:{ [name:string]:any}={};
         sp.forEach(x=>{
             var ff = x.getFixedFacets();
-            for( var key in Object.keys(ff)){
+            for( var key of Object.keys(ff)){
                 mm[key] = ff[key];
             }
         });
