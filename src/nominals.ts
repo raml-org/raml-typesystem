@@ -161,7 +161,7 @@ export function toNominal(t:ts.AbstractType,callback:StringToBuiltIn,customizer:
     if (t.isEmpty()){
         vs.addAdapter(new nt.Empty());
     }
-    vs._validator=(x)=>t.validate(x,false).getErrors();
+    vs._validator = getValidator(t);
     if (t.isBuiltin()){
         vs.buildIn=true;
     }
@@ -173,3 +173,8 @@ export function toNominal(t:ts.AbstractType,callback:StringToBuiltIn,customizer:
     return vs;
 }
 
+function getValidator(t:ts.AbstractType): any {
+    return function(arg: any) {
+        return t.validate(arg,false).getErrors();
+    }
+}
