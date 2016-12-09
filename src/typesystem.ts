@@ -2237,6 +2237,7 @@ RECURRENT.addMeta(BUILT_IN);
 RECURRENT.lock();
 EXTERNAL.lock();
 UNION.lock();
+REFERENCE.lock();
 
 ///lets register all types in registry
 

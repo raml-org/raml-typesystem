@@ -9,6 +9,7 @@
   "raml-definition-system" : {
     "build" : "npm run build",
     "gitUrl" : "https://github.com/raml-org/raml-definition-system.git",
+    "gitBranch": "develop",
     "installTypings" : true
   },
   "raml-typesystem" : {
@@ -32,6 +33,7 @@
   "ts-structure-parser" : {
     "build" : "npm run build",
     "gitUrl" : "https://github.com/mulesoft-labs/ts-structure-parser.git",
+    "gitBranch": "develop",
     "installTypings" : true
   },
   "yaml-ast-parser" : {
@@ -41,6 +43,7 @@
   "ts-model" : {
     "build" : "npm run build",
     "gitUrl" : "https://github.com/mulesoft-labs/ts-model.git",
+    "gitBranch": "develop",
     "installTypings" : true
   }
 }
