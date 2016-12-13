@@ -689,6 +689,18 @@ function testFacetAgainstType(facet : ts.TypeInformation, type : ts.AbstractType
     }
 }
 
+function appendAnnotations(appendedInfo:ts.TypeInformation, childNode:ParseNode) {
+    var children = childNode.children();
+    for (var ch of children) {
+        var key = ch.key();
+        if (key && key.charAt(0) == "(" && key.charAt(key.length - 1) == ")") {
+            var aName = key.substring(1, key.length - 1);
+            var aInstance = new meta.Annotation(aName, ch.value());
+            aInstance.setOwnerFacet(appendedInfo);
+            appendedInfo.addAnnotation(aInstance);
+        }
+    }
+}
 /**
  * parses a type from a JSON structure
  * @param name
@@ -764,6 +776,7 @@ export function parse(
             shAndType=true;
         }
     }
+    var typePropAnnotations:tsInterfaces.IAnnotation[][] = [];
     if (!tp||ignoreTypeAttr){
         if (defaultsToAny){
             if (n.childWithKey("properties")) {
@@ -783,6 +796,18 @@ export function parse(
         }
     }
     else{
+        var sAnnotations:ParseNode[][] = [];
+        var actual = tp.childWithKey("value");
+        if(actual&&(actual.kind()==NodeKind.SCALAR||actual.kind()==NodeKind.ARRAY)){
+            sAnnotations = [ tp.children().filter(x=>{
+                var key = x.key();
+                if(!key){
+                    return false;
+                }
+                return key.charAt(0) == "(" && key.charAt(key.length - 1) == ")";
+            }) ]
+            tp = actual;
+        }
         if (tp.kind()==NodeKind.SCALAR){
             var valString = tp.value();
             if(valString==null||valString=="Null"||valString=="NULL"){
@@ -793,21 +818,59 @@ export function parse(
             }
         }
         else if (tp.kind()==NodeKind.ARRAY){
-            superTypes=tp.children().map(x=>x.value()).map(y=>typeExpressions.parseToType(""+y,r, provider));
+            superTypes=tp.children().map(x=>{
+                var actual = x.childWithKey("value");
+                if(actual&&(actual.kind()==NodeKind.SCALAR||actual.kind()==NodeKind.ARRAY)){
+                    sAnnotations.push(x.children().filter(x=>{
+                        var key = x.key();
+                        if(!key){
+                            return false;
+                        }
+                        return key.charAt(0) == "(" && key.charAt(key.length - 1) == ")";
+                    }));
+                    x = actual;
+                }
+                else{
+                    sAnnotations.push([]);
+                }
+                return x.value();
+            }).map(y=>typeExpressions.parseToType(""+y,r, provider));
         }
         else if (tp.kind()==NodeKind.MAP){
             superTypes=[parse("",tp,r,false,false,false)];
         }
+        if(sAnnotations.length>0 && sAnnotations.filter(x=>x.length>0).length>0) {
+            for(var aArr of sAnnotations){
+                var aiArr:meta.Annotation[] = [];
+                typePropAnnotations.push(aiArr);
+                for(var ann of aArr) {
+                    var key = ann.key();
+                    var aName = key.substring(1, key.length - 1);
+                    var aInstance = new meta.Annotation(aName, ann.value());
+                    aiArr.push(aInstance);
+                }
+            }
+        }
     }
     var result=ts.derive(name,superTypes);
+    for(var i = 0 ; i < typePropAnnotations.length ; i++){
+        var aArr1:tsInterfaces.IAnnotation[] = typePropAnnotations[i];
+        result.addSupertypeAnnotation(aArr1,i);
+    }
     if (r instanceof AccumulatingRegistry){
         result = contributeToAccumulatingRegistry(result, r);
     }
     var actualResult=result;
     var hasfacetsOrOtherStuffDoesNotAllowedInExternals:string=null;
 
-    n.children().forEach(x=>{
-        var key = x.key();
+    n.children().forEach(childNode=>{
+
+        var key = childNode.key();
+        actual = childNode.childWithKey("value");
+        var x = childNode;
+        if(key!="example"&&actual){
+            x = actual;
+        }
         if (!key){
             return;
         }
@@ -828,42 +891,51 @@ export function parse(
                 return;
             }
         }
+        var appendedInfo:ts.TypeInformation;
         if (key=="items"){
             if (result.isSubTypeOf(ts.ARRAY)){
                 var tp=parse(null, x,r,false,false,false);
-                actualResult.addMeta(new ComponentShouldBeOfType(tp));
+                appendedInfo = new ComponentShouldBeOfType(tp);
+                actualResult.addMeta(appendedInfo);
                 actualResult.putExtra(tsInterfaces.HAS_ITEMS,true)
+                if(actual){
+                    appendAnnotations(appendedInfo, childNode);
+                }
+                return appendedInfo;
+            }            
+        }
+        else {
+            if (key === "facets") {
+                hasfacetsOrOtherStuffDoesNotAllowedInExternals = key;
                 return;
             }
-        }
+            else if (key == "default" || key == "xml" || key == "required") {
+                hasfacetsOrOtherStuffDoesNotAllowedInExternals = key;
+            }
+            else if (key.charAt(0) == '(' && key.charAt(key.length - 1) == ')') {
+                result.addMeta(new meta.Annotation(key.substr(1, key.length - 2), x.value()));
+                return;
+            }
+            appendedInfo = facetR.getInstance().buildFacet(key, x.value());
 
-        if (key==="facets"){
-            hasfacetsOrOtherStuffDoesNotAllowedInExternals=key;
-            return;
-        }
-        if (key=="default"||key=="xml"||key=="required"){
-            hasfacetsOrOtherStuffDoesNotAllowedInExternals=key;
-        }
-        if (key.charAt(0)=='('&& key.charAt(key.length-1)==')'){
-            result.addMeta(new meta.Annotation(key.substr(1, key.length-2), x.value()));
-            return;
-        }
-        var vl=facetR.getInstance().buildFacet(key, x.value());
-
-        //TODO remove "format" condition and use this check for all facets
-        if (vl && (key != "format" || testFacetAgainstType(vl, result))){
-            vl.setNode(x);
-            result.addMeta(vl);
-        }
-        else{
-            if (annotation&&key==="allowedTargets"){
-                result.addMeta(new meta.AllowedTargets(x.value()));
+            //TODO remove "format" condition and use this check for all facets
+            if (appendedInfo && (key != "format" || testFacetAgainstType(appendedInfo, result))) {
+                appendedInfo.setNode(x);
+                result.addMeta(appendedInfo);
             }
             else {
-                var customFacet = new meta.CustomFacet(key, x.value());
-                customFacet.setNode(x);
-                result.addMeta(customFacet);
+                if (annotation && key === "allowedTargets") {
+                    result.addMeta(new meta.AllowedTargets(x.value()));
+                }
+                else {
+                    var customFacet = new meta.CustomFacet(key, x.value());
+                    customFacet.setNode(x);
+                    result.addMeta(customFacet);
+                }
             }
+        }
+        if(appendedInfo){
+            appendAnnotations(appendedInfo, childNode);
         }
     });
     if(result.metaOfType(meta.DiscriminatorValue).length==0){
@@ -888,6 +960,10 @@ export function parse(
         }
         var ap= n.childWithKey("additionalProperties");
         if (ap){
+            actual = ap.childWithKey("value");
+            if(actual){
+                ap = actual;
+            }
             result.addMeta(new KnownPropertyRestriction(ap.value()));
         }
     }

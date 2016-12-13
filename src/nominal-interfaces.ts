@@ -109,9 +109,11 @@ export interface IExpandableExample {
     
     displayName():string
     
-    annotations():any
+    annotations():{[aName:string]:tsInterfaces.IAnnotation}
     
     name():string
+    
+    scalarsAnnotations():{[pName:string]:{[aName:string]:tsInterfaces.IAnnotation}}
 }
 export class ValueRequirement{
     /**
