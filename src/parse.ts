@@ -894,7 +894,40 @@ export function parse(
         var appendedInfo:ts.TypeInformation;
         if (key=="items"){
             if (result.isSubTypeOf(ts.ARRAY)){
-                var tp=parse(null, x,r,false,false,false);
+                var componentTypes:ts.AbstractType[] = [];
+                if (x.kind()==NodeKind.SCALAR){
+                    var valString = x.value();
+                    if(valString==null||valString=="Null"||valString=="NULL"){
+                        componentTypes = [ ts.STRING ];
+                    }
+                    else{
+                        componentTypes=[typeExpressions.parseToType(""+valString,r, provider)];
+                    }
+                }
+                else if (x.kind()==NodeKind.ARRAY){
+                    componentTypes=x.children().map(y=>{
+                        var actual = y.childWithKey("value");
+                        if(actual&&(actual.kind()==NodeKind.SCALAR||actual.kind()==NodeKind.ARRAY)){
+                            sAnnotations.push(y.children().filter(x=>{
+                                var key = x.key();
+                                if(!key){
+                                    return false;
+                                }
+                                return key.charAt(0) == "(" && key.charAt(key.length - 1) == ")";
+                            }));
+                            y = actual;
+                        }
+                        else{
+                            sAnnotations.push([]);
+                        }
+                        return y.value();
+                    }).map(y=>typeExpressions.parseToType(""+y,r, provider));
+                }
+                else if (x.kind()==NodeKind.MAP){
+                    componentTypes=[parse("",x,r,false,false,false)];
+                }
+                var tp = componentTypes.length == 1 ? componentTypes[0] : 
+                    ts.derive("",componentTypes);
                 appendedInfo = new ComponentShouldBeOfType(tp);
                 actualResult.addMeta(appendedInfo);
                 actualResult.putExtra(tsInterfaces.HAS_ITEMS,true)
