@@ -9,6 +9,8 @@ var XMLValidatorConstructor: any;
 try {
     XMLValidatorConstructor = require("raml-xml-validation").XMLValidator;
 } catch(exception) {
+}
+if (!XMLValidatorConstructor) {
     class XMLValidatorDummyImpl {
         constructor(arg: string) {
 

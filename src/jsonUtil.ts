@@ -9,6 +9,8 @@ var JSONValidatorConstructor: any;
 try {
     JSONValidatorConstructor = require("raml-json-validation").JSONValidator;
 } catch(exception) {
+}
+if (!JSONValidatorConstructor) {
     class JSONValidatorDummyImpl {
         setRemoteReference(reference: string, content: any): void {
             
