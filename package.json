@@ -20,6 +20,14 @@
     "date-and-time": "0.3.0",
     "xmldom": "^0.1.22"
   },
+  "optionalDependencies": {
+    "raml-xml-validation": "0.0.5",
+    "raml-json-validation": "0.0.6"
+  },
+  "browser": {
+    "raml-json-validation": false,
+    "raml-xml-validation": false
+  },
   "repository": {
     "type": "git",
     "url": "https://github.com/raml-org/typesystem-ts.git"
