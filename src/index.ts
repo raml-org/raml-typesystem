@@ -119,7 +119,7 @@ export interface ObjectType extends IType {
     /**
      * allows to set constraints on the type of additional properties
      */
-    additionalProperties?: IType
+    additionalProperties?: boolean
 }
 /**
  * this interface contains additional properties specific to array types
