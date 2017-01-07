@@ -2289,9 +2289,11 @@ registry.types().forEach(x=>x.lock())
 
 
 export class ExternalType extends InheritedType{
-    constructor( name: string,private _content:string,private json:boolean, private provider: su.IContentProvider){
+    constructor( name: string,private _content:string,private json:boolean,
+                 private provider: su.IContentProvider,
+                 typeAttributeProvider: su.IContentProvider = null){
         super(name);
-        this.addMeta(new restr.MatchToSchema(_content, provider));
+        this.addMeta(new restr.MatchToSchema(_content, typeAttributeProvider?typeAttributeProvider:provider));
         this.addSuper(EXTERNAL);
     }
 

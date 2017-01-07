@@ -814,7 +814,9 @@ export function parse(
                 superTypes = [ ts.STRING ];
             }
             else{
-                superTypes=[typeExpressions.parseToType(""+valString,r, provider)];
+                var typeAttributeContentProvider : su.IContentProvider =
+                    (<any>tp).contentProvider ? (<any>tp).contentProvider() : null;
+                superTypes=[typeExpressions.parseToType(""+valString,r, provider, typeAttributeContentProvider)];
             }
         }
         else if (tp.kind()==NodeKind.ARRAY){
