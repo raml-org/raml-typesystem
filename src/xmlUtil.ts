@@ -16,7 +16,7 @@ if (!XMLValidatorConstructor) {
 
         }
 
-        validate(xml: string): Error[] {
+        validate(xml: string, references: any): Error[] {
             return [];
         }
     }
