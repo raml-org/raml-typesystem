@@ -134,7 +134,11 @@ export class Annotation extends MetaInfo implements tsInterfaces.IAnnotation{
 }
 export class FacetDeclaration extends MetaInfo{
 
-    constructor(private name: string,private _type:ts.AbstractType,private optional:boolean){
+    constructor(
+        private name: string,
+        private _type:ts.AbstractType,
+        private optional:boolean,
+        private builtIn = false){
         super(name,_type,true)
     }
     actualName(){
@@ -153,6 +157,10 @@ export class FacetDeclaration extends MetaInfo{
 
     kind() : tsInterfaces.MetaInformationKind {
         return tsInterfaces.MetaInformationKind.FacetDeclaration;
+    }
+    
+    isBuiltIn():boolean{
+        return this.builtIn;
     }
 }
 export class CustomFacet extends MetaInfo{

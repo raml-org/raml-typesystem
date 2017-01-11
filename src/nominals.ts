@@ -142,7 +142,7 @@ export function toNominal(t:ts.AbstractType,callback:StringToBuiltIn,customizer:
             prop.withRequired(true);
         }
     });
-    proto.facetDeclarations.forEach(x=>{
+    proto.facetDeclarations.filter(x=>!x.isBuiltIn()).forEach(x=>{
         var prop=pc?pc(x.facetName()):new nt.Property(x.facetName());
         prop.withRange(toNominal(x.type(),callback));
         vs.addFacet(prop);

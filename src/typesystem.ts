@@ -2279,10 +2279,10 @@ DATETIME.addMeta(new dt.DateTimeR());
 FILE.addMeta(new TypeOfRestriction("string"));
 var arrayOfString=ARRAY.inherit("");
 arrayOfString.addMeta(new ComponentShouldBeOfType(STRING))
-FILE.addMeta(new FacetDeclaration("fileTypes",arrayOfString,true));
-FILE.addMeta(new FacetDeclaration("minLength",INTEGER,true));
-FILE.addMeta(new FacetDeclaration("maxLength",INTEGER,true));
-DATETIME.addMeta(new FacetDeclaration("format",STRING,true));
+FILE.addMeta(new FacetDeclaration("fileTypes",arrayOfString,true,true));
+FILE.addMeta(new FacetDeclaration("minLength",INTEGER,true,true));
+FILE.addMeta(new FacetDeclaration("maxLength",INTEGER,true,true));
+DATETIME.addMeta(new FacetDeclaration("format",STRING,true,true));
 NIL.nullable=true;
 SCALAR.addMeta(new ScalarRestriction());
 registry.types().forEach(x=>x.lock())

@@ -390,5 +390,9 @@
   "CAN_NOT_PARSE_SCHEMA" : {
     "code" : "CAN_NOT_PARSE_SCHEMA",
     "message": "Can not parse schema"
+  },
+  "FILE_TYPES_SHOULD_BE_AN_ARRAY" : {
+    "code" : "FILE_TYPES_SHOULD_BE_AN_ARRAY",
+    "message": "'fileTypes' value should be an array of strings"
   }
 }
