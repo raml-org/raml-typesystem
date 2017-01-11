@@ -183,6 +183,10 @@
     "code" : "INVALID_EXMAPLE",
     "message": "Using invalid 'example': {{msg}}"
   },
+  "ADDITIONAL_PROPERTIES_BOOLEAN" : {
+    "code" : "REQUIRED_BOOLEAN",
+    "message": "Value of 'additionalProperties' facet should be boolean"
+  },
   "REQUIRED_BOOLEAN" : {
     "code" : "REQUIRED_BOOLEAN",
     "message": "Value of 'required' facet should be boolean"

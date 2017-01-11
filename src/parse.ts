@@ -814,7 +814,9 @@ export function parse(
                 superTypes = [ ts.STRING ];
             }
             else{
-                superTypes=[typeExpressions.parseToType(""+valString,r, provider)];
+                var typeAttributeContentProvider : su.IContentProvider =
+                    (<any>tp).contentProvider ? (<any>tp).contentProvider() : null;
+                superTypes=[typeExpressions.parseToType(""+valString,r, provider, typeAttributeContentProvider)];
             }
         }
         else if (tp.kind()==NodeKind.ARRAY){
@@ -997,7 +999,15 @@ export function parse(
             if(actual){
                 ap = actual;
             }
-            result.addMeta(new KnownPropertyRestriction(ap.value()));
+
+            if (typeof(ap.value()) == "boolean") {
+                result.addMeta(new KnownPropertyRestriction(ap.value()));
+            } else {
+                var err=ts.error(messageRegistry.ADDITIONAL_PROPERTIES_BOOLEAN,actualResult);
+                err.setValidationPath({ name:"additionalProperties"})
+                result.putExtra(tsInterfaces.PARSE_ERROR,err);
+            }
+
         }
     }
 

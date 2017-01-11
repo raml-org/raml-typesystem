@@ -11,7 +11,8 @@ export type Literal = typeExpressionDefs.Literal;
 export type Parens = typeExpressionDefs.Parens;
 
 
-export function parseToType(val:string,t:ts.TypeRegistry, contentProvider: schemaUtil.IContentProvider = null):ts.AbstractType{
+export function parseToType(val:string,t:ts.TypeRegistry, contentProvider: schemaUtil.IContentProvider = null,
+    typeAttributeContentProvider: schemaUtil.IContentProvider = null):ts.AbstractType{
     try {
         
         var q=val.trim();
@@ -19,7 +20,8 @@ export function parseToType(val:string,t:ts.TypeRegistry, contentProvider: schem
         if (q.length > 0) {
             var json=q.charAt(0)=='{';
             if (json || (q.charAt(0)=='<'&&q.length>1&&q.charAt(1)!='<')){
-                return new ts.ExternalType("", q, json, contentProvider);
+
+                return new ts.ExternalType("", q, json, contentProvider, typeAttributeContentProvider);
             }
 
             var node:BaseNode = typeExpression.parse(val);

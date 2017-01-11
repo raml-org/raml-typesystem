@@ -888,6 +888,11 @@ describe("Type collection parse and store",function(){
         };
         var col=ps.parseJSONTypeCollection(st);
         var q=ps.storeAsJSON(col);
+
+        var t1=col.getType("t1");
+        var instanceStatus=t1.validateType();
+        assert.isTrue(!instanceStatus.isOk());
+        assert.isTrue(instanceStatus.message.indexOf('additionalProperties') != -1);
         //assert.deepEqual(q,st);
     });
     it ("parse type collection issue2",function(){
