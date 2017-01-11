@@ -6,7 +6,7 @@
     "test-cov": " ./node_modules/.bin/istanbul cover _mocha dist/tests/*Tests.js",
     "test": "npm run test-cov",
     "noValidationBuild": "rimraf dist && tsc",
-    "build": "npm install raml-json-validation && npm run noValidationBuild",
+    "build": "npm run noValidationBuild",
     "pullall": "dev-env-installer pullall",
     "buildall": "dev-env-installer buildall",
     "testall": "dev-env-installer testall",
@@ -18,11 +18,10 @@
     "lrucache": "^1.0.0",
     "underscore": "^1.8.3",
     "xml2js": "^0.4.16",
-    "date-and-time": "0.3.0",
-    "xmldom": "^0.1.22",
-    "raml-xml-validation": "^0.0.9"
+    "date-and-time": "0.3.0"
   },
   "optionalDependencies": {
+    "raml-xml-validation": "0.0.8",
     "raml-json-validation": "0.0.11"
   },
   "browser": {
