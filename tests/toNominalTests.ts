@@ -120,7 +120,7 @@ describe("To nominals",function() {
         var tp=tps.getType("B")
         var nt=nm.toNominal(tp,x=>null);
 
-        assert.isTrue(nt.getFixedFacets()["rr"]==3);
+        assert.isTrue(nt.fixedFacets()["rr"]==3);
     });
     it("is External", function () {
         var tps = ps.parseJSONTypeCollection({

@@ -227,7 +227,7 @@ export class AbstractType extends Described implements ITypeDefinition{
                 }
             })
         }
-        for (var x in this.getFixedFacets()){
+        for (var x in this.fixedFacets()){
             delete n[x];
         }
         this.properties().forEach(x=>n[x.nameId()]=x);
@@ -280,7 +280,9 @@ export class AbstractType extends Described implements ITypeDefinition{
     _subTypes:ITypeDefinition[]=[];
     _requirements:ti.ValueRequirement[]=[];
 
-    private fixedFacets:{ [name:string]:any}={}
+    private _fixedFacets:{ [name:string]:any}={}
+
+    private _fixedBuildInFacets:{ [name:string]:any}={}
 
 
     hasArrayInHierarchy(){
@@ -343,30 +345,57 @@ export class AbstractType extends Described implements ITypeDefinition{
 
     }
 
-    fixFacet(name:string,v: any){
-        this.fixedFacets[name]=v;
+    fixFacet(name:string,v: any, builtIn=false){
+        if(builtIn){
+            this._fixedBuildInFacets[name]=v;
+        }
+        else{
+            this._fixedFacets[name]=v;
+        }
     }
 
     protected _af:{ [name:string]:any};
 
-    getFixedFacets():{ [name:string]:any}{
-        var mm:{ [name:string]:any}={};
-        for (var q in  this.fixedFacets){
-            mm[q]=this.fixedFacets[q];
+    protected _abf:{ [name:string]:any};
+
+    fixedFacets():{ [name:string]:any}{
+        return this.collectFixedFacets(false);
+    }
+
+    fixedBuiltInFacets():{ [name:string]:any}{
+        return this.collectFixedFacets(true);
+    }
+
+    protected collectFixedFacets(builtIn:boolean):{ [name:string]:any}{
+        var facetsMap = builtIn ? this._fixedBuildInFacets : this._fixedFacets;
+        var result:{ [name:string]:any}={};
+        for (var q of Object.keys(facetsMap)){
+            result[q]=facetsMap[q];
         }
-        this.contributeFacets(mm);
-        return mm;
+        this.contributeFacets(result);
+        return result;
     }
 
     allFixedFacets():{ [name:string]:any}{
-        if (this._af){
+        return this.collectAllFixedFacets(false);
+    }
+
+    allFixedBuiltInFacets():{ [name:string]:any}{
+        return this.collectAllFixedFacets(true);
+    }
+
+    protected collectAllFixedFacets(builtIn:boolean):{ [name:string]:any}{
+        if (builtIn && this._abf){
+            return this._abf;
+        }
+        else if (!builtIn && this._af){
             return this._af;
         }
         var sp=this.allSuperTypes();
         sp.push(this);
         var mm:{ [name:string]:any}={};
         sp.forEach(x=>{
-            var ff = x.getFixedFacets();
+            var ff = builtIn ? x.fixedBuiltInFacets() : x.fixedFacets();
             for( var key of Object.keys(ff)){
                 mm[key] = ff[key];
             }
@@ -583,7 +612,11 @@ export class AbstractType extends Described implements ITypeDefinition{
 
         if (this.properties() && this.properties().length > 0) return true;
 
-        if (this.getFixedFacets() && Object.keys(this.getFixedFacets()).length > 0) return true;
+        var facets = this.fixedFacets();
+        if (facets && Object.keys(facets).length > 0) return true;
+
+        var builtInFacets = this.fixedBuiltInFacets();
+        if (builtInFacets && Object.keys(builtInFacets).length > 0) return true;
 
         return this.isTopLevel()&&this.nameId()&&this.nameId().length>0;
     }

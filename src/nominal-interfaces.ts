@@ -295,12 +295,22 @@ export interface ITypeDefinition extends INamedEntity,tsInterfaces.IHasExtra {
     /**
      * @return map of fixed facet names to fixed facet values;
      */
-    getFixedFacets():{ [name:string]:any};
+    fixedFacets():{ [name:string]:any};
 
     /**
-     * @return map of fixed facet names to fixed facet values;
+     * @return map of facets fixed by the type and its supertypes
      */
     allFixedFacets():{ [name:string]:any};
+
+    /**
+     * @return map of built-in facets fixed by the type and its supertypes
+     */
+    fixedBuiltInFacets():{ [name:string]:any};
+
+    /**
+     * @return map of fixed built-in facet names to their values;
+     */
+    allFixedBuiltInFacets():{ [name:string]:any};
 
     /**
      * Print details of this type.
