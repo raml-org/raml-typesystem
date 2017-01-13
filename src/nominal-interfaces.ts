@@ -292,6 +292,12 @@ export interface ITypeDefinition extends INamedEntity,tsInterfaces.IHasExtra {
      */
     requiredProperties():IProperty[];
 
+    /** 
+     * @return map of fixed facet names to fixed facet values;
+     * @deprecated
+     */
+    getFixedFacets():{ [name:string]:any};
+
     /**
      * @return map of fixed facet names to fixed facet values;
      */

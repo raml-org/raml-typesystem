@@ -358,6 +358,13 @@ export class AbstractType extends Described implements ITypeDefinition{
 
     protected _abf:{ [name:string]:any};
 
+    /**
+     * @deprecated
+     */
+    getFixedFacets():{ [name:string]:any}{
+        return this.fixedFacets();
+    }
+
     fixedFacets():{ [name:string]:any}{
         return this.collectFixedFacets(false);
     }
