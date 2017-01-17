@@ -542,6 +542,23 @@ describe("Metadata validation",function() {
         var st= tp.getType("MyNumber").validateType(ts.builtInRegistry());
         assert.isTrue(!st.isOk());
     });
+    it("validating - default 3", function () {
+        var tp = ps.parseJSONTypeCollection({
+            types: {
+                MyType:{
+                    "properties" : {
+                        "p1": "string"
+                    },
+                    default: {
+                        "p1": "stringValue",
+                        "p2": 5,
+                    }
+                }
+            }
+        })
+        var st= tp.getType("MyType").validateType(ts.builtInRegistry());
+        assert.isTrue(st.isWarning());
+    });
     it("validating - example", function () {
         var tp = ps.parseJSONTypeCollection({
             types: {

@@ -563,7 +563,12 @@ export class Default extends MetaInfo{
         var result = super.validateSelf(registry);
         var valOwner=this.owner().validateDirect(this.value(),true);
         if (!valOwner.isOk()){
-            result =  ts.error(messageRegistry.INVALID_DEFAULT_VALUE, this , { msg : valOwner.getMessage() });
+            var severity = ts.Status.ERROR;
+            if(valOwner.isWarning()){
+                severity = ts.Status.WARNING;
+            }
+            result =  ts.error(
+                messageRegistry.INVALID_DEFAULT_VALUE, this , { msg : valOwner.getMessage() }, severity);
             ts.setValidationPath(result,{name:this.facetName()});
         }
         return result;
