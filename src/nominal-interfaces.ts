@@ -459,7 +459,7 @@ export interface IProperty extends INamedEntity{
      */
     keyPrefix():string
     /**
-     * return a pattern for a property name - used for a pattern properties
+     * return a pattern for a property name - used for pattern properties
      */
     getKeyRegexp():string;
     /**

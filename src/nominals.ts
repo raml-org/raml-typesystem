@@ -141,6 +141,9 @@ export function toNominal(t:ts.AbstractType,callback:StringToBuiltIn,customizer:
         if (!x.optional){
             prop.withRequired(true);
         }
+        if(x.regExp){
+            prop.withKeyRegexp(x.id);
+        }
     });
     proto.facetDeclarations.filter(x=>!x.isBuiltIn()).forEach(x=>{
         var prop=pc?pc(x.facetName()):new nt.Property(x.facetName());
