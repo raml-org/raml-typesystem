@@ -919,6 +919,25 @@ describe("Metadata validation",function() {
         var st= tp.getType("MyNumber2").validateType(ts.builtInRegistry());
         assert.isTrue(!st.isOk());
     });
+    it("validating - facet fixed by declaring type", function () {
+        var tp = ps.parseJSONTypeCollection({
+            types: {
+                MyNumber:{
+                    type: "object",
+                    properties:{
+                        x: "number",
+                        y: "number",
+                    },
+                    facets: {
+                        "tp": "number"
+                    },
+                    tp: 5
+                }
+            }
+        });
+        var st= tp.getType("MyNumber").validateType(ts.builtInRegistry());
+        assert.isTrue(!st.isOk());
+    });
     it("validating - redeclare builtin", function () {
         var tp = ps.parseJSONTypeCollection({
             types: {

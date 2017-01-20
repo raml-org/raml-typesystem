@@ -924,22 +924,31 @@ export abstract class AbstractType implements tsInterfaces.IParsedType, tsInterf
                     knownPropertySet[(<PropertyIs>x).propId()]=true;
                 }
         });
-        this.meta().forEach(x=> {
+        for(var x of this.meta()){
             if (x instanceof CustomFacet) {
                 var cd:CustomFacet = x;
-                if (fds.hasOwnProperty(cd.facetName())) {
-                    var ft = fds[cd.facetName()].value();
-                    rs.addSubStatus(ft.validateDirect(cd.value(),false,false));
-                    delete rfds[cd.facetName()];
+                var facetName = cd.facetName();
+                if (fds.hasOwnProperty(facetName)) {
+                    var facet = fds[facetName];
+                    var ft = facet.value();
+                    if(facet.owner() == this && cd.owner() == this){
+                        var err = error(messageRegistry.FACET_CAN_NOT_BE_FIXED_BY_THE_DECLARING_TYPE,cd);
+                        err.setValidationPath({name: facetName});
+                        rs.addSubStatus(err);
+                    }
+                    else {
+                        rs.addSubStatus(ft.validateDirect(cd.value(), false, false));
+                        delete rfds[facetName];
+                    }
                 }
                 else {
                     if(this.isExternal()){
                         rs.addSubStatus(error(messageRegistry.FACET_PROHIBITED_FOR_EXTERNALS,
-                            cd, {facetName: cd.facetName()}, Status.ERROR, true));
+                            cd, {facetName: facetName}, Status.ERROR, true));
                     }
                     else{
                         rs.addSubStatus(error(messageRegistry.UNKNOWN_FACET,
-                            cd, {facetName: cd.facetName()}, Status.ERROR, true));
+                            cd, {facetName: facetName}, Status.ERROR, true));
                     }
                 }
             }
@@ -957,7 +966,7 @@ export abstract class AbstractType implements tsInterfaces.IParsedType, tsInterf
             //         }
             //     })
             // }
-        })
+        }
         if (Object.getOwnPropertyNames(rfds).length > 0) {
             rs.addSubStatus(error(messageRegistry.MISSING_REQUIRED_FACETS,
                 this, { facetsList: Object.keys(rfds).map(x=>`'${x}'`).join(",")}))
