@@ -645,8 +645,16 @@ export class DiscriminatorValue extends ts.Constraint{
         // }
         if(dVal) {
             if (i.hasOwnProperty(dName)) {
+                var queue = this.owner().allSubTypes().concat(this.owner());
+                var knownDiscriminatorValues:any = {};
+                for(var t of queue){
+                    let dvArr = t.metaOfType(DiscriminatorValue);
+                    if(dvArr && dvArr.length >0){
+                       dvArr.forEach(dv=>knownDiscriminatorValues[dv.value()] = true);
+                    }
+                }
                 var adVal = i[dName];
-                if (adVal != dVal) {
+                if (!knownDiscriminatorValues[adVal]) {
                     var wrng = ts.error(Status.CODE_INCORRECT_DISCRIMINATOR, this, {
                         rootType : owner.name(),
                         value: adVal,
