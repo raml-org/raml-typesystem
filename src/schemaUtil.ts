@@ -24,16 +24,62 @@ export class ValidationResult{
 
 var useLint=true;
 
+var CACHE_SIZE_BARRIER = 5*1024*1024;
+
 class ErrorsCache {
-    errors: any = {};
+    errors:{[key:string]:ErrorsEntry} = {};
+
+    last:ErrorsEntry;
+    top:ErrorsEntry;
+    size:number = 0;
 
     getValue(key: any): any {
-        return <any>this.errors[key];
+        var e = this.errors[key];
+        if(!e){
+            return null;
+        }
+        return e.value;
     }
 
     setValue(key: any, value: any) {
-        this.errors[key] = value;
+        var e = this.errors[key];
+        if(!e){
+            e = {
+                key: key,
+                value: value
+            };
+            if(this.top) {
+                this.top.next = e;
+            }
+            this.top = e;
+            if(!this.last){
+                this.last = e;
+            }
+            this.errors[key] = e;
+            this.size += key.length;
+            while(this.size > CACHE_SIZE_BARRIER){
+                if(!this.last){
+                    break;
+                }
+                var k = this.last.key;
+                delete this.errors[k];
+                this.size -= k.length;
+                this.last = this.last.next;
+            }
+        }
+        else{
+            e.value = value;
+        }
     }
+}
+
+interface ErrorsEntry{
+
+    value:any;
+
+    key:string;
+
+    next?:ErrorsEntry;
 }
 
 var globalCache = new ErrorsCache();
