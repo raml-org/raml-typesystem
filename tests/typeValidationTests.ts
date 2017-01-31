@@ -542,6 +542,23 @@ describe("Metadata validation",function() {
         var st= tp.getType("MyNumber").validateType(ts.builtInRegistry());
         assert.isTrue(!st.isOk());
     });
+    it("validating - default 3", function () {
+        var tp = ps.parseJSONTypeCollection({
+            types: {
+                MyType:{
+                    "properties" : {
+                        "p1": "string"
+                    },
+                    default: {
+                        "p1": "stringValue",
+                        "p2": 5,
+                    }
+                }
+            }
+        })
+        var st= tp.getType("MyType").validateType(ts.builtInRegistry());
+        assert.isTrue(st.isWarning());
+    });
     it("validating - example", function () {
         var tp = ps.parseJSONTypeCollection({
             types: {
@@ -900,6 +917,25 @@ describe("Metadata validation",function() {
             }
         })
         var st= tp.getType("MyNumber2").validateType(ts.builtInRegistry());
+        assert.isTrue(!st.isOk());
+    });
+    it("validating - facet fixed by declaring type", function () {
+        var tp = ps.parseJSONTypeCollection({
+            types: {
+                MyNumber:{
+                    type: "object",
+                    properties:{
+                        x: "number",
+                        y: "number",
+                    },
+                    facets: {
+                        "tp": "number"
+                    },
+                    tp: 5
+                }
+            }
+        });
+        var st= tp.getType("MyNumber").validateType(ts.builtInRegistry());
         assert.isTrue(!st.isOk());
     });
     it("validating - redeclare builtin", function () {

@@ -1820,6 +1820,24 @@ describe("Type collection parse and store",function(){
         assert.isTrue(val);
     });
 
+    it ("datetime  rfc3339 positive 4",function(){
+        var st={
+
+
+            types:{
+                t1:{
+                    type:"datetime",
+                    example: "2016-02-28T16:41:41.090123-10:30"
+                },
+
+            }
+        };
+        var col=ps.parseJSONTypeCollection(st);
+        var t=col.getType("t1");
+        var val= t.validateType(ts.builtInRegistry()).isOk();
+        assert.isTrue(val);
+    });
+
     it ("datetime  format rfc2616",function(){
         var st={
 

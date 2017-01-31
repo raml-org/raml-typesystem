@@ -8,7 +8,7 @@ import {TypeInformation,  Abstract, Polymorphic} from "./typesystem";
 import {MinProperties, MaxProperties, MinLength, MaxLength, MinItems , MaxItems, Minimum,
         Maximum, Enum, Pattern, UniqueItems,
         PropertyIs, AdditionalPropertyIs , MapPropertyIs, HasProperty,
-        KnownPropertyRestriction, ComponentShouldBeOfType, Format} from "./restrictions";
+        KnownPropertyRestriction, ComponentShouldBeOfType, Format, FileTypes} from "./restrictions";
 
 import {Default, Example, Description, DisplayName} from "./metainfo";
 import {AbstractType} from "./typesystem";
@@ -81,7 +81,8 @@ export class Registry {
         new FacetPrototype(()=>new HasProperty("x"), null),//X
         new FacetPrototype(()=>new UniqueItems(true), (x)=>new UniqueItems(x)),//X
         new FacetPrototype(()=>new ComponentShouldBeOfType(ts.ANY), null),//X
-        new FacetPrototype(()=>new KnownPropertyRestriction(false), (x)=>new KnownPropertyRestriction(<boolean>x))
+        new FacetPrototype(()=>new KnownPropertyRestriction(false), (x)=>new KnownPropertyRestriction(<boolean>x)),
+        new FacetPrototype(()=>new FileTypes([""]), (x)=>new FileTypes(x)),//X
     ];
 
     meta:FacetPrototype[] = [

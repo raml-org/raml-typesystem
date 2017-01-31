@@ -24,16 +24,62 @@ export class ValidationResult{
 
 var useLint=true;
 
+var CACHE_SIZE_BARRIER = 5*1024*1024;
+
 class ErrorsCache {
-    errors: any = {};
+    errors:{[key:string]:ErrorsEntry} = {};
+
+    last:ErrorsEntry;
+    top:ErrorsEntry;
+    size:number = 0;
 
     getValue(key: any): any {
-        return <any>this.errors[key];
+        var e = this.errors[key];
+        if(!e){
+            return null;
+        }
+        return e.value;
     }
 
     setValue(key: any, value: any) {
-        this.errors[key] = value;
+        var e = this.errors[key];
+        if(!e){
+            e = {
+                key: key,
+                value: value
+            };
+            if(this.top) {
+                this.top.next = e;
+            }
+            this.top = e;
+            if(!this.last){
+                this.last = e;
+            }
+            this.errors[key] = e;
+            this.size += key.length;
+            while(this.size > CACHE_SIZE_BARRIER){
+                if(!this.last){
+                    break;
+                }
+                var k = this.last.key;
+                delete this.errors[k];
+                this.size -= k.length;
+                this.last = this.last.next;
+            }
+        }
+        else{
+            e.value = value;
+        }
     }
+}
+
+interface ErrorsEntry{
+
+    value:any;
+
+    key:string;
+
+    next?:ErrorsEntry;
 }
 
 var globalCache = new ErrorsCache();
@@ -460,6 +506,8 @@ export class XMLSchemaObject {
     private schemaString: string;
 
     private extraElementData: any = null;
+    
+    private namspacePrefix:string;
 
     references: any = {};
 
@@ -515,10 +563,10 @@ export class XMLSchemaObject {
 
         doc = new DOMParser().parseFromString(xmlString);
 
-        var schema = elementChildrenByName(doc, 'xs:schema')[0];
+        var schema = elementChildrenByName(doc, 'schema', this.namspacePrefix)[0];
 
-        var imports: any[] = elementChildrenByName(schema, 'xs:import');
-        var includes: any[] = elementChildrenByName(schema, 'xs:include');
+        var imports: any[] = elementChildrenByName(schema, 'import', this.namspacePrefix);
+        var includes: any[] = elementChildrenByName(schema, 'include', this.namspacePrefix);
 
         var refElements: any = imports.concat(includes);
 
@@ -560,10 +608,10 @@ export class XMLSchemaObject {
 
         doc = new DOMParser().parseFromString(this.schemaString);
 
-        var schema = elementChildrenByName(doc, 'xs:schema')[0];
+        var schema = elementChildrenByName(doc, 'schema', this.namspacePrefix)[0];
 
-        var imports: any[] = elementChildrenByName(schema, 'xs:import');
-        var includes: any[] = elementChildrenByName(schema, 'xs:include');
+        var imports: any[] = elementChildrenByName(schema, 'import', this.namspacePrefix);
+        var includes: any[] = elementChildrenByName(schema, 'include', this.namspacePrefix);
 
         var refElements: any = imports.concat(includes);
         
@@ -587,10 +635,10 @@ export class XMLSchemaObject {
 
         doc = new DOMParser().parseFromString(xmlString);
 
-        var schema = elementChildrenByName(doc, 'xs:schema')[0];
+        var schema = elementChildrenByName(doc, 'schema', this.namspacePrefix)[0];
 
-        var imports: any[] = elementChildrenByName(schema, 'xs:import');
-        var includes: any[] = elementChildrenByName(schema, 'xs:include');
+        var imports: any[] = elementChildrenByName(schema, 'import', this.namspacePrefix);
+        var includes: any[] = elementChildrenByName(schema, 'include', this.namspacePrefix);
 
         var refElements: any = imports.concat(includes);
 
@@ -673,10 +721,11 @@ export class XMLSchemaObject {
 
     private handleReferenceElement(content: string): string {
         var doc = new DOMParser().parseFromString(content);
+        this.namspacePrefix = extractNamespace(doc);
 
-        var schema = elementChildrenByName(doc, 'xs:schema')[0];
+        var schema = elementChildrenByName(doc, 'schema', this.namspacePrefix)[0];
 
-        var elements:any[] = elementChildrenByName(schema, 'xs:element');
+        var elements:any[] = elementChildrenByName(schema, 'element', this.namspacePrefix);
 
         var element = _.find(elements, (element:any) => element.getAttribute('extraelement') === 'true');
 
@@ -789,8 +838,16 @@ export function createSchema(content: string, provider: IContentProvider): Schem
     }
 }
 
-function elementChildrenByName(parent: any, tagName: string): any[] {
-    var elements = parent.getElementsByTagName(tagName);
+function elementChildrenByName(parent: any, tagName: string, ns:string): any[] {
+
+    if(ns==null) {
+        ns = extractNamespace(parent);
+    }
+    if(ns.length>0){
+        ns += ":";
+    }
+
+    var elements = parent.getElementsByTagName(ns+tagName);
 
     var result: any[] = [];
 
@@ -803,4 +860,21 @@ function elementChildrenByName(parent: any, tagName: string): any[] {
     }
 
     return result;
+}
+
+function extractNamespace(documentOrElement:any){
+    var ns = "";
+    if(documentOrElement) {
+        var doc = documentOrElement;
+        if (documentOrElement.ownerDocument) {
+            doc = documentOrElement.ownerDocument;
+        }
+        if (doc) {
+            var docElement = doc.documentElement;
+            if (docElement) {
+                ns = docElement.prefix;
+            }
+        }
+    }
+    return ns;
 }

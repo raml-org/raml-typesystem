@@ -2,9 +2,9 @@ import ts=require("./typesystem")
 import nt=require("./nominal-types")
 import parse=require("./parse")
 import restrictions = require("./restrictions");
-import {FacetDeclaration} from "./metainfo";
-import {Description} from "./metainfo";
-import {DisplayName} from "./metainfo";
+import reg = require("./facetRegistry");
+import metainfo = require("./metainfo");
+import _ = require("underscore");
 
 const NOMINAL="nominal"
 
@@ -135,14 +135,18 @@ export function toNominal(t:ts.AbstractType,callback:StringToBuiltIn,customizer:
 
     var proto=parse.toProto(t);
     proto.properties.forEach(x=>{
-        var prop=pc?pc(x.id):new nt.Property(x.id);
+        var propName = x.regExp ? `/${x.id}/` : x.id; 
+        var prop=pc ? pc(propName):new nt.Property(propName);
         prop.withDomain(<nt.StructuredType>vs);
         prop.withRange(toNominal(x.type,callback));
         if (!x.optional){
             prop.withRequired(true);
         }
+        if(x.regExp){
+            prop.withKeyRegexp(propName);
+        }
     });
-    proto.facetDeclarations.forEach(x=>{
+    proto.facetDeclarations.filter(x=>!x.isBuiltIn()).forEach(x=>{
         var prop=pc?pc(x.facetName()):new nt.Property(x.facetName());
         prop.withRange(toNominal(x.type(),callback));
         vs.addFacet(prop);
@@ -151,11 +155,47 @@ export function toNominal(t:ts.AbstractType,callback:StringToBuiltIn,customizer:
     t.customFacets().forEach(x=>{
         vs.fixFacet(x.facetName(), x.value());
     });
-    var basicFacets = <restrictions.FacetRestriction<any>[]>
-            t.metaOfType(<any>restrictions.FacetRestriction);
+    var skipped:any = {
+        "example": true,
+        "examples": true
+    };
+    var basicFacets = <restrictions.FacetRestriction<any>[]>t.meta()
+        .filter(x=> {
+
+            if (!(x instanceof metainfo.Discriminator) && !(x instanceof metainfo.DiscriminatorValue)) {
+                if (!(x instanceof restrictions.FacetRestriction)
+                    && !(x instanceof metainfo.MetaInfo)
+                    && !(x instanceof restrictions.KnownPropertyRestriction)) {
+                    return false;
+                }
+                if (x instanceof metainfo.FacetDeclaration || x instanceof metainfo.CustomFacet) {
+                    return false;
+                }
+            }
+            var rt = x.requiredType();
+            var trArr = rt.isUnion() ? (<ts.UnionType>rt).allOptions() : [rt];
+            if (!_.some(trArr, y=>t.isSubTypeOf(y))) {
+                return false;
+            }
+            var n = x.facetName();
+            if (skipped[n]) {
+                return false;
+            }
+            if (n == "discriminatorValue") {
+                return (<metainfo.DiscriminatorValue>x).isStrict();
+            }
+            if (n == "allowedTargets") {
+                return true;
+            }
+            return reg.getInstance().facetPrototypeWithName(n) != null;
+        });
 
     for(var x of basicFacets){
-        vs.fixFacet(x.facetName(), x.value());
+        var n = x.facetName();
+        if(n == "closed"){
+            n = "additionalProperties";
+        }
+        vs.fixFacet(n, x.value(),true);
     }
     vs.addAdapter(t);
     if (t.isEmpty()){

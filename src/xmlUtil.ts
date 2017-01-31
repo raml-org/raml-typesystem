@@ -31,6 +31,9 @@ function objectToXml(object: any) {
 
     var nodeName = Object.keys(object)[0];
     var root = object[nodeName];
+    if(nodeName=="#text"){
+        return root;
+    }
 
     if(!root && root !== '') {
         return '';

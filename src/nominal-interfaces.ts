@@ -292,15 +292,31 @@ export interface ITypeDefinition extends INamedEntity,tsInterfaces.IHasExtra {
      */
     requiredProperties():IProperty[];
 
-    /**
+    /** 
      * @return map of fixed facet names to fixed facet values;
+     * @deprecated
      */
     getFixedFacets():{ [name:string]:any};
 
     /**
      * @return map of fixed facet names to fixed facet values;
      */
+    fixedFacets():{ [name:string]:any};
+
+    /**
+     * @return map of facets fixed by the type and its supertypes
+     */
     allFixedFacets():{ [name:string]:any};
+
+    /**
+     * @return map of built-in facets fixed by the type and its supertypes
+     */
+    fixedBuiltInFacets():{ [name:string]:any};
+
+    /**
+     * @return map of fixed built-in facet names to their values;
+     */
+    allFixedBuiltInFacets():{ [name:string]:any};
 
     /**
      * Print details of this type.
@@ -443,7 +459,7 @@ export interface IProperty extends INamedEntity{
      */
     keyPrefix():string
     /**
-     * return a pattern for a property name - used for a pattern properties
+     * return a pattern for a property name - used for pattern properties
      */
     getKeyRegexp():string;
     /**

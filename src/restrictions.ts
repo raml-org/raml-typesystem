@@ -1214,6 +1214,51 @@ export class Pattern extends FacetRestriction<string>{
     }
 }
 
+export class FileTypes extends FacetRestriction<string[]>{
+
+    constructor(private _value:string[]){
+        super();
+    }
+    facetName(){return "fileTypes"}
+    requiredType(){return ts.FILE}
+
+    check(i:any):ts.Status{
+        if (!Array.isArray(i)) {
+            return ts.error(messageRegistry.FILE_TYPES_SHOULD_BE_AN_ARRAY,this);
+        }
+        for(var s of i){
+            if(typeof(s) != "string"){
+                return ts.error(messageRegistry.FILE_TYPES_SHOULD_BE_AN_ARRAY,this);
+            }
+        }
+        return ts.ok()
+    }
+
+
+    composeWith(r:ts.Constraint):ts.Constraint{
+        if (r instanceof FileTypes){
+            var v=<FileTypes>r;
+            var arr = _.intersection(this._value, v._value);
+            if(arr.length>0){
+                return new FileTypes(arr);
+            }
+            return this.nothing(r,"no common file types");
+        }
+        return null;
+    }
+
+    value(){
+        return this._value;
+    }
+    checkValue():ts.Status{
+        return ts.ok();
+    }
+    toString(){
+        return "supported file types: " + this._value.join(", ");
+    }
+}
+
+
 /**
  * regular expression (pattern) constraint
  */

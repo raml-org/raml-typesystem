@@ -100,7 +100,7 @@ var r2=/(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)\,[ ]+\d{2}-(J
 
 var r3=/(Mon|Tue|Wed|Thu|Fri|Sat|Sun)\,[ ]+(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[ ]+\d{1,2}[ ]+\d{2}:\d{2}:\d{2}[ ]+GMT/
 
-var r0=/^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2}:\d{2})(?:\.\d{1,3})?((?:[\+\-]\d{2}:\d{2})|Z)$/;
+var r0=/^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2}:\d{2})(?:\.\d+)?((?:[\+\-]\d{2}:\d{2})|Z)$/;
 export class DateTimeR extends ts.GenericTypeOf{
     check(value:any):ts.Status {
         var c=ts.VALIDATED_TYPE;

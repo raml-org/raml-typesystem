@@ -134,7 +134,11 @@ export class Annotation extends MetaInfo implements tsInterfaces.IAnnotation{
 }
 export class FacetDeclaration extends MetaInfo{
 
-    constructor(private name: string,private _type:ts.AbstractType,private optional:boolean){
+    constructor(
+        private name: string,
+        private _type:ts.AbstractType,
+        private optional:boolean,
+        private builtIn = false){
         super(name,_type,true)
     }
     actualName(){
@@ -153,6 +157,10 @@ export class FacetDeclaration extends MetaInfo{
 
     kind() : tsInterfaces.MetaInformationKind {
         return tsInterfaces.MetaInformationKind.FacetDeclaration;
+    }
+    
+    isBuiltIn():boolean{
+        return this.builtIn;
     }
 }
 export class CustomFacet extends MetaInfo{
@@ -555,8 +563,11 @@ export class Default extends MetaInfo{
         var result = super.validateSelf(registry);
         var valOwner=this.owner().validateDirect(this.value(),true);
         if (!valOwner.isOk()){
-            result =  ts.error(messageRegistry.INVALID_DEFAULT_VALUE, this , { msg : valOwner.getMessage() });
-            ts.setValidationPath(result,{name:this.facetName()});
+            var c = ts.error(messageRegistry.INVALID_DEFAULT_VALUE, this, { msg : valOwner.getMessage() });
+            valOwner.getErrors().forEach(x=>{c.addSubStatus(x);
+                ts.setValidationPath(x,{name:this.facetName()});
+            });
+            result.addSubStatus(c);
         }
         return result;
     }
@@ -634,8 +645,16 @@ export class DiscriminatorValue extends ts.Constraint{
         // }
         if(dVal) {
             if (i.hasOwnProperty(dName)) {
+                var queue = this.owner().allSubTypes().concat(this.owner());
+                var knownDiscriminatorValues:any = {};
+                for(var t of queue){
+                    let dvArr = t.metaOfType(DiscriminatorValue);
+                    if(dvArr && dvArr.length >0){
+                       dvArr.forEach(dv=>knownDiscriminatorValues[dv.value()] = true);
+                    }
+                }
                 var adVal = i[dName];
-                if (adVal != dVal) {
+                if (!knownDiscriminatorValues[adVal]) {
                     var wrng = ts.error(Status.CODE_INCORRECT_DISCRIMINATOR, this, {
                         rootType : owner.name(),
                         value: adVal,
