@@ -22,7 +22,7 @@
     "xmldom": "^0.1.22"
   },
   "optionalDependencies": {
-    "raml-xml-validation": "0.0.10",
+    "raml-xml-validation": "0.0.11",
     "raml-json-validation": "0.0.11"
   },
   "browser": {
