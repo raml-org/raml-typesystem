@@ -78,12 +78,22 @@ class Example implements nm.IExpandableExample{
         private _displayName:string=undefined,
         private _description:string=undefined,
         private _strict:boolean=true,
-        private _annotations:{[key:string]:meta.Annotation}={},
+        private _annotations:{[key:string]:meta.Annotation},
         private _isSingle:boolean=false,
         private _empty:boolean=false){
 
+        if(!this._annotations){
+            this._annotations = {};
+        }
+        else{
+            this._hasAnnotations = true;
+        }
     }
-    
+
+    private _hasAnnotations:boolean;
+
+    private _hasScalarAnnotations:boolean;
+
     private _ownerType: rt.AbstractType
 
     private _expandedValue:any;
@@ -98,11 +108,27 @@ class Example implements nm.IExpandableExample{
     }
 
     isJSONString():boolean {
-        return typeof this._value==="string"&&((this._value+"").trim().indexOf("{")==0||(this._value+"").trim().indexOf("[")==0);
+        var ch = this.firstCharacter();
+        return ch == "{" || ch== "[";
     }
 
     isXMLString():boolean {
-        return typeof this._value==="string"&&(this._value+"").trim().indexOf("<")==0;
+        var ch = this.firstCharacter();
+        return ch == "<";
+    }
+    
+    private firstCharacter():string{
+        if(this._value==null){
+            return null;
+        }
+        if(typeof this._value !== "string"){
+            return null;
+        }
+        var trim = this._value.trim();
+        if(trim.length==0){
+            return null;
+        }
+        return trim.charAt(0);
     }
     
     asXMLString(): string {
@@ -194,6 +220,7 @@ class Example implements nm.IExpandableExample{
     }
 
     registerScalarAnnotatoion(a:meta.Annotation,pName:string){
+        this._hasScalarAnnotations = true;
         var aMap = this._scalarsAnnotations[pName];
         if(!aMap){
             aMap = {};
@@ -218,6 +245,9 @@ class Example implements nm.IExpandableExample{
         return this._ownerType;
     }
 
+    hasAnnotations():boolean{ return this._hasAnnotations; }
+
+    hasScalarAnnotations():boolean{ return this._hasScalarAnnotations; }
 }
 var toExample = function (owner: any, exampleObj:any, name:string=null,isSingle:boolean=false) {
     var example:Example;
