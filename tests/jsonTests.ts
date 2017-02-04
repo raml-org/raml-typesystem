@@ -1534,7 +1534,58 @@ describe("Type collection parse and store",function(){
             types:{
                 t1:{
                     type:"date-only",
-                    example: "0091-01-01"
+                    example: "0099-01-01"
+                },
+
+            }
+        };
+        var col=ps.parseJSONTypeCollection(st);
+        var t=col.getType("t1");
+        var val= t.validateType(ts.builtInRegistry()).isOk();
+        assert.isTrue(val);
+    });
+    it ("date only positive 4",function(){
+        var st={
+
+
+            types:{
+                t1:{
+                    type:"date-only",
+                    example: "0100-01-01"
+                },
+
+            }
+        };
+        var col=ps.parseJSONTypeCollection(st);
+        var t=col.getType("t1");
+        var val= t.validateType(ts.builtInRegistry()).isOk();
+        assert.isTrue(val);
+    });
+    it ("date only positive 5",function(){
+        var st={
+
+
+            types:{
+                t1:{
+                    type:"date-only",
+                    example: "0069-01-01"
+                },
+
+            }
+        };
+        var col=ps.parseJSONTypeCollection(st);
+        var t=col.getType("t1");
+        var val= t.validateType(ts.builtInRegistry()).isOk();
+        assert.isTrue(val);
+    });
+    it ("date only positive 6",function(){
+        var st={
+
+
+            types:{
+                t1:{
+                    type:"date-only",
+                    example: "0070-01-01"
                 },
 
             }

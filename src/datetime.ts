@@ -167,7 +167,7 @@ function checkDateOnlyString(dateStr : string, dateFormat:string):boolean {
     }
 
     let parsedYear = parseInt(matches[1]);
-    if((parsedYear < 69 || parsedYear > 99) && !date.isValid(dateStr,dateFormat)){
+    if((parsedYear < 70 || parsedYear > 99) && !date.isValid(dateStr,dateFormat)){
         return false;
     }
 
