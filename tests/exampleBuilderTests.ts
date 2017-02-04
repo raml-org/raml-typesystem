@@ -163,7 +163,7 @@ describe("Simple validation testing",function() {
         var t=tp.getType("XX2");
         var nt=nm.toNominal(t,x=>null);
         var p=nt.examples()[0];
-        assert.deepEqual(p.asJSON(),{"c":"A",vv:3,"c2":"Hee"})
+        assert.deepEqual(p.expandAsJSON(),{"c":"A",vv:3,"c2":"Hee"})
         var t=tp.getType("XX");
         var nt=nm.toNominal(t,x=>null);
         var p=nt.examples()[0];
@@ -199,7 +199,7 @@ describe("Simple validation testing",function() {
         var t=tp.getType("XX2");
         var nt=nm.toNominal(t,x=>null);
         var p=nt.examples()[0];
-        assert.deepEqual(p.asJSON(),[{"c":"A",vv:3}]);
+        assert.deepEqual(p.expandAsJSON(),[{"c":"A",vv:3}]);
 
     });
     it("example object as string ", function () {
@@ -277,8 +277,8 @@ describe("Simple validation testing",function() {
         var t=tp.getType("XX2");
         var nt=nm.toNominal(t,x=>null);
         var p=nt.examples()[0];
-        assert.isTrue(p.isEmpty())
-        assert.deepEqual(p.asString(),"4");
+        assert.isTrue(p.isEmpty());
+        assert.deepEqual(p.expandAsJSON(),4);
     });
     it("example object ", function () {
         var tp = ps.parseJSONTypeCollection({
@@ -301,6 +301,6 @@ describe("Simple validation testing",function() {
         var nt=nm.toNominal(t,x=>null);
         var p=nt.examples()[0];
         assert.isTrue(p.isEmpty())
-        assert.deepEqual(p.asJSON(),{ name: "Pavel",fr: null});
+        assert.deepEqual(p.expandAsJSON(),{ name: "Pavel",fr: null});
     });
 })
