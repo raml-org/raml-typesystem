@@ -1510,6 +1510,40 @@ describe("Type collection parse and store",function(){
         var val= t.validateType(ts.builtInRegistry()).isOk();
         assert.isTrue(val);
     });
+    it ("date only positive 2",function(){
+        var st={
+
+
+            types:{
+                t1:{
+                    type:"date-only",
+                    example: "0001-01-01"
+                },
+
+            }
+        };
+        var col=ps.parseJSONTypeCollection(st);
+        var t=col.getType("t1");
+        var val= t.validateType(ts.builtInRegistry()).isOk();
+        assert.isTrue(val);
+    });
+    it ("date only positive 3",function(){
+        var st={
+
+
+            types:{
+                t1:{
+                    type:"date-only",
+                    example: "0091-01-01"
+                },
+
+            }
+        };
+        var col=ps.parseJSONTypeCollection(st);
+        var t=col.getType("t1");
+        var val= t.validateType(ts.builtInRegistry()).isOk();
+        assert.isTrue(val);
+    });
     it ("date only negative 1",function(){
         var st={
 

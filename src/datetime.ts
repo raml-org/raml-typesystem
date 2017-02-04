@@ -9,7 +9,7 @@ import ts=require("./typesystem");
 var messageRegistry = ts.messageRegistry;
 
 function checkDate(dateStr : string) : boolean {
-    return checkDateString(dateStr,"YYYY-MM-DD")
+    return checkDateOnlyString(dateStr,"YYYY-MM-DD")
 }
 
 export class DateOnlyR extends ts.GenericTypeOf{
@@ -34,7 +34,17 @@ export class DateOnlyR extends ts.GenericTypeOf{
 }
 
 function checkTime(time : string): boolean {
-    return checkDateString("11 "+time.trim(),"YY HH:mm:ss");
+
+    let dateStr = "11 "+time.trim();
+    let dateFormat = "YY HH:mm:ss";
+
+    if(!date.isValid(dateStr,dateFormat)){
+        return false;
+    }
+
+    let parsedDate = date.parse(dateStr,dateFormat,false);
+    var serializedDate = date.format(parsedDate,dateFormat,false);
+    return serializedDate.trim() == dateStr.trim();
 }
 
 export class TimeOnlyR extends ts.GenericTypeOf{
@@ -148,17 +158,18 @@ export class DateTimeR extends ts.GenericTypeOf{
     }
 }
 
-function checkDateString(dateStr : string, dateFormat:string):boolean {
-    if(!date.isValid(dateStr,dateFormat)){
+function checkDateOnlyString(dateStr : string, dateFormat:string):boolean {
+    var regexp = /^(\d{4})-\d{2}-\d{2}$/;
+
+    var matches = dateStr.match(regexp);
+    if (!matches || matches.length != 2){
         return false;
     }
 
-    // try {
-    //     (<any>date).useStrict = true;
-    // } catch(Error){}
-    //
-    // var d = date.parse(dateStr,dateFormat,false);
-    // var ds = date.format(d,dateFormat,false);
-    // return ds.trim() == dateStr.trim();
+    let parsedYear = parseInt(matches[1]);
+    if((parsedYear < 69 || parsedYear > 99) && !date.isValid(dateStr,dateFormat)){
+        return false;
+    }
+
     return true;
 }
