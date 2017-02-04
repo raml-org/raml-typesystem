@@ -152,7 +152,13 @@ function checkDateString(dateStr : string, dateFormat:string):boolean {
     if(!date.isValid(dateStr,dateFormat)){
         return false;
     }
-    var d = date.parse(dateStr,dateFormat,false);
-    var ds = date.format(d,dateFormat,false);
-    return ds.trim() == dateStr.trim();
+
+    // try {
+    //     (<any>date).useStrict = true;
+    // } catch(Error){}
+    //
+    // var d = date.parse(dateStr,dateFormat,false);
+    // var ds = date.format(d,dateFormat,false);
+    // return ds.trim() == dateStr.trim();
+    return true;
 }
