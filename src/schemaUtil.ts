@@ -22,6 +22,14 @@ export class ValidationResult{
     num:number;
 }
 
+var domParserOptions: any = {
+    errorHandler:{
+        warning:() => null,
+        error:() => null,
+        fatalError:() => null
+    }
+}
+
 var useLint=true;
 
 var CACHE_SIZE_BARRIER = 5*1024*1024;
@@ -561,7 +569,7 @@ export class XMLSchemaObject {
     collectReferences(xmlString: string, context: string, references: any): string {
         var doc: any;
 
-        doc = new DOMParser().parseFromString(xmlString);
+        doc = new DOMParser(domParserOptions).parseFromString(xmlString);
 
         var schema = elementChildrenByName(doc, 'schema', this.namspacePrefix)[0];
 
@@ -606,7 +614,7 @@ export class XMLSchemaObject {
     getMissingReferences(): string[] {
         var doc: any;
 
-        doc = new DOMParser().parseFromString(this.schemaString);
+        doc = new DOMParser(domParserOptions).parseFromString(this.schemaString);
 
         var schema = elementChildrenByName(doc, 'schema', this.namspacePrefix)[0];
 
@@ -633,7 +641,7 @@ export class XMLSchemaObject {
     private collectReferencesAsync(xmlString: string, context: string, references: any): Promise {
         var doc: any;
 
-        doc = new DOMParser().parseFromString(xmlString);
+        doc = new DOMParser(domParserOptions).parseFromString(xmlString);
 
         var schema = elementChildrenByName(doc, 'schema', this.namspacePrefix)[0];
 
@@ -720,7 +728,7 @@ export class XMLSchemaObject {
     }
 
     private handleReferenceElement(content: string): string {
-        var doc = new DOMParser().parseFromString(content);
+        var doc = new DOMParser(domParserOptions).parseFromString(content);
         this.namspacePrefix = extractNamespace(doc);
 
         var schema = elementChildrenByName(doc, 'schema', this.namspacePrefix)[0];
