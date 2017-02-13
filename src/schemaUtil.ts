@@ -24,9 +24,9 @@ export class ValidationResult{
 
 var domParserOptions: any = {
     errorHandler:{
-        warning:() => null,
-        error:() => null,
-        fatalError:() => null
+        warning:(): any => null,
+        error:(): any => null,
+        fatalError:(): any => null
     }
 }
 
