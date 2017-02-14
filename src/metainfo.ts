@@ -676,6 +676,7 @@ export class DiscriminatorValue extends ts.Constraint{
                 return err;
             }
         }
+        return ts.ok();
     }
     facetName(){return "discriminatorValue"}
 

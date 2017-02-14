@@ -66,6 +66,9 @@ export class Status implements tsInterfaces.IStatus {
     }
 
     addSubStatus(st:tsInterfaces.IStatus,pathName:string=null) {
+        if(!st){
+            return;
+        }
         if (pathName){
             setValidationPath(st,{name: pathName})
         }
