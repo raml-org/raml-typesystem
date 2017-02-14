@@ -924,6 +924,10 @@ export function parse(
                         }
                         return y.value();
                     }).map(y=>typeExpressions.parseToType(""+y,r, provider));
+
+                    var err=ts.error(messageRegistry.ITEMS_SHOULD_BE_REFERENCE_OR_INLINE_TYPE,actualResult);
+                    err.setValidationPath({ name:"items"})
+                    result.putExtra(tsInterfaces.PARSE_ERROR,err);
                 }
                 else if (x.kind()==NodeKind.MAP){
                     componentTypes=[parse("",x,r,false,false,false)];
