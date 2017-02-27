@@ -1510,6 +1510,91 @@ describe("Type collection parse and store",function(){
         var val= t.validateType(ts.builtInRegistry()).isOk();
         assert.isTrue(val);
     });
+    it ("date only positive 2",function(){
+        var st={
+
+
+            types:{
+                t1:{
+                    type:"date-only",
+                    example: "0001-01-01"
+                },
+
+            }
+        };
+        var col=ps.parseJSONTypeCollection(st);
+        var t=col.getType("t1");
+        var val= t.validateType(ts.builtInRegistry()).isOk();
+        assert.isTrue(val);
+    });
+    it ("date only positive 3",function(){
+        var st={
+
+
+            types:{
+                t1:{
+                    type:"date-only",
+                    example: "0099-01-01"
+                },
+
+            }
+        };
+        var col=ps.parseJSONTypeCollection(st);
+        var t=col.getType("t1");
+        var val= t.validateType(ts.builtInRegistry()).isOk();
+        assert.isTrue(val);
+    });
+    it ("date only positive 4",function(){
+        var st={
+
+
+            types:{
+                t1:{
+                    type:"date-only",
+                    example: "0100-01-01"
+                },
+
+            }
+        };
+        var col=ps.parseJSONTypeCollection(st);
+        var t=col.getType("t1");
+        var val= t.validateType(ts.builtInRegistry()).isOk();
+        assert.isTrue(val);
+    });
+    it ("date only positive 5",function(){
+        var st={
+
+
+            types:{
+                t1:{
+                    type:"date-only",
+                    example: "0069-01-01"
+                },
+
+            }
+        };
+        var col=ps.parseJSONTypeCollection(st);
+        var t=col.getType("t1");
+        var val= t.validateType(ts.builtInRegistry()).isOk();
+        assert.isTrue(val);
+    });
+    it ("date only positive 6",function(){
+        var st={
+
+
+            types:{
+                t1:{
+                    type:"date-only",
+                    example: "0070-01-01"
+                },
+
+            }
+        };
+        var col=ps.parseJSONTypeCollection(st);
+        var t=col.getType("t1");
+        var val= t.validateType(ts.builtInRegistry()).isOk();
+        assert.isTrue(val);
+    });
     it ("date only negative 1",function(){
         var st={
 
@@ -2040,6 +2125,45 @@ describe("Type collection parse and store",function(){
         var status=t.validateType(ts.builtInRegistry());
         var val=status .isOk();
         assert.isTrue(!val);
+    });
+
+    it ("multiple of value (negative 1)",function(){
+        var st={
+
+
+            types:{
+                t1:{
+                    type:"number",
+                    multipleOf:0,
+                    example: 4
+                },
+
+            }
+        };
+        var col=ps.parseJSONTypeCollection(st);
+        var t=col.getType("t1");
+        var status=t.validateType(ts.builtInRegistry());
+        var val=!status .isOk();
+        assert.isTrue(val);
+    });
+    it ("multiple of value (negative 2)",function(){
+        var st={
+
+
+            types:{
+                t1:{
+                    type:"number",
+                    multipleOf:-2,
+                    example: 4
+                },
+
+            }
+        };
+        var col=ps.parseJSONTypeCollection(st);
+        var t=col.getType("t1");
+        var status=t.validateType(ts.builtInRegistry());
+        var val=!status .isOk();
+        assert.isTrue(val);
     });
 
     it ("inline types",function(){

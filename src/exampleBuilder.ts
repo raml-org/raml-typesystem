@@ -70,7 +70,7 @@ export function example(t:rt.AbstractType):any{
     }
 }
 class Example implements nm.IExpandableExample{
-    _owner: any;
+    private _owner:any;
 
     constructor(
         private _value:any,
@@ -78,11 +78,27 @@ class Example implements nm.IExpandableExample{
         private _displayName:string=undefined,
         private _description:string=undefined,
         private _strict:boolean=true,
-        private _annotations:{[key:string]:meta.Annotation}={},
+        private _annotations:{[key:string]:meta.Annotation},
         private _isSingle:boolean=false,
         private _empty:boolean=false){
 
+        if(!this._annotations){
+            this._annotations = {};
+        }
+        else{
+            this._hasAnnotations = true;
+        }
     }
+
+    private _hasAnnotations:boolean;
+
+    private _hasScalarAnnotations:boolean;
+
+    private _ownerType: rt.AbstractType
+
+    private _expandedValue:any;
+
+    private isExpanded:boolean = false;
 
     private _scalarsAnnotations:
         {[pName:string]:{[aName:string]:meta.Annotation}} = {};
@@ -92,11 +108,27 @@ class Example implements nm.IExpandableExample{
     }
 
     isJSONString():boolean {
-        return typeof this._value==="string"&&((this._value+"").trim().indexOf("{")==0||(this._value+"").trim().indexOf("[")==0);
+        var ch = this.firstCharacter();
+        return ch == "{" || ch== "[";
     }
 
     isXMLString():boolean {
-        return typeof this._value==="string"&&(this._value+"").trim().indexOf("<")==0;
+        var ch = this.firstCharacter();
+        return ch == "<";
+    }
+    
+    private firstCharacter():string{
+        if(this._value==null){
+            return null;
+        }
+        if(typeof this._value !== "string"){
+            return null;
+        }
+        var trim = this._value.trim();
+        if(trim.length==0){
+            return null;
+        }
+        return trim.charAt(0);
     }
     
     asXMLString(): string {
@@ -122,7 +154,7 @@ class Example implements nm.IExpandableExample{
         if (typeof this._value==="string"){
             return ""+this._value;
         }
-        return this.expandAsString();
+        return JSON.stringify(this._value,null,2);
     }
 
     asJSON():any {
@@ -136,7 +168,7 @@ class Example implements nm.IExpandableExample{
         if (this.isYAML()){
             return this._value;
         }
-        return this.expandAsString();
+        return this.asString();
     }
 
     original():any {
@@ -148,7 +180,15 @@ class Example implements nm.IExpandableExample{
     }
 
     expandAsJSON():any {
-        return this._value;
+        if(!this.isEmpty()){
+            return this._value;
+        }
+        if(this.isExpanded){
+            return this._expandedValue;
+        }
+        this._expandedValue = example(this._ownerType);
+        this.isExpanded = true;
+        return this._expandedValue;
     }
 
     isSingle():boolean{
@@ -180,6 +220,7 @@ class Example implements nm.IExpandableExample{
     }
 
     registerScalarAnnotatoion(a:meta.Annotation,pName:string){
+        this._hasScalarAnnotations = true;
         var aMap = this._scalarsAnnotations[pName];
         if(!aMap){
             aMap = {};
@@ -187,7 +228,26 @@ class Example implements nm.IExpandableExample{
         }
         aMap[a.facetName()] = a;
     }
+    
+    setOwner(owner:any){
+        this._owner = owner;
+    }
+    
+    owner(){
+        return this._owner;
+    }
 
+    setOwnerType(ownerType:rt.AbstractType){
+        this._ownerType = ownerType;
+    }
+
+    ownerType():rt.AbstractType{
+        return this._ownerType;
+    }
+
+    hasAnnotations():boolean{ return this._hasAnnotations; }
+
+    hasScalarAnnotations():boolean{ return this._hasScalarAnnotations; }
 }
 var toExample = function (owner: any, exampleObj:any, name:string=null,isSingle:boolean=false) {
     var example:Example;
@@ -219,7 +279,7 @@ var toExample = function (owner: any, exampleObj:any, name:string=null,isSingle:
     }
     
     if(example) {
-        example._owner = owner;
+        example.setOwner(owner);
     }
     
     return example;
@@ -264,7 +324,8 @@ function exampleFromInheritedType(inheritedType:rt.InheritedType) : nm.IExpandab
                     }
 
                     return xmlValues[key];
-                }}, exampleObj, name);
+                },
+                ownerType: () => inheritedType}, exampleObj, name);
                 result.push(example);
             })
         }
@@ -305,7 +366,9 @@ export function exampleFromNominal(nominalType:nm.ITypeDefinition,collectFromSup
         }
     }
     if (originalInherited) {
-        return [new Example(example(originalInherited),undefined,undefined,undefined,false,undefined,undefined,true)];
+        var ex = new Example(null,undefined,undefined,undefined,false,undefined,undefined,true);
+        ex.setOwnerType(originalInherited);
+        return [ex];
     }
     return [];
 }

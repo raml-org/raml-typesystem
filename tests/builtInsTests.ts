@@ -516,7 +516,7 @@ describe("Facet Registry",function() {
         assert.equal(facetRegistry.getInstance().allPrototypes().length,32);
     });
     it ("All object facets",function (){
-        assert.equal(facetRegistry.getInstance().applyableTo(ts.OBJECT).length,19);
+        assert.equal(facetRegistry.getInstance().applyableTo(ts.OBJECT).length,20);
     });
     it ("All meta",function (){
         assert.equal(facetRegistry.getInstance().allMeta().length,11);

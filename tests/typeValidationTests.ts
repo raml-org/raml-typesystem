@@ -2180,5 +2180,34 @@ describe("Type validation basics",function() {
         var st= tp.getType("Q").validateType();
         assert.isTrue(!st.isOk());
         assert.isTrue(st.getErrors().length==1);
-    })
-})
+    });
+
+    it("property type with discriminator", function () {
+        var tp = ps.parseJSONTypeCollection({
+
+            types: {
+                T1: {
+                    discriminator: "d",
+                    properties: {
+                        d: "string",
+                    }
+                },
+                T2: {
+                    properties: {
+                        prop: {
+                            type: "T1",
+                            required: false
+                        }
+                    },
+                    example: {
+                        prop: {
+                            d: "T1"
+                        }
+                    }
+                }
+            }
+        });
+        var st= tp.getType("T2").validateType();
+        assert.isTrue(st.isOk());
+    });
+});

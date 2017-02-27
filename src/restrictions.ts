@@ -851,6 +851,12 @@ export class MultipleOf extends FacetRestriction<Number>{
             return ts.error(messageRegistry.FACET_REQUIRE_NUMBER,
                 this,{ facetName: this.facetName()},ts.Status.ERROR,true);
         }
+        else{
+            if(this._value <= 0){
+                return ts.error(messageRegistry.VALUE_SHOULD_BE_POSITIVE,
+                    this,{ facetName: this.facetName()},ts.Status.ERROR,true);
+            }
+        }
         return null;
     }
 
@@ -1332,7 +1338,7 @@ export class Enum extends FacetRestriction<string[]>{
         super();
     }
     facetName(){return "enum"}
-    requiredType(){return ts.SCALAR}
+    requiredType(){return ts.ANY}
 
 
     checkStatus:boolean
@@ -1388,13 +1394,14 @@ export class Enum extends FacetRestriction<string[]>{
         // if (_.uniq(this._value).length<this._value.length){
         //     return "enum facet can only contain unique items";
         // }
-        var result:ts.Status=null;
+        var result:ts.Status=ts.ok();
         this.checkStatus=true;
         try {
-            this._value.forEach(x=> {
+            this._value.forEach((x,i)=> {
                 var res = this.owner().validate(x);
                 if (!res.isOk()) {
-                    result= res;
+                    ts.setValidationPath(res,{name:i});
+                    result.addSubStatus(res);
                 }
             })
         }finally {
