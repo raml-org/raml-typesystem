@@ -851,6 +851,12 @@ export class MultipleOf extends FacetRestriction<Number>{
             return ts.error(messageRegistry.FACET_REQUIRE_NUMBER,
                 this,{ facetName: this.facetName()},ts.Status.ERROR,true);
         }
+        else{
+            if(this._value <= 0){
+                return ts.error(messageRegistry.VALUE_SHOULD_BE_POSITIVE,
+                    this,{ facetName: this.facetName()},ts.Status.ERROR,true);
+            }
+        }
         return null;
     }
 

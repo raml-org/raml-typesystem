@@ -402,5 +402,9 @@
   "ITEMS_SHOULD_BE_REFERENCE_OR_INLINE_TYPE" : {
     "code" : "ITEMS_SHOULD_BE_REFERENCE_OR_INLINE_TYPE",
     "message": "The 'items' property value should be either a reference to an existing type or an inline type declaration"
+  },
+  "VALUE_SHOULD_BE_POSITIVE" : {
+    "code" : "VALUE_SHOULD_BE_POSITIVE",
+    "message": "Value of the '{{facetName}}' facet should be positive"
   }
 }
