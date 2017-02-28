@@ -1250,6 +1250,16 @@ export abstract class AbstractType implements tsInterfaces.IParsedType, tsInterf
         this.allSuperTypes().forEach(x=>rs=rs|| x instanceof UnionType);
         return rs;
     }
+
+    isIntersection():boolean{
+        var rs=false;
+        if (this.isBuiltin()){
+            return false;
+        }
+        this.allSuperTypes().forEach(x=>rs=rs|| x instanceof IntersectionType);
+        return rs;
+    }
+    
     nullable:boolean
     /**
      * return all type information associated with type
@@ -1743,7 +1753,8 @@ export class InheritedType extends AbstractType{
     }
 
 }
-export abstract class DerivedType extends AbstractType{
+export abstract class DerivedType extends AbstractType
+        implements tsInterfaces.IDerivedType{
 
     constructor(name: string,private _options:AbstractType[]){
         super(name);
@@ -1847,6 +1858,9 @@ export class IntersectionType extends DerivedType{
 
     label(){
         return this.options().map(x=>x.label()).join("&");
+    }
+    isIntersection(){
+        return true;
     }
 }
 
@@ -2198,13 +2212,13 @@ export const OBJECT=ANY.inherit("object");
 //export const POLYMORPHIC=OBJECT.inherit("polymorphic");
 
 export const ARRAY=ANY.inherit("array");
-export const NIL=ANY.inherit("nil");
 
 export const EXTERNAL=ANY.inherit("external");
 export const NUMBER=SCALAR.inherit("number");
 export const INTEGER=NUMBER.inherit("integer");
 export const BOOLEAN=SCALAR.inherit("boolean");
 export const STRING=SCALAR.inherit("string");
+export const NIL=SCALAR.inherit("nil");
 //export const DATE=SCALAR.inherit("date");
 export const DATE_ONLY=SCALAR.inherit("date-only");
 export const TIME_ONLY=SCALAR.inherit("time-only");

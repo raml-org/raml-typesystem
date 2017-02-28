@@ -336,6 +336,11 @@ export interface IParsedType extends IHasExtra {
     isUnion():boolean
 
     /**
+     * returns true if this type is an intersection type
+     */
+    isIntersection():boolean
+
+    /**
      * returns true if this type inhetits from an unknown type
      */
     isUnknown(): boolean;
@@ -349,6 +354,24 @@ export interface IParsedType extends IHasExtra {
      * returns true if this type has recurrent definition;
      */
     isRecurrent():boolean;
+}
+
+/**
+ * Type defined by a set of types, e.g. union or intersection type
+ */
+export interface IDerivedType extends IParsedType {
+
+    /**
+     * Straightforward set of components. E.g. for `A|(B|C)` where `A`, `B` and `C`
+     * are not union types the result is `[A, B|C]`
+     */
+    options():IParsedType[];
+
+    /**
+     * Expanded set of components. E.g. for `A|(B|C)` where `A`, `B` and `C`
+     * are not union types the result is `[A, B, C]`
+     */
+    allOptions():IParsedType[];
 }
 
 /**
