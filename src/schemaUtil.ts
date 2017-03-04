@@ -1,6 +1,5 @@
 /// <reference path="../typings/main.d.ts" />
 
-import {XMLValidator} from "raml-xml-validation";
 import {XMLSchemaReference} from "raml-xml-validation";
 
 declare var global:any;
@@ -665,7 +664,7 @@ export class XMLSchemaObject {
                         patchedContent = loadedContent;
                     }
 
-                    reference = new XMLSchemaReference(fullPath, index, patchedContent);
+                    reference = xmlUtil.createXmlSchemaReference(fullPath, index, patchedContent);
 
                     references[fullPath] = reference;
                 }
@@ -736,7 +735,7 @@ export class XMLSchemaObject {
                     }, (reject: any) => loadedContent).then((patchedContent: string) => {
                         var index = Object.keys(references).length;
 
-                        reference = new XMLSchemaReference(fullPath, index, patchedContent);
+                        reference = xmlUtil.createXmlSchemaReference(fullPath, index, patchedContent);
 
                         references[fullPath] = reference;
 
@@ -770,8 +769,8 @@ export class XMLSchemaObject {
             var references: any = {};
             
             var patchedSchema = this.collectReferences(this.schemaString, this.provider.contextPath(), references);
-            
-            var validator = new XMLValidator(patchedSchema);
+
+            var validator = xmlUtil.getValidator(patchedSchema);
 
             if(this.provider.hasAsyncRequests()) {
                 return;
