@@ -383,7 +383,8 @@ export class JSONSchemaObject {
         var missingReferences = validator.getMissingRemoteReferences().filter((reference: any) => !_.find(alreadyAccepted, (acceptedReference: any) => reference === acceptedReference.reference));
 
         if(!missingReferences || missingReferences.length === 0) {
-            this.acceptErrors(key, validator.getLastErrors(), true);
+            this.acceptErrors(key, validator.getLastErrors(),
+                messageRegistry.CONTENT_DOES_NOT_MATCH_THE_SCHEMA, true);
 
             return;
         }
@@ -425,6 +426,71 @@ export class JSONSchemaObject {
         this.validate(content, alreadyAccepted);
     }
 
+    validateSelf(alreadyAccepted: any[] = []): void {
+        var key = exampleKey("__SCHEMA_VALIDATION__",this.schema,this.provider.contextPath());
+
+        var error = globalCache.getValue(key);
+
+        if(error) {
+            if(error instanceof Error) {
+                throw error;
+            }
+
+            return;
+        }
+
+        var validator = jsonUtil.getValidator();
+
+        alreadyAccepted.forEach(accepted => validator.setRemoteReference(accepted.reference, accepted.content));
+
+        validator.validateSchema(this.jsonSchema);
+
+        var missingReferences = validator.getMissingRemoteReferences().filter((reference: any) => !_.find(alreadyAccepted, (acceptedReference: any) => reference === acceptedReference.reference));
+
+        if(!missingReferences || missingReferences.length === 0) {
+            this.acceptErrors(key, validator.getLastErrors(),
+                messageRegistry.INVALID_JSON_SCHEMA_DETAILS, true);
+
+            return;
+        }
+
+        var acceptedReferences: any = [];
+
+        missingReferences.forEach((reference: any) => {
+            var remoteSchemeContent: any;
+
+            var result: any = {reference: reference};
+
+            try {
+                var api = require('json-schema-compatibility');
+
+                var jsonObject = JSON.parse(this.provider.content(reference));
+
+                this.setupId(jsonObject, this.provider.normalizePath(reference));
+
+                remoteSchemeContent = api.v4(jsonObject);
+
+                delete remoteSchemeContent['$schema'];
+
+                result.content = remoteSchemeContent;
+            } catch(exception){
+                result.error = exception;
+            } finally {
+                acceptedReferences.push(result);
+            }
+        });
+
+        if(this.provider.hasAsyncRequests()) {
+            return;
+        }
+
+        acceptedReferences.forEach((accepted: any) => {
+            alreadyAccepted.push(accepted);
+        });
+
+        this.validateSelf(alreadyAccepted);
+    }
+
     private setupId(json: any, path: string): any {
         if(!path) {
             return;
@@ -449,10 +515,10 @@ export class JSONSchemaObject {
         this.patchSchema(json);
     }
 
-    private acceptErrors(key: any, errors: any[], throwImmediately = false): void {
+    private acceptErrors(key: any, errors: any[], regEntry:any, throwImmediately = false): void {
         if(errors && errors.length>0){
             var msg = errors.map(x=>x.message+" "+x.params).join(", ");
-            var res= new ts.ValidationError(messageRegistry.CONTENT_DOES_NOT_MATCH_THE_SCHEMA,{msg : msg});
+            var res= new ts.ValidationError(regEntry,{msg : msg});
             (<any>res).errors=errors;
             globalCache.setValue(key, res);
             if(throwImmediately) {

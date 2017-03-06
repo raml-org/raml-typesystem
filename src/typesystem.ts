@@ -671,29 +671,28 @@ export abstract class AbstractType implements tsInterfaces.IParsedType, tsInterf
         if (rs.isOk()) {
             rs.addSubStatus(this.checkConfluent());
 
-            if (this.isExternal()){
-                var allS=this.allSuperTypes();
-                var mma:ExternalType[]=<ExternalType[]>allS.filter(x=>x instanceof ExternalType);
-                if (this instanceof ExternalType){
-                    mma.push(<ExternalType><any>this);
-                }
-                mma.forEach(x=>{
+            if (this.isExternal() && this.kind() == "external") {
+                var extType = <ExternalType><any>this;
 
-                    if (x.isJSON()) {
-                        try {
-                            su.getJSONSchema(x.schema(), x.getContentProvider && x.getContentProvider());
-                        } catch (e){
-                            if(e instanceof ValidationError){
-                                var ve = <ValidationError>e;
-                                rs.addSubStatus(error(ve.messageEntry,this,ve.parameters));
-                            }
-                            else {
-                                rs.addSubStatus(new Status(Status.ERROR, "", e.message, this));
-                            }
+                if (extType.isJSON()) {
+                    try {
+                        var sch = su.getJSONSchema(extType.schema(), extType.getContentProvider && extType.getContentProvider());
+                        if (sch) {
+                            sch.validateSelf();
+                        }
+                    } catch (e) {
+                        if (e.message == "Maximum call stack size exceeded") {
+                            return error(messageRegistry.CIRCULAR_REFS_IN_JSON_SCHEMA, this);
+                        }
+                        else if (e instanceof ValidationError) {
+                            var ve = <ValidationError>e;
+                            rs.addSubStatus(error(ve.messageEntry, this, ve.parameters));
+                        }
+                        else {
+                            rs.addSubStatus(new Status(Status.ERROR, "", e.message, this));
                         }
                     }
-                });
-
+                }
             }
             if (rs.isOk()) {
                 this.superTypes().forEach(x=> {
