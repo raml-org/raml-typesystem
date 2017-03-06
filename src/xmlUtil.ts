@@ -1,6 +1,6 @@
 /// <reference path="../typings/main.d.ts" />
 
-import {XMLValidator} from "raml-xml-validation";
+import {XMLValidator, XMLSchemaReference} from "raml-xml-validation";
 
 declare function require(s:string):any;
 
@@ -22,6 +22,14 @@ if (!XMLValidatorConstructor) {
     }
     
     XMLValidatorConstructor = XMLValidatorDummyImpl;
+}
+
+export function createXmlSchemaReference(originalPath: string, virtualIndex: number, patchedContent: string): XMLSchemaReference {
+    return {
+        originalPath: originalPath,
+        virtualIndex: virtualIndex,
+        patchedContent: patchedContent
+    }
 }
 
 function objectToXml(object: any) {
