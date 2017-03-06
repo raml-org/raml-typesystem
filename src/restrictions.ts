@@ -148,12 +148,6 @@ export class MatchToSchema extends  ts.Constraint{
                 if (e.message=="!_PERF_!"){
                     return ts.error(messageRegistry.UNABLE_TO_VALIDATE_XML,this,{},ts.Status.WARNING);
                 }
-                if (e.message=="Cannot assign to read only property '__$validated' of object"){
-                    return ts.ok();
-                }
-                if (e.message=="Object.keys called on non-object"){
-                    return ts.ok();
-                }
                 if (e.message == "Maximum call stack size exceeded"){
                     return ts.error(messageRegistry.CIRCULAR_REFS_IN_JSON_SCHEMA,this);
                 }

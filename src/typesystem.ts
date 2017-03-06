@@ -689,7 +689,7 @@ export abstract class AbstractType implements tsInterfaces.IParsedType, tsInterf
                             rs.addSubStatus(error(ve.messageEntry, this, ve.parameters));
                         }
                         else {
-                            rs.addSubStatus(new Status(Status.ERROR, "", e.message, this));
+                            rs.addSubStatus(error(messageRegistry.JSON_SCHEMA_VALIDATION_EXCEPTION,this,{msg:e.message}));
                         }
                     }
                 }
@@ -2512,7 +2512,6 @@ export class AnnotatedFacet implements tsInterfaces.IAnnotatedElement{
     entry():tsInterfaces.ITypeFacet{ return this._facet; }
 }
 import parse = require("./parse");
-import {messageRegistry} from "../dist/src/typesystem";
 /**
  * A model of annotated RAML type
  */
