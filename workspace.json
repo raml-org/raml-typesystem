@@ -3,12 +3,13 @@
     "build" : "npm run build",
     "test" : "gulp test",
     "gitUrl" : "https://github.com/raml-org/raml-js-parser-2.git",
-    "gitBranch" : "hotfix-for-1.1.15",
+    "gitBranch": "develop",
     "installTypings" : true
   },
   "raml-definition-system" : {
     "build" : "npm run build",
     "gitUrl" : "https://github.com/raml-org/raml-definition-system.git",
+    "gitBranch": "develop",
     "installTypings" : true
   },
   "raml-typesystem" : {
@@ -21,6 +22,7 @@
   "raml-xml-validation" : {
     "build" : "npm run build",
     "gitUrl" : "https://github.com/dreamflyer/raml-xml-validation.git",
+    "gitBranch": "develop",
     "installTypings" : true
   },
   "raml-json-validation" : {
@@ -40,6 +42,7 @@
   "ts-model" : {
     "build" : "npm run build",
     "gitUrl" : "https://github.com/mulesoft-labs/ts-model.git",
+    "gitBranch": "develop",
     "installTypings" : true
   }
 }
