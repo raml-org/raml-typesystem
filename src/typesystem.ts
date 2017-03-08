@@ -689,7 +689,7 @@ export abstract class AbstractType implements tsInterfaces.IParsedType, tsInterf
                             rs.addSubStatus(error(ve.messageEntry, this, ve.parameters));
                         }
                         else {
-                            rs.addSubStatus(new Status(Status.ERROR, "", e.message, this));
+                            rs.addSubStatus(error(messageRegistry.JSON_SCHEMA_VALIDATION_EXCEPTION,this,{msg:e.message}));
                         }
                     }
                 }
@@ -2415,9 +2415,23 @@ function checkDescriminator(i:any,t:AbstractType,path?:IValidationPath){
 
 export class ValidationError extends Error{
 
+    private static CLASS_IDENTIFIER_ValidationError = "linter.ValidationError";
+
     constructor(public messageEntry:any, public parameters:any={}){
         super();
         this.message = messageText(messageEntry,parameters);
+    }
+
+    public getClassIdentifier() : string[] {
+        var superIdentifiers:string[] = [];
+
+        return superIdentifiers.concat(ValidationError.CLASS_IDENTIFIER_ValidationError);
+    }
+
+    public static isInstance(instance : any) : instance is ValidationError {
+        return instance != null && instance.getClassIdentifier
+            && typeof(instance.getClassIdentifier) == "function"
+            && _.contains(instance.getClassIdentifier(),ValidationError.CLASS_IDENTIFIER_ValidationError);
     }
 }
 

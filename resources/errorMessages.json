@@ -271,6 +271,10 @@
     "code" : "EXAMPLE_SCHEMA_FAILURE",
     "message": "Example does not conform to schema: {{msg}}"
   },
+  "JOSN_EXAMPLE_VALIDATION_EXCEPTION" : {
+    "code" : "JOSN_EXAMPLE_VALIDATION_EXCEPTION",
+    "message": "Validating example against schema caused an exception: {{msg}}"
+  },
   "UNKNOWN_PROPERTY" : {
     "code" : "UNKNOWN_PROPERTY",
     "message": "Unknown property: '{{propName}}'"
@@ -366,6 +370,10 @@
   "INVALID_JSON_SCHEMA" : {
     "code" : "INVALID_JSON_SCHEMA",
     "message": "Invalid JSON schema"
+  },
+  "JSON_SCHEMA_VALIDATION_EXCEPTION" : {
+    "code" : "JSON_SCHEMA_VALIDATION_EXCEPTION",
+    "message": "Schema validation exception: {{msg}}"
   },
   "REFERENCE_NOT_FOUND" : {
     "code" : "REFERENCE_NOT_FOUND",
