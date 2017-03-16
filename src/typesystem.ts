@@ -686,7 +686,8 @@ export abstract class AbstractType implements tsInterfaces.IParsedType, tsInterf
                         }
                         else if (e instanceof ValidationError) {
                             var ve = <ValidationError>e;
-                            rs.addSubStatus(error(ve.messageEntry, this, ve.parameters));
+                            rs.addSubStatus(error(ve.messageEntry, this, ve.parameters,
+                                ve.isWarning?Status.WARNING:Status.ERROR));
                         }
                         else {
                             rs.addSubStatus(error(messageRegistry.JSON_SCHEMA_VALIDATION_EXCEPTION,this,{msg:e.message}));
@@ -2416,6 +2417,8 @@ function checkDescriminator(i:any,t:AbstractType,path?:IValidationPath){
 export class ValidationError extends Error{
 
     private static CLASS_IDENTIFIER_ValidationError = "linter.ValidationError";
+
+    public isWarning = false;
 
     constructor(public messageEntry:any, public parameters:any={}){
         super();

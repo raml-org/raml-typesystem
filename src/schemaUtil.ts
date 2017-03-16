@@ -448,7 +448,7 @@ export class JSONSchemaObject {
 
         if(!missingReferences || missingReferences.length === 0) {
             this.acceptErrors(key, validator.getLastErrors(),
-                messageRegistry.INVALID_JSON_SCHEMA_DETAILS, true);
+                messageRegistry.INVALID_JSON_SCHEMA_DETAILS, true, true);
 
             return;
         }
@@ -514,10 +514,12 @@ export class JSONSchemaObject {
         this.patchSchema(json);
     }
 
-    private acceptErrors(key: any, errors: any[], regEntry:any, throwImmediately = false): void {
+    private acceptErrors(key: any, errors: any[], regEntry:any, throwImmediately = false,
+        isWarning=false): void {
         if(errors && errors.length>0){
             var msg = errors.map(x=>x.message+" "+x.params).join(", ");
             var res= new ts.ValidationError(regEntry,{msg : msg});
+            res.isWarning = isWarning;
             (<any>res).errors=errors;
             globalCache.setValue(key, res);
             if(throwImmediately) {
