@@ -442,7 +442,29 @@ export class JSONSchemaObject {
 
         alreadyAccepted.forEach(accepted => validator.setRemoteReference(accepted.reference, accepted.content));
 
-        validator.validateSchema(this.jsonSchema);
+        try {
+            validator.validateSchema(this.jsonSchema);
+        } catch (error) {
+            let illegalRequiredMessageStart = "Cannot assign to read only property '__$validated' of ";
+
+            if (error.message && error.message.indexOf(illegalRequiredMessageStart) == 0
+                && error.message.length > illegalRequiredMessageStart.length) {
+
+                let propertyName = error.message.substr(illegalRequiredMessageStart.length,
+                    error.message.length - illegalRequiredMessageStart.length);
+
+                let message = "Unexpected value '" + propertyName + "'";
+
+                this.acceptErrors(key,
+                    [{
+                        message : message,
+                        params:[]
+                    }],
+                    messageRegistry.INVALID_JSON_SCHEMA_DETAILS, true, true);
+            }
+
+            throw error;
+        }
 
         var missingReferences = validator.getMissingRemoteReferences().filter((reference: any) => !_.find(alreadyAccepted, (acceptedReference: any) => reference === acceptedReference.reference));
 
