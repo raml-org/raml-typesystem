@@ -438,7 +438,7 @@ export class JSONSchemaObject {
 
         if (!message) return null;
 
-        if (message.indexOf(underscoreValidatedMessage)) {
+        if (message.indexOf(underscoreValidatedMessage) != -1) {
             const messageBeginning1 = "Cannot assign to read only property '__$validated' of ";
             const messageBeginning2 = "Cannot create property '__$validated' on string '";
             if(message.indexOf(messageBeginning1) == 0
@@ -456,7 +456,7 @@ export class JSONSchemaObject {
             }
 
             return "";
-        } else if (message.indexOf(nonObjectMessage)) {
+        } else if (message.indexOf(nonObjectMessage) != -1) {
             return "";
         } else {
             return null;
