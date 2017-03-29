@@ -425,6 +425,44 @@ export class JSONSchemaObject {
         this.validate(content, alreadyAccepted);
     }
 
+    /**
+     * Checks for z-schema messages related to the inability to assign to a property of non-object variables.
+     * @param message
+     *
+     * @returns null if related message is not detected, assigned value if it can be detected, and empty string
+     * if related message is detected, but assigned value can not be found.
+     */
+    public static checkIfNonObjectAssignmentFailure(message : string) : string {
+        const underscoreValidatedMessage = "__$validated";
+        const nonObjectMessage = "called on non-object";
+
+        if (!message) return null;
+
+        if (message.indexOf(underscoreValidatedMessage) != -1) {
+            const messageBeginning1 = "Cannot assign to read only property '__$validated' of ";
+            const messageBeginning2 = "Cannot create property '__$validated' on string '";
+            if(message.indexOf(messageBeginning1) == 0
+                && message.length > messageBeginning1.length) {
+
+                return message.substr(messageBeginning1.length,
+                    message.length - messageBeginning1.length);
+
+            } else if (message.indexOf(messageBeginning2) == 0
+                && message.length > messageBeginning2.length + 1 &&
+                message.charAt(message.length-1) == "'") {
+
+                return message.substr(messageBeginning2.length,
+                    message.length - messageBeginning2.length - 1);
+            }
+
+            return "";
+        } else if (message.indexOf(nonObjectMessage) != -1) {
+            return "";
+        } else {
+            return null;
+        }
+    }
+
     validateSelf(alreadyAccepted: any[] = []): void {
         var key = exampleKey("__SCHEMA_VALIDATION__",this.schema,this.provider.contextPath());
 
@@ -447,13 +485,15 @@ export class JSONSchemaObject {
         } catch (error) {
             let illegalRequiredMessageStart = "Cannot assign to read only property '__$validated' of ";
 
-            if (error.message && error.message.indexOf(illegalRequiredMessageStart) == 0
-                && error.message.length > illegalRequiredMessageStart.length) {
+            let nonObjectAssignmentCheck = JSONSchemaObject.checkIfNonObjectAssignmentFailure(error.message);
+            if (nonObjectAssignmentCheck !== null) {
 
-                let propertyName = error.message.substr(illegalRequiredMessageStart.length,
-                    error.message.length - illegalRequiredMessageStart.length);
+                let propertyName = nonObjectAssignmentCheck;
 
-                let message = "Unexpected value '" + propertyName + "'";
+                let message = "Assignment to non-object.";
+                if (propertyName) {
+                    message = "Unexpected value '" + propertyName + "'"
+                }
 
                 this.acceptErrors(key,
                     [{
