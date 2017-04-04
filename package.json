@@ -1,5 +1,5 @@
 {
-  "name": "raml-typesystem",
+  "name": "@evches/raml-typesystem",
   "version": "0.0.62",
   "main": "dist/src/index.js",
   "scripts": {
