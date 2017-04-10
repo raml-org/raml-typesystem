@@ -344,6 +344,10 @@ export class JSONSchemaObject {
 
     private removeFragmentPartOfIDs(obj:any){
 
+        if(!obj){
+            return;
+        }
+
         if(Array.isArray(obj)){
             obj.forEach((x:any)=>this.removeFragmentPartOfIDs(x));
             return;
