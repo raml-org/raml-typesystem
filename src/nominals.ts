@@ -1,4 +1,5 @@
 import ts=require("./typesystem")
+import ti=require("./nominal-interfaces")
 import nt=require("./nominal-types")
 import parse=require("./parse")
 import restrictions = require("./restrictions");
@@ -142,6 +143,14 @@ export function toNominal(t:ts.AbstractType,callback:StringToBuiltIn,customizer:
         const descrMeta = x.type.metaOfType(metainfo.Description)
         if (descrMeta && descrMeta.length > 0 && descrMeta[0].value() && descrMeta[0].value().length && descrMeta[0].value().length > 0) {
             prop.withDescription(descrMeta[0].value())
+        }
+        const annMetas = x.type.metaOfType(<{ new(v:any):metainfo.Annotation }>metainfo.Annotation)
+        if (annMetas && annMetas.length && annMetas.length > 0) {
+            annMetas.forEach(ann => {
+                const nameId = () => ann.facetName()
+                const val = { value: ann.value }
+                prop.addAnnotation(new nt.Annotation(<ti.IAnnotationType>{nameId: nameId }, val))
+            })
         }
         if (!x.optional){
             prop.withRequired(true);
