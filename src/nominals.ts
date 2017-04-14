@@ -148,7 +148,7 @@ export function toNominal(t:ts.AbstractType,callback:StringToBuiltIn,customizer:
         if (annMetas && annMetas.length && annMetas.length > 0) {
             annMetas.forEach(ann => {
                 const nameId = () => ann.facetName()
-                const val = { value: ann.value }
+                const val = { value: ann.value() }
                 prop.addAnnotation(new nt.Annotation(<ti.IAnnotationType>{nameId: nameId }, val))
             })
         }
