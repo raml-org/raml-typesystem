@@ -732,9 +732,6 @@ export function parse(
         }
     }
 
-
-    var provider: su.IContentProvider = (<any>n).contentProvider ? (<any>n).contentProvider() : null;
-
     if (n.kind()==NodeKind.SCALAR){
         var valString = n.value();
         var sp:ts.AbstractType;
@@ -742,7 +739,7 @@ export function parse(
             sp = ts.STRING;
         }
         else{
-            sp = typeExpressions.parseToType(""+valString,r, provider)
+            sp = typeExpressions.parseToType(""+valString,r, n)
         }
         if (name==null){
             return sp;
@@ -756,7 +753,7 @@ export function parse(
     if (n.kind()==NodeKind.ARRAY){
         var supers:ts.AbstractType[]=[];
         n.children().forEach(x=>{
-            supers.push(typeExpressions.parseToType(""+x.value(),r, provider))
+            supers.push(typeExpressions.parseToType(""+x.value(),r, n))
         })
         var res=ts.derive(name,supers);
         if (r instanceof AccumulatingRegistry){
@@ -816,7 +813,7 @@ export function parse(
             else{
                 var typeAttributeContentProvider : su.IContentProvider =
                     (<any>tp).contentProvider ? (<any>tp).contentProvider() : null;
-                superTypes=[typeExpressions.parseToType(""+valString,r, provider, typeAttributeContentProvider)];
+                superTypes=[typeExpressions.parseToType(""+valString,r, n, typeAttributeContentProvider)];
             }
         }
         else if (tp.kind()==NodeKind.ARRAY){
@@ -836,7 +833,7 @@ export function parse(
                     sAnnotations.push([]);
                 }
                 return x.value();
-            }).map(y=>typeExpressions.parseToType(""+y,r, provider));
+            }).map(y=>typeExpressions.parseToType(""+y,r, n));
         }
         else if (tp.kind()==NodeKind.MAP){
             superTypes=[parse("",tp,r,false,false,false)];
@@ -903,7 +900,7 @@ export function parse(
                         componentTypes = [ ts.STRING ];
                     }
                     else{
-                        componentTypes=[typeExpressions.parseToType(""+valString,r, provider)];
+                        componentTypes=[typeExpressions.parseToType(""+valString,r, n)];
                     }
                 }
                 else if (x.kind()==NodeKind.ARRAY){
@@ -923,7 +920,7 @@ export function parse(
                             sAnnotations.push([]);
                         }
                         return y.value();
-                    }).map(y=>typeExpressions.parseToType(""+y,r, provider));
+                    }).map(y=>typeExpressions.parseToType(""+y,r, n));
 
                     var err=ts.error(messageRegistry.ITEMS_SHOULD_BE_REFERENCE_OR_INLINE_TYPE,actualResult);
                     err.setValidationPath({ name:"items"})

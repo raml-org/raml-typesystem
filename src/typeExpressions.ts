@@ -2,7 +2,7 @@ import typeExpression=require("./typeExpressionParser")
 import ts=require("./typesystem")
 import schemaUtil = require('./schemaUtil')
 import {ComponentShouldBeOfType} from "./restrictions";
-import {AdditionalPropertyIs} from "./restrictions";
+import {ParseNode} from "./parse";
 import typeExpressionDefs = require("./typeExpressionUtil")
 
 export type BaseNode = typeExpressionDefs.BaseNode;
@@ -11,15 +11,26 @@ export type Literal = typeExpressionDefs.Literal;
 export type Parens = typeExpressionDefs.Parens;
 
 
-export function parseToType(val:string,t:ts.TypeRegistry, contentProvider: schemaUtil.IContentProvider = null,
+export function parseToType(val:string,t:ts.TypeRegistry, contentProvidingNode?:ParseNode,
     typeAttributeContentProvider: schemaUtil.IContentProvider = null):ts.AbstractType{
     try {
-        
+
         var q=val.trim();
         
         if (q.length > 0) {
             var json=q.charAt(0)=='{';
             if (json || (q.charAt(0)=='<'&&q.length>1&&q.charAt(1)!='<')){
+
+                let typeChild = contentProvidingNode;
+                let n:ParseNode;
+                do {
+                    n = typeChild;
+                    typeChild = n.childWithKey("type");
+                }
+                while(typeChild);
+
+                let contentProvider: schemaUtil.IContentProvider =
+                    n && (<any>n).contentProvider && (<any>n).contentProvider();
 
                 return new ts.ExternalType("", q, json, contentProvider, typeAttributeContentProvider);
             }
