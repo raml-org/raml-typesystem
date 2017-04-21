@@ -342,6 +342,36 @@ export class JSONSchemaObject {
         });
     }
 
+    private removeFragmentPartOfIDs(obj:any){
+
+        if(!obj){
+            return;
+        }
+
+        if(Array.isArray(obj)){
+            obj.forEach((x:any)=>this.removeFragmentPartOfIDs(x));
+            return;
+        }
+        else if(typeof obj != "object"){
+            return;
+        }
+
+        let idValue = obj.id;
+        if(idValue && typeof obj.id=="string"){
+            let ind = idValue.indexOf("#");
+            if(ind>=0){
+                idValue = idValue.substring(0,ind).trim();
+                if(!idValue){
+                    delete obj.id;
+                }
+                else{
+                    obj.id = idValue;
+                }
+            }
+        }
+        Object.keys(obj).forEach(x=>this.removeFragmentPartOfIDs(obj[x]));
+    }
+
     private collectRefContainers(rootObject: any, refContainers: any): void {
         Object.keys(rootObject).forEach(key => {
             if(key === '$ref') {
@@ -560,6 +590,8 @@ export class JSONSchemaObject {
         if(!json) {
             return;
         }
+
+        this.removeFragmentPartOfIDs(json);
 
         if(json.id) {
             json.id = json.id.trim();

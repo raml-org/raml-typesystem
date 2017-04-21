@@ -4,16 +4,16 @@ var typedoc = require("gulp-typedoc");
 var childProcess = require('child_process');
 var mocha = require('gulp-mocha');
 var join = require('path').join;
-var ts = require('gulp-typescript');
-var sourcemaps = require('gulp-sourcemaps');
-var rename = require('gulp-rename')
+//var ts = require('gulp-typescript');
+//var sourcemaps = require('gulp-sourcemaps');
+//var rename = require('gulp-rename')
 var fs = require('fs');
 var path = require('path');
 var PORT = process.env.PORT || 3000;
 
-var tsProject = ts.createProject('tsconfig.json', {
-    typescript: require('typescript')
-});
+// var tsProject = ts.createProject('tsconfig.json', {
+//     typescript: require('typescript')
+// });
 
 gulp.task("typedoc", function() {
     return gulp
