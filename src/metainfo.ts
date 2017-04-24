@@ -285,11 +285,14 @@ export class Example extends MetaInfo{
 
             }
         }
-        var rr=parseExampleIfNeeded(val,this.owner());
-        if (rr instanceof ts.Status && !rr.isOk()){
-            ts.setValidationPath(rr,{name: "example"});
-            result.addSubStatus(rr);
-            return result;
+        var rr:any = val;
+        if(!this.owner().isExternal()){
+            rr = parseExampleIfNeeded(val, this.owner());
+            if (rr instanceof ts.Status && !rr.isOk()) {
+                ts.setValidationPath(rr, {name: "example"});
+                result.addSubStatus(rr);
+                return result;
+            }
         }
         var valOwner=this.owner().validateDirect(rr,true,false);
         if (!valOwner.isOk()){
@@ -470,11 +473,14 @@ export class Examples extends MetaInfo{
                                 return ;
                             }
                         }
-                        var example = parseExampleIfNeeded(val, this.owner());
-                        if (example instanceof ts.Status) {
-                            examplesPatchPath(example,noVal,x)
-                            rs.addSubStatus(example);
-                            return;
+                        var example:any = val;
+                        if(!this.owner().isExternal()) {
+                            example = parseExampleIfNeeded(val, this.owner());
+                            if (example instanceof ts.Status) {
+                                examplesPatchPath(example, noVal, x)
+                                rs.addSubStatus(example);
+                                return;
+                            }
                         }
                         var res = this.owner().validate(example, true, false);
                         res.getErrors().forEach(ex=> {

@@ -77,6 +77,8 @@ export interface IStatus extends IHasExtra {
     setCode(c:string):void;
 
     getSeverity(): number;
+
+    getInternalRange():RangeObject;
 }
 
 export enum MetaInformationKind {
@@ -503,4 +505,16 @@ export function getAnnotationValidationPlugins():IAnnotationValidationPlugin[]{
         }
     }
     return [];
+}
+
+
+export interface MarkerObject{
+    line: number
+    column: number
+    position: number
+}
+
+export interface RangeObject{
+    start: MarkerObject,
+    end: MarkerObject
 }

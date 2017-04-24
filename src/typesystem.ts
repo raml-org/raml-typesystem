@@ -29,6 +29,8 @@ export class Status implements tsInterfaces.IStatus {
     protected severity:number;
     protected source:any;
 
+    protected internalRange:tsInterfaces.RangeObject;
+
     protected subStatus:tsInterfaces.IStatus[] = [];
 
     protected vp:tsInterfaces.IValidationPath
@@ -156,6 +158,11 @@ export class Status implements tsInterfaces.IStatus {
 
     putExtra(name:string,value:any):void{}
 
+    setInternalRange(range:tsInterfaces.RangeObject){
+        this.internalRange = range;
+    }
+
+    getInternalRange():tsInterfaces.RangeObject{ return this.internalRange }
 }
 
 export function ok(){ return new Status(Status.OK,"","",null)};
@@ -686,8 +693,11 @@ export abstract class AbstractType implements tsInterfaces.IParsedType, tsInterf
                         }
                         else if (e instanceof ValidationError) {
                             var ve = <ValidationError>e;
-                            rs.addSubStatus(error(ve.messageEntry, this, ve.parameters,
-                                ve.isWarning?Status.WARNING:Status.ERROR));
+                            let errorStatus = error(ve.messageEntry, this, ve.parameters,
+                                ve.isWarning?Status.WARNING:Status.ERROR);
+                            errorStatus.setInternalRange(ve.internalRange);
+                            rs.addSubStatus(errorStatus);
+
                         }
                         else {
                             rs.addSubStatus(error(messageRegistry.JSON_SCHEMA_VALIDATION_EXCEPTION,this,{msg:e.message}));
@@ -2418,12 +2428,16 @@ export class ValidationError extends Error{
 
     private static CLASS_IDENTIFIER_ValidationError = "linter.ValidationError";
 
-    public isWarning = false;
-
     constructor(public messageEntry:any, public parameters:any={}){
         super();
         this.message = messageText(messageEntry,parameters);
     }
+
+    public isWarning = false;
+
+    public internalRange: tsInterfaces.RangeObject;
+
+    public additionalErrors: ValidationError[];
 
     public getClassIdentifier() : string[] {
         var superIdentifiers:string[] = [];

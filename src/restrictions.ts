@@ -131,6 +131,13 @@ export class MatchToSchema extends  ts.Constraint{
             try {
                 so = su.getJSONSchema(strVal, this.provider);
             } catch (e){
+                if(ts.ValidationError.isInstance(e)){
+                    let ve = <ts.ValidationError>e;
+                    let severity = ve.isWarning ? ts.Status.WARNING : ts.Status.ERROR;
+                    let err = ts.error(ve.messageEntry,this,ve.parameters,severity,ve.parameters);
+                    //err.setRange(ve.range); the range belongs to schema node, not to example
+                    return err;
+                }
                 return ts.error(messageRegistry.INCORRECT_SCHEMA,this,{msg: e.message});
             }
         }
@@ -143,8 +150,33 @@ export class MatchToSchema extends  ts.Constraint{
         }
         if(so){
             try {
-                so.validateObject(i);
+                if(typeof i == "string") {
+                    so.validate(i);
+                }
+                else{
+                    so.validateObject(i);
+                }
             }catch(e){
+                if(ts.ValidationError.isInstance(e)){
+                    let ve:ts.ValidationError = e;
+                    let status = ts.Status.ERROR;
+                    if(ve.isWarning){
+                        status = ts.Status.WARNING;
+                    }
+                    let st = ts.error(ve.messageEntry,this,ve.parameters,status);
+                    st.setInternalRange(ve.internalRange);
+                    if(!ve.additionalErrors || ve.additionalErrors.length == 0){
+                        return st;
+                    }
+                    let result = ts.ok();
+                    result.addSubStatus(st);
+                    for(var ae of ve.additionalErrors){
+                        let st1 = ts.error(ae.messageEntry,this,ae.parameters,status);
+                        st1.setInternalRange(ae.internalRange);
+                        result.addSubStatus(st1);
+                    }
+                    return result;
+                }
                 if (e.message=="!_PERF_!"){
                     return ts.error(messageRegistry.UNABLE_TO_VALIDATE_XML,this,{},ts.Status.WARNING);
                 }

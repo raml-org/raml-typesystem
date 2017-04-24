@@ -15,10 +15,10 @@
   "dependencies": {
     "date-and-time": "^0.3.0",
     "json-schema-compatibility": "^1.1.0",
+    "json-to-ast": "^2.0.0-alpha1.2",
     "lrucache": "^1.0.0",
     "underscore": "^1.8.3",
     "xml2js": "^0.4.16",
-    "date-and-time": "0.3.0",
     "xmldom": "^0.1.22"
   },
   "optionalDependencies": {
