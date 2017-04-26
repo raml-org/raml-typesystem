@@ -79,6 +79,8 @@ export interface IStatus extends IHasExtra {
     getSeverity(): number;
 
     getInternalRange():RangeObject;
+
+    getInternalPath():IValidationPath;
 }
 
 export enum MetaInformationKind {

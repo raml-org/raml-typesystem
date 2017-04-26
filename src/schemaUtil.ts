@@ -638,6 +638,7 @@ export class JSONSchemaObject {
                 }
                 ve.isWarning = isWarning;
                 (<any>ve).error = x;
+                ve.internalPath = x.path;
                 return ve;
             });
             let res = vErrors[0];
@@ -1202,6 +1203,9 @@ export function messageToValidationError(message:string,isExample=false){
 
 export function getJSONRange(jsonStrig:string, jsonObj:any, jsonPath:string):tsInterfaces.RangeObject{
 
+    if(!jsonPath||typeof jsonPath != "string"){
+        return null;
+    }
     jsonObj = jsonObj || jsonToAST(jsonStrig,{verbose:true});
 
     if(jsonPath.charAt(0)=="#"){
@@ -1215,7 +1219,11 @@ export function getJSONRange(jsonStrig:string, jsonObj:any, jsonPath:string):tsI
     if(jsonPath.length>0) {
         let segments = jsonPath.split("/");
         for (var seg of segments) {
-            obj = getJOSNValue(obj, seg);
+            let nextObj = getJOSNValue(obj, seg);
+            if(nextObj==null){
+                break;
+            }
+            obj = nextObj;
         }
     }
 

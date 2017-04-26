@@ -35,6 +35,8 @@ export class Status implements tsInterfaces.IStatus {
 
     protected vp:tsInterfaces.IValidationPath
 
+    protected internalPath:tsInterfaces.IValidationPath
+
     getValidationPath():tsInterfaces.IValidationPath{
         return this.vp;
     }
@@ -163,6 +165,14 @@ export class Status implements tsInterfaces.IStatus {
     }
 
     getInternalRange():tsInterfaces.RangeObject{ return this.internalRange }
+
+    getInternalPath():tsInterfaces.IValidationPath{
+        return this.internalPath;
+    }
+
+    setInternalPath(ip:tsInterfaces.IValidationPath){
+        this.internalPath = ip;
+    }
 }
 
 export function ok(){ return new Status(Status.OK,"","",null)};
@@ -696,6 +706,7 @@ export abstract class AbstractType implements tsInterfaces.IParsedType, tsInterf
                             let errorStatus = error(ve.messageEntry, this, ve.parameters,
                                 ve.isWarning?Status.WARNING:Status.ERROR);
                             errorStatus.setInternalRange(ve.internalRange);
+                            errorStatus.setInternalPath(toValidationPath(ve.internalPath));
                             rs.addSubStatus(errorStatus);
 
                         }
@@ -2437,6 +2448,8 @@ export class ValidationError extends Error{
 
     public internalRange: tsInterfaces.RangeObject;
 
+    public internalPath: string;
+
     public additionalErrors: ValidationError[];
 
     public getClassIdentifier() : string[] {
@@ -2682,4 +2695,37 @@ function toStatus(pvi:tsInterfaces.PluginValidationIssue,pluginId:string,src:any
     var status = new Status(severity,issueCode,message,src);
     status.setValidationPath(pvi.path);
     return status;
+}
+
+export function toValidationPath(p:string):tsInterfaces.IValidationPath{
+
+    if(!p){
+        return null;
+    }
+    p = p.trim();
+    if(p.length==0){
+        return null;
+    }
+    if(p.charAt(0)=="#"){
+        p = p.substring(1);
+    }
+    if(p.charAt(0)=="/"){
+        p = p.substring(1);
+    }
+    if(p.length==0){
+        return null;
+    }
+    let arr = p.split("/");
+    let result:IValidationPath = {
+        name: arr[0]
+    }
+    let prev = result;
+    for(var i = 1 ; i < arr.length ; i++){
+        let vp = {
+            name: arr[i]
+        }
+        prev.child = vp;
+        prev = vp;
+    }
+    return result;
 }
