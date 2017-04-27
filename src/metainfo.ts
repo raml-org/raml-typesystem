@@ -183,7 +183,8 @@ function parseExampleIfNeeded(val:any,type:ts.AbstractType):any{
         if (type.isObject() || type.isArray() || type.isExternal() || type.isUnion()){
             var exampleString:string=val;
             var firstChar = exampleString.trim().charAt(0);
-            if (firstChar=="{" || firstChar=="[" || exampleString.trim()=="null" ){
+            if (!type.isExternal()
+                &&(firstChar=="{" || firstChar=="[" || exampleString.trim()=="null")){
                 try {
                     return JSON.parse(exampleString);
                 } catch (e) {
@@ -286,14 +287,14 @@ export class Example extends MetaInfo{
             }
         }
         var rr:any = val;
-        if(!this.owner().isExternal()){
+        //if(!this.owner().isExternal()){
             rr = parseExampleIfNeeded(val, this.owner());
             if (rr instanceof ts.Status && !rr.isOk()) {
                 ts.setValidationPath(rr, {name: "example"});
                 result.addSubStatus(rr);
                 return result;
             }
-        }
+        //}
         var valOwner=this.owner().validateDirect(rr,true,false);
         if (!valOwner.isOk()){
             if (typeof this.value()==="string"){
