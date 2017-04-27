@@ -1262,6 +1262,9 @@ function getJOSNValue(obj:any,key:string):any{
 
 export function tryParseJSON(content: any, isExample:boolean) {
     try {
+        if(typeof content != "string"){
+            return;
+        }
         jsonToAST(content, {verbose: true});
     } catch (err) {
         let ve = messageToValidationError(err.message, isExample);
