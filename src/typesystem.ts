@@ -28,6 +28,7 @@ export class Status implements tsInterfaces.IStatus {
     protected message: string;
     protected severity:number;
     protected source:any;
+    protected filePath:string;
 
     protected internalRange:tsInterfaces.RangeObject;
 
@@ -172,6 +173,14 @@ export class Status implements tsInterfaces.IStatus {
 
     setInternalPath(ip:tsInterfaces.IValidationPath){
         this.internalPath = ip;
+    }
+
+    getFilePath():string{
+        return this.filePath;
+    }
+
+    setFilePath(filePath:string){
+        this.filePath = filePath;
     }
 }
 
@@ -701,12 +710,13 @@ export abstract class AbstractType implements tsInterfaces.IParsedType, tsInterf
                         if (e.message == "Maximum call stack size exceeded") {
                             return error(messageRegistry.CIRCULAR_REFS_IN_JSON_SCHEMA, this);
                         }
-                        else if (e instanceof ValidationError) {
+                        else if (ValidationError.isInstance(e)) {
                             var ve = <ValidationError>e;
                             let errorStatus = error(ve.messageEntry, this, ve.parameters,
                                 ve.isWarning?Status.WARNING:Status.ERROR);
                             errorStatus.setInternalRange(ve.internalRange);
                             errorStatus.setInternalPath(toValidationPath(ve.internalPath));
+                            errorStatus.setFilePath(ve.filePath);
                             rs.addSubStatus(errorStatus);
 
                         }
@@ -2449,6 +2459,8 @@ export class ValidationError extends Error{
     public internalRange: tsInterfaces.RangeObject;
 
     public internalPath: string;
+
+    public filePath: string;
 
     public additionalErrors: ValidationError[];
 

@@ -166,6 +166,7 @@ export class MatchToSchema extends  ts.Constraint{
                     let st = ts.error(ve.messageEntry,this,ve.parameters,status);
                     st.setInternalRange(ve.internalRange);
                     st.setInternalPath(ts.toValidationPath(ve.internalPath));
+                    st.setFilePath(ve.filePath);
                     if(!ve.additionalErrors || ve.additionalErrors.length == 0){
                         return st;
                     }
@@ -175,6 +176,7 @@ export class MatchToSchema extends  ts.Constraint{
                         let st1 = ts.error(ae.messageEntry,this,ae.parameters,status);
                         st1.setInternalRange(ae.internalRange);
                         st1.setInternalPath(ts.toValidationPath(ae.internalPath));
+                        st1.setFilePath(ae.filePath);
                         result.addSubStatus(st1);
                     }
                     return result;

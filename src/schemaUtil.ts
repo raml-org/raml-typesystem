@@ -432,7 +432,9 @@ export class JSONSchemaObject {
             try {
                 var api = require('json-schema-compatibility');
 
-                var jsonObject = JSON.parse(this.provider.content(reference));
+                let content = this.provider.content(reference);
+                tryParseJSON(content,true);
+                var jsonObject = JSON.parse(content);
 
                 this.setupId(jsonObject, this.provider.normalizePath(reference));
 
@@ -442,6 +444,10 @@ export class JSONSchemaObject {
 
                 result.content = remoteSchemeContent;
             } catch(exception){
+                if(ts.ValidationError.isInstance(exception)){
+                    (<ts.ValidationError>exception).filePath = reference;
+                    throw exception;
+                }
                 result.error = exception;
             } finally {
                 acceptedReferences.push(result);
@@ -557,7 +563,9 @@ export class JSONSchemaObject {
             try {
                 var api = require('json-schema-compatibility');
 
-                var jsonObject = JSON.parse(this.provider.content(reference));
+                let content = this.provider.content(reference);
+                tryParseJSON(content,true);
+                var jsonObject = JSON.parse(content);
 
                 this.setupId(jsonObject, this.provider.normalizePath(reference));
 
@@ -567,6 +575,10 @@ export class JSONSchemaObject {
 
                 result.content = remoteSchemeContent;
             } catch(exception){
+                if(ts.ValidationError.isInstance(exception)){
+                    (<ts.ValidationError>exception).filePath = reference;
+                    throw exception;
+                }
                 result.error = exception;
             } finally {
                 acceptedReferences.push(result);

@@ -81,6 +81,8 @@ export interface IStatus extends IHasExtra {
     getInternalRange():RangeObject;
 
     getInternalPath():IValidationPath;
+
+    getFilePath():string;
 }
 
 export enum MetaInformationKind {
