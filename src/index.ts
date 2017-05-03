@@ -520,3 +520,6 @@ export function toNominal(t:IParsedType,bt: (name:string)=>nominalTypes.ITypeDef
      return nm.toNominal(<ts.AbstractType>t,bt);
 }
 
+export function toValidationPath(p:string):tsInterfaces.IValidationPath{
+    return ts.toValidationPath(p);
+}

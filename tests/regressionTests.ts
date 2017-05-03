@@ -299,7 +299,7 @@ describe("Simple validation testing",function() {
         var st=t.validateType(ts.builtInRegistry());
         var f=false;
         assert.isTrue(st.getErrors().length===1);
-        assert.isTrue(st.getMessage()==="Example does not conform to schema: Content is not valid according to schema: Additional properties not allowed: r r")
+        assert.isTrue(st.getMessage()==="Content is not valid according to schema: Additional properties not allowed: r")
     });
     it("Valid example", function () {
         var tp = ps.parseJSONTypeCollection({

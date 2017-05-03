@@ -1,6 +1,7 @@
 /// <reference path="../typings/main.d.ts" />
 
 import {XMLSchemaReference} from "raml-xml-validation";
+import tsInterfaces = require("./typesystem-interfaces");
 
 declare var global:any;
 declare function require(s:string):any;
@@ -15,6 +16,7 @@ import jsonUtil = require('./jsonUtil');
 var DOMParser = require('xmldom').DOMParser;
 import ts = require("./typesystem");
 import {messageRegistry} from "./typesystem";
+var jsonToAST = require("json-to-ast");
 
 export class ValidationResult{
     result:any;
@@ -178,16 +180,10 @@ export class JSONSchemaObject {
             throw new ts.ValidationError(messageRegistry.INVALID_JSON_SCHEMA);
         }
 
-        var jsonSchemaObject: any;
-
-        try {
-            var jsonSchemaObject = JSON.parse(schema);
-        } catch(err){
-            throw new ts.ValidationError(messageRegistry.INVALID_JSON_SCHEMA_DETAILS,{msg:err.message});
-        }
-
+        tryParseJSON(schema,false);
+        let jsonSchemaObject = JSON.parse(schema);
         if(!jsonSchemaObject){
-            return
+            return;
         }
 
         try{
@@ -209,6 +205,10 @@ export class JSONSchemaObject {
 
         this.jsonSchema=jsonSchemaObject;
     }
+
+    private EXAMPLE_ERROR_ENTRY = messageRegistry.CONTENT_DOES_NOT_MATCH_THE_SCHEMA;
+
+    private SCHEMA_ERROR_ENTRY = messageRegistry.INVALID_JSON_SCHEMA_DETAILS;
 
     fixRequired(obj:any){
         // Object.keys(obj).forEach(x=>{
@@ -403,18 +403,22 @@ export class JSONSchemaObject {
             return;
         }
 
+        if(alreadyAccepted.length==0){
+            tryParseJSON(content,true);
+        }
+
+        let exampleObject = JSON.parse(content);
+
+
         var validator = jsonUtil.getValidator();
 
         alreadyAccepted.forEach(accepted => validator.setRemoteReference(accepted.reference, accepted.content));
-
-        validator.validate(JSON.parse(content), this.jsonSchema);
+        validator.validate(exampleObject, this.jsonSchema);
 
         var missingReferences = validator.getMissingRemoteReferences().filter((reference: any) => !_.find(alreadyAccepted, (acceptedReference: any) => reference === acceptedReference.reference));
 
         if(!missingReferences || missingReferences.length === 0) {
-            this.acceptErrors(key, validator.getLastErrors(),
-                messageRegistry.CONTENT_DOES_NOT_MATCH_THE_SCHEMA, true);
-
+            this.acceptErrors(key, validator.getLastErrors(), content, true);
             return;
         }
 
@@ -428,7 +432,9 @@ export class JSONSchemaObject {
             try {
                 var api = require('json-schema-compatibility');
 
-                var jsonObject = JSON.parse(this.provider.content(reference));
+                let content = this.provider.content(reference);
+                tryParseJSON(content,true);
+                var jsonObject = JSON.parse(content);
 
                 this.setupId(jsonObject, this.provider.normalizePath(reference));
 
@@ -438,6 +444,10 @@ export class JSONSchemaObject {
 
                 result.content = remoteSchemeContent;
             } catch(exception){
+                if(ts.ValidationError.isInstance(exception)){
+                    (<ts.ValidationError>exception).filePath = reference;
+                    throw exception;
+                }
                 result.error = exception;
             } finally {
                 acceptedReferences.push(result);
@@ -529,8 +539,7 @@ export class JSONSchemaObject {
                     [{
                         message : message,
                         params:[]
-                    }],
-                    messageRegistry.INVALID_JSON_SCHEMA_DETAILS, true, true);
+                    }], null, true, true);
             }
 
             throw error;
@@ -539,8 +548,7 @@ export class JSONSchemaObject {
         var missingReferences = validator.getMissingRemoteReferences().filter((reference: any) => !_.find(alreadyAccepted, (acceptedReference: any) => reference === acceptedReference.reference));
 
         if(!missingReferences || missingReferences.length === 0) {
-            this.acceptErrors(key, validator.getLastErrors(),
-                messageRegistry.INVALID_JSON_SCHEMA_DETAILS, true, true);
+            this.acceptErrors(key, validator.getLastErrors(), null, true, true);
 
             return;
         }
@@ -555,7 +563,9 @@ export class JSONSchemaObject {
             try {
                 var api = require('json-schema-compatibility');
 
-                var jsonObject = JSON.parse(this.provider.content(reference));
+                let content = this.provider.content(reference);
+                tryParseJSON(content,true);
+                var jsonObject = JSON.parse(content);
 
                 this.setupId(jsonObject, this.provider.normalizePath(reference));
 
@@ -565,6 +575,10 @@ export class JSONSchemaObject {
 
                 result.content = remoteSchemeContent;
             } catch(exception){
+                if(ts.ValidationError.isInstance(exception)){
+                    (<ts.ValidationError>exception).filePath = reference;
+                    throw exception;
+                }
                 result.error = exception;
             } finally {
                 acceptedReferences.push(result);
@@ -608,13 +622,39 @@ export class JSONSchemaObject {
         this.patchSchema(json);
     }
 
-    private acceptErrors(key: any, errors: any[], regEntry:any, throwImmediately = false,
+    private acceptErrors(
+        key: any,
+        errors: any[],
+        exampleContent:string,
+        throwImmediately = false,
         isWarning=false): void {
+
+        let isExamplesMode = exampleContent != null;
+        let jsonContent = exampleContent != null ? exampleContent : this.schema;
+
         if(errors && errors.length>0){
-            var msg = errors.map(x=>x.message+" "+x.params).join(", ");
-            var res= new ts.ValidationError(regEntry,{msg : msg});
-            res.isWarning = isWarning;
-            (<any>res).errors=errors;
+
+            let jsonObj:any = jsonToAST(jsonContent, {verbose:true});
+            let vErrors = errors.map(x=>{
+                let regEntry:any;
+                let isInFactExampleMode = isExamplesMode && JSONSchemaObject.EXAMPLE_ERROR_CODES[x.code];
+                if(isInFactExampleMode){
+                    regEntry = this.EXAMPLE_ERROR_ENTRY;
+                }
+                else{
+                    regEntry = this.SCHEMA_ERROR_ENTRY;
+                }
+                let ve = new ts.ValidationError(regEntry,{ msg : x.message });
+                if(isInFactExampleMode || exampleContent==null) {
+                    ve.internalRange = getJSONRange(jsonContent, jsonObj, <string>x.path);
+                }
+                ve.isWarning = isWarning;
+                (<any>ve).error = x;
+                ve.internalPath = x.path;
+                return ve;
+            });
+            let res = vErrors[0];
+            res.additionalErrors = vErrors.slice(1);
             globalCache.setValue(key, res);
             if(throwImmediately) {
                 throw res;
@@ -661,6 +701,51 @@ export class JSONSchemaObject {
         });
 
         return result;
+    }
+
+    private static SCHEMA_ERROR_CODES:{[key:string]:boolean} = {
+        "KEYWORD_TYPE_EXPECTED": true,
+        "KEYWORD_MUST_BE": true,
+        "KEYWORD_DEPENDENCY": true,
+        "KEYWORD_PATTERN": true,
+        "KEYWORD_UNDEFINED_STRICT": true,
+        "KEYWORD_VALUE_TYPE": true,
+        "CUSTOM_MODE_FORCE_PROPERTIES": true,
+        "UNKNOWN_FORMAT": true,
+        "PARENT_SCHEMA_VALIDATION_FAILED": true,
+        "REF_UNRESOLVED": true,
+        "KEYWORD_UNEXPECTED": true,
+
+        "SCHEMA_NOT_AN_OBJECT": true,
+
+        "SCHEMA_NOT_REACHABLE": true,
+        "UNRESOLVABLE_REFERENCE": true,
+    }
+
+    private static EXAMPLE_ERROR_CODES:{[key:string]:boolean} = {
+        "MULTIPLE_OF": true,
+        "MAXIMUM": true,
+        "MAXIMUM_EXCLUSIVE": true,
+        "MAX_LENGTH": true,
+        "MIN_LENGTH": true,
+        "PATTERN": true,
+        "ARRAY_ADDITIONAL_ITEMS": true,
+        "ARRAY_LENGTH_LONG": true,
+        "ARRAY_LENGTH_SHORT": true,
+        "ARRAY_UNIQUE": true,
+        "OBJECT_PROPERTIES_MAXIMUM": true,
+        "OBJECT_PROPERTIES_MINIMUM": true,
+        "OBJECT_MISSING_REQUIRED_PROPERTY": true,
+        "OBJECT_ADDITIONAL_PROPERTIES": true,
+        "OBJECT_DEPENDENCY_KEY": true,
+        "ENUM_MISMATCH": true,
+        "ANY_OF_MISSING": true,
+        "ONE_OF_MISSING": true,
+        "ONE_OF_MULTIPLE": true,
+        "NOT_PASSED": true,
+        "INVALID_FORMAT": true,
+        "UNKNOWN_FORMAT": true,
+        "INVALID_TYPE": true,
     }
 }
 
@@ -979,6 +1064,7 @@ export function getXMLSchema(content: string, provider: IContentProvider) {
 
 export function createSchema(content: string, provider: IContentProvider): Schema {
 
+    let isJSON = content && content.trim().length >0 && content.trim().charAt(0)=="{";
     var key = schemaKey(provider, content);
     var rs = useLint ? globalCache.getValue(key) : false;
     if (rs) {
@@ -992,17 +1078,22 @@ export function createSchema(content: string, provider: IContentProvider): Schem
         return res;
     }
     catch (e) {
-        try {
-            var res:Schema = new XMLSchemaObject(content, provider);
-            if (useLint) {
+        if (useLint && ts.ValidationError.isInstance(e) && isJSON) {
+            globalCache.setValue(key, e);
+            return <any>e;
+        }
+        else {
+            try {
+                var res: Schema = new XMLSchemaObject(content, provider);
                 globalCache.setValue(key, res);
+                return res;
+            } catch (e) {
+                if (useLint) {
+                    let rs = new ts.ValidationError(messageRegistry.CAN_NOT_PARSE_SCHEMA);
+                    globalCache.setValue(key, rs);
+                    return <any>rs;
+                }
             }
-            return res;
-        } catch (e) {
-            if (useLint) {
-                globalCache.setValue(key, new ts.ValidationError(messageRegistry.CAN_NOT_PARSE_SCHEMA));
-            }
-            return null;
         }
     }
 }
@@ -1046,4 +1137,149 @@ function extractNamespace(documentOrElement:any){
         }
     }
     return ns;
+}
+
+const JSON_TO_AST_MESSAGE1 = "Cannot tokenize symbol";
+const JSON_TO_AST_MESSAGE2 = "Unexpected token";
+
+export function messageToValidationError(message:string,isExample=false){
+
+    let regEntry = isExample ? messageRegistry.CAN_NOT_PARSE_JSON
+        : messageRegistry.INVALID_JSON_SCHEMA_DETAILS;
+
+    let l1 = JSON_TO_AST_MESSAGE1.length;
+    let l2 = JSON_TO_AST_MESSAGE2.length;
+    let msg:string,l:number;
+    if(message.substring(0,l1)==JSON_TO_AST_MESSAGE1){
+        msg = JSON_TO_AST_MESSAGE1;
+        l = l1;
+    }
+    else if(message.substring(0,l2)==JSON_TO_AST_MESSAGE2){
+        msg = JSON_TO_AST_MESSAGE2;
+        l = l2;
+    }
+    else{
+        return new ts.ValidationError(regEntry,{msg:message});;
+    }
+
+    if(msg && l){
+        let end = message.indexOf("\n",l);
+        if(end<0){
+            end = message.length;
+        }
+        let str = message.substring(l).trim();
+        let i0 = str.indexOf("<");
+        if(i0<0){
+            i0 = 0;
+        }
+        else{
+            i0++;
+        }
+        let i3 = str.indexOf("\n");
+        if(i3<0){ i3 = str.length; }
+        let i2 = str.lastIndexOf("at",i3);
+        if(i2<0){
+            i2 = i3;
+        }
+        else{
+            i2 += "at".length;
+        }
+        let i1 = str.lastIndexOf(">",i2);
+        if(i1<0){ i1 = i2; }
+        let ch = str.substring(i0,i1);
+        let posStr = str.substring(i2,i3).trim();
+        let colonInd = posStr.indexOf(":");
+        try{
+            let line = parseInt(posStr.substring(0,colonInd))-1;
+            let col = parseInt(posStr.substring(colonInd+1,posStr.length))-1;
+            let newMessage = `${msg} '${ch}'`;
+            let result = new ts.ValidationError(regEntry,{msg:newMessage});
+            result.internalRange = {
+                start: {
+                    line: line,
+                    column: col,
+                    position: null
+                },
+                end: {
+                    line: line,
+                    column: col+ch.length,
+                    position: null
+                }
+            };
+            return result;
+        }
+        catch(err){}
+    }
+    return new ts.ValidationError(messageRegistry.INVALID_JSON_SCHEMA_DETAILS,{msg:message});;
+}
+
+export function getJSONRange(jsonStrig:string, jsonObj:any, jsonPath:string):tsInterfaces.RangeObject{
+
+    if(!jsonPath||typeof jsonPath != "string"){
+        return null;
+    }
+    jsonObj = jsonObj || jsonToAST(jsonStrig,{verbose:true});
+
+    if(jsonPath.charAt(0)=="#"){
+        jsonPath = jsonPath.substring(1);
+    }
+    if(jsonPath.charAt(0)=="/"){
+        jsonPath = jsonPath.substring(1);
+    }
+    let obj = jsonObj;
+
+    if(jsonPath.length>0) {
+        let segments = jsonPath.split("/");
+        for (var seg of segments) {
+            let nextObj = getJOSNValue(obj, seg);
+            if(nextObj==null){
+                break;
+            }
+            obj = nextObj;
+        }
+    }
+
+    let sLoc = obj.loc.start;
+    let eLoc = obj.loc.end;
+
+    return {
+        start: {
+            line: sLoc.line-1,
+            column: sLoc.column-1,
+            position: sLoc.offset
+        },
+        end: {
+            line: eLoc.line-1,
+            column: eLoc.column-1,
+            position: eLoc.offset
+        }
+    }
+}
+
+function getJOSNValue(obj:any,key:string):any{
+    if(obj.type == "property"){
+        obj = obj.value;
+    }
+    if(obj.type=="object"){
+        return _.find(obj.children,x=>(<any>x).key.value==key);
+    }
+    else if(obj.type=="array"){
+        return obj.children[key];
+    }
+    else if(obj.type=="array"){
+        return obj;
+    }
+    return null;
+}
+
+export function tryParseJSON(content: any, isExample:boolean) {
+    try {
+        if(typeof content != "string"){
+            return;
+        }
+        jsonToAST(content, {verbose: true});
+    } catch (err) {
+        let ve = messageToValidationError(err.message, isExample);
+        throw ve;
+    }
 }

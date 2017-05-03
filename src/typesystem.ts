@@ -28,10 +28,15 @@ export class Status implements tsInterfaces.IStatus {
     protected message: string;
     protected severity:number;
     protected source:any;
+    protected filePath:string;
+
+    protected internalRange:tsInterfaces.RangeObject;
 
     protected subStatus:tsInterfaces.IStatus[] = [];
 
     protected vp:tsInterfaces.IValidationPath
+
+    protected internalPath:tsInterfaces.IValidationPath
 
     getValidationPath():tsInterfaces.IValidationPath{
         return this.vp;
@@ -156,6 +161,27 @@ export class Status implements tsInterfaces.IStatus {
 
     putExtra(name:string,value:any):void{}
 
+    setInternalRange(range:tsInterfaces.RangeObject){
+        this.internalRange = range;
+    }
+
+    getInternalRange():tsInterfaces.RangeObject{ return this.internalRange }
+
+    getInternalPath():tsInterfaces.IValidationPath{
+        return this.internalPath;
+    }
+
+    setInternalPath(ip:tsInterfaces.IValidationPath){
+        this.internalPath = ip;
+    }
+
+    getFilePath():string{
+        return this.filePath;
+    }
+
+    setFilePath(filePath:string){
+        this.filePath = filePath;
+    }
 }
 
 export function ok(){ return new Status(Status.OK,"","",null)};
@@ -684,10 +710,15 @@ export abstract class AbstractType implements tsInterfaces.IParsedType, tsInterf
                         if (e.message == "Maximum call stack size exceeded") {
                             return error(messageRegistry.CIRCULAR_REFS_IN_JSON_SCHEMA, this);
                         }
-                        else if (e instanceof ValidationError) {
+                        else if (ValidationError.isInstance(e)) {
                             var ve = <ValidationError>e;
-                            rs.addSubStatus(error(ve.messageEntry, this, ve.parameters,
-                                ve.isWarning?Status.WARNING:Status.ERROR));
+                            let errorStatus = error(ve.messageEntry, this, ve.parameters,
+                                ve.isWarning?Status.WARNING:Status.ERROR);
+                            errorStatus.setInternalRange(ve.internalRange);
+                            errorStatus.setInternalPath(toValidationPath(ve.internalPath));
+                            errorStatus.setFilePath(ve.filePath);
+                            rs.addSubStatus(errorStatus);
+
                         }
                         else {
                             rs.addSubStatus(error(messageRegistry.JSON_SCHEMA_VALIDATION_EXCEPTION,this,{msg:e.message}));
@@ -2418,12 +2449,20 @@ export class ValidationError extends Error{
 
     private static CLASS_IDENTIFIER_ValidationError = "linter.ValidationError";
 
-    public isWarning = false;
-
     constructor(public messageEntry:any, public parameters:any={}){
         super();
         this.message = messageText(messageEntry,parameters);
     }
+
+    public isWarning = false;
+
+    public internalRange: tsInterfaces.RangeObject;
+
+    public internalPath: string;
+
+    public filePath: string;
+
+    public additionalErrors: ValidationError[];
 
     public getClassIdentifier() : string[] {
         var superIdentifiers:string[] = [];
@@ -2668,4 +2707,37 @@ function toStatus(pvi:tsInterfaces.PluginValidationIssue,pluginId:string,src:any
     var status = new Status(severity,issueCode,message,src);
     status.setValidationPath(pvi.path);
     return status;
+}
+
+export function toValidationPath(p:string):tsInterfaces.IValidationPath{
+
+    if(!p){
+        return null;
+    }
+    p = p.trim();
+    if(p.length==0){
+        return null;
+    }
+    if(p.charAt(0)=="#"){
+        p = p.substring(1);
+    }
+    if(p.charAt(0)=="/"){
+        p = p.substring(1);
+    }
+    if(p.length==0){
+        return null;
+    }
+    let arr = p.split("/");
+    let result:IValidationPath = {
+        name: arr[0]
+    }
+    let prev = result;
+    for(var i = 1 ; i < arr.length ; i++){
+        let vp = {
+            name: arr[i]
+        }
+        prev.child = vp;
+        prev = vp;
+    }
+    return result;
 }
