@@ -357,7 +357,8 @@ describe("Simple validation testing",function() {
                     type:"file",
                     fileTypes:["applicaiton/json"],
                     minLength:1,
-                    maxLength:2000
+                    maxLength:2000,
+                    example: "some JOSN content"
                 }
 
             }
@@ -373,6 +374,7 @@ describe("Simple validation testing",function() {
                 a: {
                     type:"file",
                     fileTypes:["applicaiton/json"],
+                    example: "some JOSN content",
                     minLength:"1",
                     maxLength:2000
                 }
