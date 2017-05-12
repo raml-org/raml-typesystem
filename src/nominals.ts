@@ -159,6 +159,10 @@ export function toNominal(t:ts.AbstractType,callback:StringToBuiltIn,customizer:
             prop.withKeyRegexp(propName);
         }
     });
+    proto.annotations.forEach(ann => {
+        const nameId = () => ann.facetName()
+        vs.addAnnotation(new nt.Annotation(<ti.IAnnotationType>{ nameId: nameId }, ann.value()))
+    });
     proto.facetDeclarations.filter(x=>!x.isBuiltIn()).forEach(x=>{
         var prop=pc?pc(x.facetName()):new nt.Property(x.facetName());
         prop.withRange(toNominal(x.type(),callback));
