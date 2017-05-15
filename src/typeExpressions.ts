@@ -1,9 +1,8 @@
-import typeExpression=require("./typeExpressionParser")
 import ts=require("./typesystem")
 import schemaUtil = require('./schemaUtil')
 import {ComponentShouldBeOfType} from "./restrictions";
 import {ParseNode} from "./parse";
-import typeExpressionDefs = require("./typeExpressionUtil")
+import typeExpressionDefs = require("raml-typeexpressions-parser")
 
 export type BaseNode = typeExpressionDefs.BaseNode;
 export type Union = typeExpressionDefs.Union;
@@ -35,7 +34,7 @@ export function parseToType(val:string,t:ts.TypeRegistry, contentProvidingNode?:
                 return new ts.ExternalType("", q, json, contentProvider, typeAttributeContentProvider);
             }
 
-            var node:BaseNode = typeExpression.parse(val);
+            var node:BaseNode = typeExpressionDefs.parse(val);
             var result= parseNode(node, t);
             return result;    
         } else {
@@ -113,41 +112,7 @@ export function storeToString(t:ts.AbstractType):string{
     return t.name();
 }
 
-export function visit(node:BaseNode,action:(n:BaseNode)=>void){
-    action(node);
-    if(node.type=="union"){
-        var union = <Union>node;
-        visit(union.first,action);
-        visit(union.rest,action);
-    }
-    else if(node.type=="parens"){
-        var parens = <Parens>node;
-        visit(parens.expr,action);
-    }
-}
-export function serializeToString(node:BaseNode):string{
-    var arr = 0;
-    var str:string;
-    if(node.type=="name"){
-        var literal = <Literal>node;
-        str = literal.value;
-        arr = literal.arr;
-    }
-    else if(node.type=="union"){
-        var union = <Union>node;
-        str = serializeToString(union.first) + " | " + serializeToString(union.rest);
-    }
-    else if(node.type=="parens"){
-        var parens = <Parens>node;
-        str = "("+serializeToString(parens.expr)+")";
-        arr = parens.arr;
-    }
-    while(--arr>=0){
-        str += "[]";
-    }
-    return str;
-}
 
 export function parse(str:string):BaseNode{
-    return typeExpression.parse(str);
+    return typeExpressionDefs.parse(str);
 }

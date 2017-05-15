@@ -1,5 +1,5 @@
 import ts=require("./typesystem")
-import nt=require("./nominal-types")
+import nt=require("raml-nominal-types")
 import parse=require("./parse")
 import restrictions = require("./restrictions");
 import reg = require("./facetRegistry");

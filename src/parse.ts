@@ -1,6 +1,8 @@
 import  ts=require("./typesystem");
 var messageRegistry = ts.messageRegistry;
-import  tsInterfaces=require("./typesystem-interfaces")
+import ti = require("raml-typeesystem-interfaces")
+import tsInterfaces = ti.tsInterfaces
+
 import  rs=require("./restrictions")
 import {AbstractType} from "./typesystem";
 import typeExpressions=require("./typeExpressions")

@@ -77,7 +77,7 @@ function objectToXml(object: any) {
                 child[key] = root[key] || '';
 
                 result = result + objectToXml(child);
-            } else if(typeof root[key] === 'array' || root[key].length) {
+            } else if( root[key].length) {
                 var children: any[] = root[key];
 
                 for(var i = 0; i < children.length; i++) {

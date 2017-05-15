@@ -5,7 +5,8 @@ import {Status} from "./typesystem";
 import {PropertyIs} from "./restrictions";
 import _=require("underscore")
 import xmlio=require("./xmlio")
-import tsInterfaces=require("./typesystem-interfaces")
+import ni=require("raml-typeesystem-interfaces");
+import tsInterfaces=ni.tsInterfaces
 
 export class MetaInfo extends ts.TypeInformation {
 

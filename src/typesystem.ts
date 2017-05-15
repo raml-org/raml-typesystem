@@ -1,7 +1,8 @@
 /// <reference path="../typings/main.d.ts" />
 import _=require("underscore")
 import su=require("./schemaUtil")
-import tsInterfaces = require("./typesystem-interfaces")
+import ti = require("raml-typesystem-interfaces")
+import tsInterfaces = ti.tsInterfaces
 
 export let messageRegistry = require("../../resources/errorMessages");
 
@@ -2019,7 +2020,7 @@ export class TypeOfRestriction extends GenericTypeOf{
     }
     check(i:any):Status {
 
-            var to = typeof i;
+            var to:string = typeof i;
             if (i===null||i===undefined){
                 return ok();
             }

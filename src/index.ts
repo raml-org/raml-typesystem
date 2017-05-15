@@ -1,5 +1,6 @@
 import ts=require("./typesystem")
-export import tsInterfaces=require("./typesystem-interfaces")
+export import ni=require("raml-typeesystem-interfaces");
+export import tsInterfaces=ni.tsInterfaces;
 import tc=require("./parse")
 import fr=require("./facetRegistry")
 import {KnownPropertyRestriction} from "./restrictions";
@@ -8,17 +9,23 @@ import {CustomFacet} from "./metainfo";
 import {FacetDeclaration} from "./metainfo";
 import {Status} from "./typesystem";
 import nm=require("./nominals")
-export import nominalTypes=require("./nominal-types")
-export import nominalInterfaces=require("./nominal-interfaces")
-export import typeExpressions=require("./typeExpressionUtil");
+export import nominalTypes=require("raml-nominal-types")
+export import nominalInterfaces=ni
+export import typeExpressions=require("./typeExpressions");
 import schemaUtil = require('./schemaUtil');
 
 export type IValidationPath = tsInterfaces.IValidationPath;
 export type IHasExtra = tsInterfaces.IHasExtra;
-export var TOP_LEVEL_EXTRA = tsInterfaces.TOP_LEVEL_EXTRA;
-export var DEFINED_IN_TYPES_EXTRA = tsInterfaces.DEFINED_IN_TYPES_EXTRA;
-export var USER_DEFINED_EXTRA = tsInterfaces.USER_DEFINED_EXTRA;
-export var SOURCE_EXTRA = tsInterfaces.SOURCE_EXTRA;
+export const REPEAT = "repeat";
+export const PARSE_ERROR = "parseError";
+export const TOP_LEVEL_EXTRA = "topLevel";
+export const DEFINED_IN_TYPES_EXTRA = "definedInTypes";
+export const USER_DEFINED_EXTRA = "USER_DEFINED";
+export const SOURCE_EXTRA = "SOURCE";
+export const SCHEMA_AND_TYPE_EXTRA="SCHEMA";
+export const GLOBAL_EXTRA="GLOBAL";
+export const HAS_FACETS="HAS_FACETS";
+export const HAS_ITEMS="HAS_ITEMS";
 
 // export function instanceOfHasExtra(instance : nominalTypes.ITypeDefinition) : instance is IHasExtra {
 //     returninstance instanceof ts.AbstractType || instance instanceof nominalTypes.AbstractType;

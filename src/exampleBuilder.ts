@@ -2,7 +2,7 @@ import rt=require("./typesystem")
 import meta=require("./metainfo")
 import {ComponentShouldBeOfType} from "./restrictions";
 import {PropertyIs} from "./restrictions";
-import nm=require("./nominal-types")
+import nm=require("raml-nominal-types")
 const exCalcFlag="exampleCalculation";
 export function example(t:rt.AbstractType):any{
     var ms=t.oneMeta(meta.Example);
