@@ -405,6 +405,16 @@ export class JSONSchemaObject {
 
         if(alreadyAccepted.length==0){
             tryParseJSON(content,true);
+            if(this.jsonSchema.id){
+                let schemaId = this.jsonSchema.id;
+                if(schemaId.charAt(schemaId.length-1)=="#"){
+                    let schemaId1 = schemaId.substring(0,schemaId.length-1);
+                    alreadyAccepted.push({
+                        reference: schemaId1,
+                        content: this.jsonSchema
+                    });
+                }
+            }
         }
 
         let exampleObject = JSON.parse(content);
@@ -517,6 +527,16 @@ export class JSONSchemaObject {
         }
 
         var validator = jsonUtil.getValidator();
+        if(alreadyAccepted.length==0&&this.jsonSchema.id){
+            let schemaId = this.jsonSchema.id;
+            if(schemaId.charAt(schemaId.length-1)=="#"){
+                let schemaId1 = schemaId.substring(0,schemaId.length-1);
+                alreadyAccepted.push({
+                    reference: schemaId1,
+                    content: this.jsonSchema
+                });
+            }
+        }
 
         alreadyAccepted.forEach(accepted => validator.setRemoteReference(accepted.reference, accepted.content));
 
