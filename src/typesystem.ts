@@ -1116,7 +1116,7 @@ export abstract class AbstractType implements tsInterfaces.IParsedType, tsInterf
      * @return true if type is object or inherited from object
      */
     isObject():boolean{
-        return this==<AbstractType>OBJECT||this.allSuperTypes().indexOf(OBJECT)!=-1;
+        return this==<AbstractType>OBJECT||_.some(this.allSuperTypes(),x=>x.isObject());
     }
 
     /**
@@ -1864,6 +1864,10 @@ export class UnionType extends DerivedType{
 
     isUnion(){
         return true;
+    }
+
+    isObject(){
+        return _.all(this.allOptions(),x=>x.isObject());
     }
 
     restrictions(){
