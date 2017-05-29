@@ -1259,14 +1259,6 @@ export class FileTypes extends FacetRestriction<string[]>{
     requiredType(){return ts.FILE}
 
     check(i:any):ts.Status{
-        if (!Array.isArray(i)) {
-            return ts.error(messageRegistry.FILE_TYPES_SHOULD_BE_AN_ARRAY,this);
-        }
-        for(var s of i){
-            if(typeof(s) != "string"){
-                return ts.error(messageRegistry.FILE_TYPES_SHOULD_BE_AN_ARRAY,this);
-            }
-        }
         return ts.ok()
     }
 
@@ -1287,9 +1279,20 @@ export class FileTypes extends FacetRestriction<string[]>{
         return this._value;
     }
     checkValue():ts.Status{
+        if (!Array.isArray(this._value)) {
+            return ts.error(messageRegistry.FILE_TYPES_SHOULD_BE_AN_ARRAY,this);
+        }
+        for(var s of this._value){
+            if(typeof(s) != "string"){
+                return ts.error(messageRegistry.FILE_TYPES_SHOULD_BE_AN_ARRAY,this);
+            }
+        }
         return ts.ok();
     }
     toString(){
+        if(!this.checkValue().isOk()){
+            return "invalid 'fileTypes' facet value";
+        }
         return "supported file types: " + this._value.join(", ");
     }
 }
