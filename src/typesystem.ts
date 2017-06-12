@@ -966,12 +966,16 @@ export abstract class AbstractType implements tsInterfaces.IParsedType, tsInterf
                     var facet = fds[facetName];
                     var ft = facet.value();
                     if(facet.owner() == this && cd.owner() == this){
-                        var err = error(messageRegistry.FACET_CAN_NOT_BE_FIXED_BY_THE_DECLARING_TYPE,cd);
+                        let err = error(messageRegistry.FACET_CAN_NOT_BE_FIXED_BY_THE_DECLARING_TYPE,cd);
                         err.setValidationPath({name: facetName});
                         rs.addSubStatus(err);
                     }
                     else {
-                        rs.addSubStatus(ft.validateDirect(cd.value(), false, false));
+                        let st = ft.validateDirect(cd.value(), false, false);
+                        for(var err of st.getErrors()){
+                            setValidationPath(err,{name:facetName});
+                            rs.addSubStatus(err);
+                        };
                         delete rfds[facetName];
                     }
                 }
