@@ -28,6 +28,26 @@ export function registerInjector(i:Injector){
 export class Adaptable{
     private  adapters: any[]=[]
 
+    private static CLASS_IDENTIFIER_Adaptable = "nominal-types.Adaptable";
+
+    public static isInstance(instance : any) : instance is Adaptable {
+        if(instance != null && instance.getClassIdentifier
+            && typeof(instance.getClassIdentifier) == "function"){
+
+            for (let currentIdentifier of instance.getClassIdentifier()){
+                if(currentIdentifier == Adaptable.CLASS_IDENTIFIER_Adaptable) return true;
+            }
+        }
+
+        return false;
+    }
+
+    public getClassIdentifier() : string[] {
+        let superIdentifiers:string[] = [];
+
+        return superIdentifiers.concat(Adaptable.CLASS_IDENTIFIER_Adaptable);
+    }
+
     addAdapter(q: any){
         this.adapters.push(q);
     }
@@ -62,6 +82,26 @@ export class Described extends Adaptable{
     private _version:string;
 
     private _annotations: IAnnotation[]=[]
+
+    private static CLASS_IDENTIFIER_Described = "nominal-types.Described";
+
+    public static isInstance(instance : any) : instance is Described {
+        if(instance != null && instance.getClassIdentifier
+            && typeof(instance.getClassIdentifier) == "function"){
+
+            for (let currentIdentifier of instance.getClassIdentifier()){
+                if(currentIdentifier == Described.CLASS_IDENTIFIER_Described) return true;
+            }
+        }
+
+        return false;
+    }
+
+    public getClassIdentifier() : string[] {
+        let superIdentifiers = super.getClassIdentifier();
+
+        return superIdentifiers.concat(Described.CLASS_IDENTIFIER_Described);
+    }
 
     addAnnotation(a:IAnnotation){
         this._annotations.push(a);
@@ -888,6 +928,26 @@ export class Property extends Described implements IProperty{
     private _descriminates:boolean=false;
     private _defaultBooleanValue:boolean = null;
     private _defaultIntegerValue:number = null;
+
+    private static CLASS_IDENTIFIER_Property = "nominal-types.Property";
+
+    public static isInstance(instance : any) : instance is Property {
+        if(instance != null && instance.getClassIdentifier
+            && typeof(instance.getClassIdentifier) == "function"){
+
+            for (let currentIdentifier of instance.getClassIdentifier()){
+                if(currentIdentifier == Property.CLASS_IDENTIFIER_Property) return true;
+            }
+        }
+
+        return false;
+    }
+
+    public getClassIdentifier() : string[] {
+        let superIdentifiers = super.getClassIdentifier();
+
+        return superIdentifiers.concat(Property.CLASS_IDENTIFIER_Property);
+    }
 
     withMultiValue(v:boolean=true){
         this._isMultiValue=v;
