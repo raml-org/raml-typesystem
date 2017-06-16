@@ -205,6 +205,8 @@ export interface IParsedTypeCollection {
 
     getTypeRegistry():ITypeRegistry;
     getAnnotationTypeRegistry():ITypeRegistry;
+
+    library(name:string):IParsedTypeCollection;
 }
 export  interface ITypeRegistry {
 
