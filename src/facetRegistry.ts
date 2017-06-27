@@ -89,7 +89,7 @@ export class Registry {
         new FacetPrototype(()=>new ms.Discriminator("kind"), (x)=>new ms.Discriminator(x)),//X
         new FacetPrototype(()=>new ms.DiscriminatorValue("x"), (x)=>new ms.DiscriminatorValue(x)),//X
         new FacetPrototype(()=>new Default(""), (x)=>new Default(x)),//X
-        new FacetPrototype(()=>new Usage(""), (x)=>new Usage(x)),//X
+        //new FacetPrototype(()=>new Usage(""), (x)=>new Usage(x)),//X
         new FacetPrototype(()=>new Example(""), (x)=>new Example(x)),//X
         new FacetPrototype(()=>new Required(true), (x)=>new Required(x)),//X
         new FacetPrototype(()=>new ms.Examples({}), (x)=>new ms.Examples(x)),//X
