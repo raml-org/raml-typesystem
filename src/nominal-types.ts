@@ -14,6 +14,7 @@ export type IPrintDetailsSettings=ti.IPrintDetailsSettings;
 export type IAnnotationType=ti.IAnnotationType;
 export type INamedEntity=ti.INamedEntity;
 import _=require("./utils")
+import {InheritedType} from "./typesystem";
 
 declare function require(s:string):any;
 export interface Injector{
@@ -249,10 +250,15 @@ export class AbstractType extends Described implements ITypeDefinition{
         if (this._props){
             return this._props;
         }
-        if (ps[this.typeId()]){
+
+        var uniqueTypeId = getUniqueTypeId(<AbstractType>this);
+        
+        if (ps[uniqueTypeId]){
             return [];
         }
-        ps[this.typeId()]=this;
+        
+        ps[uniqueTypeId]=this;
+        
         var n:{[name:string]:IProperty}={}
         if (this.superTypes().length>0){
             this.superTypes().forEach(x=>{
@@ -526,14 +532,22 @@ export class AbstractType extends Described implements ITypeDefinition{
     }
     private allSuperTypesRecurrent(t:ITypeDefinition,m:{[name:string]:ITypeDefinition},result:ITypeDefinition[]){
         t.superTypes().forEach(x=>{
-            if (!m[(<AbstractType>x).typeId()]) {
+            var uniqueTypeId = getUniqueTypeId(<AbstractType>x);
+            
+            if(!uniqueTypeId) {
+                var adapter = x.getAdapter(InheritedType);
+
+                uniqueTypeId = (adapter && (adapter.id() + '')) || '';
+            }
+
+            if (!m[uniqueTypeId]) {
                 result.push(x);
-                m[(<AbstractType>x).typeId()] = x;
+                m[uniqueTypeId] = x;
                 this.allSuperTypesRecurrent(x, m, result);
             }
         })
     }
-
+    
     addSuperType(q:AbstractType){
         q._subTypes.push(this);
         this._superTypes.push(q);
@@ -1222,5 +1236,17 @@ export class ExternalType extends StructuredType implements IExternalType{
     external() {
         return this;
     }
+}
+
+function getUniqueTypeId(type: AbstractType): string {
+    var uniqueTypeId = type.typeId();
+
+    if(!uniqueTypeId) {
+        var adapter = type.getAdapter(InheritedType);
+
+        uniqueTypeId = (adapter && (adapter.id() + '')) || '';
+    }
+    
+    return uniqueTypeId;
 }
 
