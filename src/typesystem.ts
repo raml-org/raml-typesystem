@@ -1785,6 +1785,12 @@ export class InheritedType extends AbstractType{
                 (<any>this)[prop] = (<any>another)[prop];
             }
         }
+        for(let i = 0 ; i < this._superTypes.length; i++){
+            var st = this._superTypes[i];
+            if(st == this || st.allSuperTypes().indexOf(this)>=0){
+                this._superTypes[i] = RECURRENT;
+            }
+        }
     }
 
 }
