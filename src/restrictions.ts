@@ -24,9 +24,9 @@ export abstract class MatchesProperty extends ts.Constraint{
         throw new Error("Should be never called");
     }
 
-    patchPath(p:ts.IValidationPath):IValidationPath{
+    patchPath(p:ts.IValidationPath,name:string):IValidationPath{
         if (!p){
-            return { name: this.propId()};
+            return { name: name};
         }
         else{
             var c=p;
@@ -44,7 +44,7 @@ export abstract class MatchesProperty extends ts.Constraint{
                     cp=news;
                 }
             }
-            r.child={name:this.propId()};
+            r.child={name:name};
             return r;
         }
     }
@@ -57,12 +57,12 @@ export abstract class MatchesProperty extends ts.Constraint{
                 if (t.isUnknown()|| t.isRecurrent()){
                     var s=ts.error(messageRegistry.VALIDATING_AGAINS_UNKNOWN,
                         this,{typeName:t.name()});
-                    ts.setValidationPath(s,this.patchPath(q));
+                    ts.setValidationPath(s,this.patchPath(q,n));
                     return s;
                 }
                 var s=new Status(Status.OK,"","",this);
                 st.getErrors().forEach(x=>s.addSubStatus(x));
-                ts.setValidationPath(s,this.patchPath(q));
+                ts.setValidationPath(s,this.patchPath(q,n));
                 return s;
             }
         return ts.ok();
