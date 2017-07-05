@@ -414,5 +414,9 @@
   "VALUE_SHOULD_BE_POSITIVE" : {
     "code" : "VALUE_SHOULD_BE_POSITIVE",
     "message": "Value of the '{{facetName}}' facet should be positive"
+  },
+  "PLUGIN_REPORTS_AN_ERROR" : {
+    "code" : "PLUGIN_REPORTS_AN_ERROR",
+    "message": "The {{pluginId}} plugin reports an error"
   }
 }

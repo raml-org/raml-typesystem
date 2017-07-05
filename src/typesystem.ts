@@ -2717,7 +2717,7 @@ export function applyTypeValidationPlugins(
 function toStatus(pvi:tsInterfaces.PluginValidationIssue,pluginId:string,src:any):Status{
     var severity = pvi.isWarning ? Status.WARNING : Status.ERROR;
     var issueCode = pvi.issueCode || pluginId;
-    var message = pvi.message || `The ${pluginId} plugin reports an error`;
+    var message = pvi.message || messageText(messageRegistry.PLUGIN_REPORTS_AN_ERROR, {pluginId: pluginId});
     var status = new Status(severity,issueCode,message,src);
     status.setValidationPath(pvi.path);
     return status;
