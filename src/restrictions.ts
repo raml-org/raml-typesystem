@@ -21,7 +21,7 @@ export abstract class MatchesProperty extends ts.Constraint{
     abstract path():string;
 
     check(i:any,p:ts.IValidationPath):ts.Status{
-        throw new Error("Should be never called");
+        throw new Error(messageRegistry.SHOULD_BE_NEVER_CALLED.message);
     }
 
     patchPath(p:ts.IValidationPath,name:string):IValidationPath{
@@ -909,7 +909,7 @@ export class Maximum extends  MinMaxRestriction{
     }
 
     textMessagePart():string{
-        return "value should not be more than";
+        return messageRegistry.VALUE_SHOULD_NOT_BE_MORE.message;
     }
 }
 /**
@@ -926,7 +926,7 @@ export class Minimum extends  MinMaxRestriction{
     }
 
     textMessagePart():string{
-        return "value should not be less than";
+        return messageRegistry.VALUE_SHOULD_NOT_BE_LESS.message;
     }
 }
 /**
@@ -945,7 +945,7 @@ export class MaxItems extends  MinMaxRestriction{
     }
 
     textMessagePart():string{
-        return "array items count should not be more than";
+        return messageRegistry.ARRAY_ITEMS_COUNT_SHOULD_NOT_BE_MORE.message;
     }
 }
 /**
@@ -964,7 +964,7 @@ export class MinItems extends  MinMaxRestriction{
     }
 
     textMessagePart():string{
-        return "array items count should not be less than";
+        return messageRegistry.ARRAY_ITEMS_COUNT_SHOULD_NOT_BE_LESS.message;
     }
 }
 /**
@@ -984,7 +984,7 @@ export class MaxLength extends  MinMaxRestriction{
     }
 
     textMessagePart():string{
-        return "string length should not be more than";
+        return messageRegistry.STRING_SHOULD_NOT_BE_MORE.message;
     }
 }
 
@@ -1004,7 +1004,7 @@ export class MinLength extends  MinMaxRestriction{
     }
 
     textMessagePart():string{
-        return "string length should not be less than";
+        return messageRegistry.STRING_SHOULD_NOT_BE_LESS.message;
     }
 }
 /**
@@ -1021,7 +1021,7 @@ export class MaxProperties extends  MinMaxRestriction{
     }
 
     textMessagePart():string{
-        return "object properties count should not be more than";
+        return messageRegistry.OBJECT_PROPERTIES_SHOULD_NOT_BE_MORE.message;
     }
 }
 /**
@@ -1038,7 +1038,7 @@ export class MinProperties extends  MinMaxRestriction{
     }
 
     textMessagePart():string{
-        return "object properties count should not be less than";
+        return messageRegistry.OBJECT_PROPERTIES_SHOULD_NOT_BE_LESS.message;
     }
 }
 /**
@@ -1086,7 +1086,7 @@ export class UniqueItems extends FacetRestriction<boolean>{
         return null;
     }
     toString(){
-        return "items should be unique";
+        return messageRegistry.MUST_BE_UNIQUE.message;
     }
 }
 /**
@@ -1101,7 +1101,7 @@ export class ComponentShouldBeOfType extends FacetRestriction<ts.AbstractType>{
     }
 
     public toString() {
-        return "items should be of type " + this.type;
+        return ts.error(messageRegistry.ITEMS_SHOULD_BE_OF_TYPE, this, {type:this.type}).getMessage();
     }
     check(i:any):ts.Status{
 
@@ -1227,7 +1227,7 @@ export class Pattern extends FacetRestriction<string>{
             if (v._value===this._value){
                 return this;
             }
-            return  this.nothing(r,"pattern restrictions can not be composed at one type");
+            return  this.nothing(r,ts.error(messageRegistry.SHOULD_PASS_REXEXP, this, {name:"pattern restrictions"}).getMessage());
         }
         return null;
     }
@@ -1246,7 +1246,7 @@ export class Pattern extends FacetRestriction<string>{
         return null;
     }
     toString(){
-        return "should pass reg exp:"+this.value;
+        return ts.error(messageRegistry.SHOULD_PASS_REXEXP, this, {rexexp:this.value}).getMessage() ;
     }
 }
 
@@ -1270,7 +1270,7 @@ export class FileTypes extends FacetRestriction<string[]>{
             if(arr.length>0){
                 return new FileTypes(arr);
             }
-            return this.nothing(r,"no common file types");
+            return this.nothing(r,messageRegistry.NO_COMMON_FILE_TYPES.message);
         }
         return null;
     }
@@ -1291,9 +1291,9 @@ export class FileTypes extends FacetRestriction<string[]>{
     }
     toString(){
         if(!this.checkValue().isOk()){
-            return "invalid 'fileTypes' facet value";
+            return messageRegistry.INVALID_FILETYPES_FACET_VALUE.message;
         }
-        return "supported file types: " + this._value.join(", ");
+        return ts.error(messageRegistry.SUPPORTED_FILE_TYPES, this, {types:this._value.join(", ")}).getMessage();
     }
 }
 
@@ -1326,7 +1326,7 @@ export class Format extends FacetRestriction<string>{
             if (v._value===this._value){
                 return this;
             }
-            return  this.nothing(r,"Format restrictions can not be composed at one type");
+            return  this.nothing(r,ts.error(messageRegistry.SHOULD_PASS_REXEXP, this, {name:"Format"}).getMessage());
         }
         return null;
     }

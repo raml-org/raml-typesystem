@@ -16,6 +16,8 @@ export type INamedEntity=ti.INamedEntity;
 import _=require("./utils")
 import {InheritedType} from "./typesystem";
 
+let messageRegistry = require("../../resources/errorMessages");
+
 declare function require(s:string):any;
 export interface Injector{
     inject(a:Adaptable):void;
@@ -207,7 +209,7 @@ export class AbstractType extends Described implements ITypeDefinition{
 
     validate(x:any):tsInterfaces.IStatus[]{
         if (!this._validator){
-            throw new Error("Validate can be used only on runtime types instances")
+            throw new Error(messageRegistry.VALIDATE_ONLY_ON_RUNTIME_TYPES_INSTANCES.message)
         }
         return this._validator(x)
     }
@@ -733,10 +735,10 @@ export class AbstractType extends Described implements ITypeDefinition{
 
     registerCustomProperty(p:IProperty){
         if (p.domain()!=this){
-            throw new Error("Should be already owned by this");
+            throw new Error(messageRegistry.SHOULD_BE_ALREADY_OWNED.message);
         }
         if (this._customProperties.indexOf(p)!=-1){
-            throw new Error("Already included");
+            throw new Error(messageRegistry.ALREADY_INCLUDED.message);
         }
         this._customProperties.push(p);
     }
@@ -921,10 +923,10 @@ export class StructuredType extends AbstractType implements ITypeDefinition{
 
     registerProperty(p:IProperty){
         if (p.domain()!=this){
-            throw new Error("Should be already owned by this");
+            throw new Error(messageRegistry.SHOULD_BE_ALREADY_OWNED.message);
         }
         if (this._properties.indexOf(p)!=-1){
-            throw new Error("Already included");
+            throw new Error(messageRegistry.ALREADY_INCLUDED.message);
         }
         this._properties.push(p);
     }

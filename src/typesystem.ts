@@ -206,7 +206,7 @@ var messageText = function (messageEntry:any, params:any) {
         prev += "}}".length;
         var paramValue = params[paramName];
         if(paramValue===undefined){
-            throw new Error(`Message parameter '${paramName}' has no value specified.`);
+            throw new Error(messageText(messageRegistry.MESSAGE_PARAMETER_NO_VALUE,{paramName: paramName}));
         }
         result += paramValue;
     }
@@ -2149,7 +2149,7 @@ export class ScalarRestriction extends GenericTypeOf{
         return ANY;
     }
     facetName(){
-        return "should be scalar"
+        return messageRegistry.SHOULD_BE_SCALAR.message;
     }
 
     value(){
