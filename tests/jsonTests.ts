@@ -2188,3 +2188,21 @@ describe("Type collection parse and store",function(){
         assert.isTrue(val);
     });
 });
+
+describe("Facets tests",function(){
+
+    it ("'usage' facet must be deprecated",function(){
+        var st={
+            types: {
+                T1:
+                {
+                    usage: "stringValue"
+                }
+            }
+        };
+        var col=ps.parseJSONTypeCollection(st);
+        var general=col.getType("T1");
+        assert(!general.validateType().isOk());
+    });
+
+});

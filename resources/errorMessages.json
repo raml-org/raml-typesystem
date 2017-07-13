@@ -414,5 +414,89 @@
   "VALUE_SHOULD_BE_POSITIVE" : {
     "code" : "VALUE_SHOULD_BE_POSITIVE",
     "message": "Value of the '{{facetName}}' facet should be positive"
+  },
+  "PLUGIN_REPORTS_AN_ERROR" : {
+    "code" : "PLUGIN_REPORTS_AN_ERROR",
+    "message": "The {{pluginId}} plugin reports an error"
+  },
+  "MESSAGE_PARAMETER_NO_VALUE" : {
+    "code" : "MESSAGE_PARAMETER_NO_VALUE",
+    "message" : "Message parameter '{{paramName}}' has no value specified."
+  },
+  "VALIDATE_ONLY_ON_RUNTIME_TYPES_INSTANCES" : {
+    "code" : "VALIDATE_ONLY_ON_RUNTIME_TYPES_INSTANCES",
+    "message" : "Validate can be used only on runtime types instances"
+  },
+  "SHOULD_BE_ALREADY_OWNED" : {
+    "code" : "SHOULD_BE_ALREADY_OWNED",
+    "message" : "Should be already owned by this"
+  },
+  "ALREADY_INCLUDED" : {
+    "code" : "ALREADY_INCLUDED",
+    "message" : "Already included"
+  },
+  "SHOULD_BE_NEVER_CALLED" : {
+    "code" : "SHOULD_BE_NEVER_CALLED",
+    "message" : "Should be never called"
+  },
+  "VALUE_SHOULD_NOT_BE_MORE" : {
+    "code" : "VALUE_SHOULD_NOT_BE_MORE",
+    "message" : "value should not be more than"
+  },
+  "VALUE_SHOULD_NOT_BE_LESS" : {
+    "code" : "VALUE_SHOULD_NOT_BE_LESS",
+    "message" : "value should not be less than"
+  },
+  "ARRAY_ITEMS_COUNT_SHOULD_NOT_BE_MORE" : {
+    "code" : "ARRAY_ITEMS_COUNT_SHOULD_NOT_BE_MORE",
+    "message" : "array items count should not be more than"
+  },
+  "ARRAY_ITEMS_COUNT_SHOULD_NOT_BE_LESS" : {
+    "code" : "ARRAY_ITEMS_COUNT_SHOULD_NOT_BE_LESS",
+    "message" : "array items count should not be less than"
+  },
+  "STRING_SHOULD_NOT_BE_MORE" : {
+    "code" : "STRING_SHOULD_NOT_BE_MORE",
+    "message" : "string length should not be more than"
+  },
+  "STRING_SHOULD_NOT_BE_LESS" : {
+    "code" : "STRING_SHOULD_NOT_BE_LESS",
+    "message" : "string length should not be less than"
+  },
+  "OBJECT_PROPERTIES_SHOULD_NOT_BE_MORE" : {
+    "code" : "OBJECT_PROPERTIES_SHOULD_NOT_BE_MORE",
+    "message" : "object properties count should not be more than"
+  },
+  "OBJECT_PROPERTIES_SHOULD_NOT_BE_LESS" : {
+    "code" : "OBJECT_PROPERTIES_SHOULD_NOT_BE_LESS",
+    "message" : "object properties count should not be less than"
+  },
+  "ITEMS_SHOULD_BE_OF_TYPE" : {
+    "code" : "ITEMS_SHOULD_BE_OF_TYPE",
+    "message" : "items should be of type {{type}}"
+  },
+  "RESTRICTIONS_CANNT_BE_COMPOSED" : {
+    "code" : "RESTRICTIONS_CANNT_BE_COMPOSED",
+    "message" : "{{name}} can not be composed at one type"
+  },
+  "SHOULD_PASS_REXEXP" : {
+    "code" : "SHOULD_PASS_REXEXP",
+    "message" : "should pass reg exp:{{rexexp}}"
+  },
+  "NO_COMMON_FILE_TYPES" : {
+    "code" : "NO_COMMON_FILE_TYPES",
+    "message" : "no common file types"
+  },
+  "INVALID_FILETYPES_FACET_VALUE" : {
+    "code" : "INVALID_FILETYPES_FACET_VALUE",
+    "message" : "invalid 'fileTypes' facet value"
+  },
+  "SUPPORTED_FILE_TYPES" : {
+    "code" : "SUPPORTED_FILE_TYPES",
+    "message" : "supported file types: {{types}}"
+  },
+  "SHOULD_BE_SCALAR" : {
+    "code" : "SHOULD_BE_SCALAR",
+    "message" : "should be scalar"
   }
 }

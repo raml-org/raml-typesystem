@@ -513,13 +513,13 @@ describe("Type family",function(){
 });
 describe("Facet Registry",function() {
     it ("All facets",function (){
-        assert.equal(facetRegistry.getInstance().allPrototypes().length,32);
+        assert.equal(facetRegistry.getInstance().allPrototypes().length,31);
     });
     it ("All object facets",function (){
-        assert.equal(facetRegistry.getInstance().applyableTo(ts.OBJECT).length,20);
+        assert.equal(facetRegistry.getInstance().applyableTo(ts.OBJECT).length,19);
     });
     it ("All meta",function (){
-        assert.equal(facetRegistry.getInstance().allMeta().length,11);
+        assert.equal(facetRegistry.getInstance().allMeta().length,10);
     });
 })
 describe("Automatic classification",function(){

@@ -14,6 +14,9 @@ export type IPrintDetailsSettings=ti.IPrintDetailsSettings;
 export type IAnnotationType=ti.IAnnotationType;
 export type INamedEntity=ti.INamedEntity;
 import _=require("./utils")
+import {InheritedType} from "./typesystem";
+
+let messageRegistry = require("../../resources/errorMessages");
 
 declare function require(s:string):any;
 export interface Injector{
@@ -27,6 +30,26 @@ export function registerInjector(i:Injector){
 
 export class Adaptable{
     private  adapters: any[]=[]
+
+    private static CLASS_IDENTIFIER_Adaptable = "nominal-types.Adaptable";
+
+    public static isInstance(instance : any) : instance is Adaptable {
+        if(instance != null && instance.getClassIdentifier
+            && typeof(instance.getClassIdentifier) == "function"){
+
+            for (let currentIdentifier of instance.getClassIdentifier()){
+                if(currentIdentifier == Adaptable.CLASS_IDENTIFIER_Adaptable) return true;
+            }
+        }
+
+        return false;
+    }
+
+    public getClassIdentifier() : string[] {
+        let superIdentifiers:string[] = [];
+
+        return superIdentifiers.concat(Adaptable.CLASS_IDENTIFIER_Adaptable);
+    }
 
     addAdapter(q: any){
         this.adapters.push(q);
@@ -62,6 +85,26 @@ export class Described extends Adaptable{
     private _version:string;
 
     private _annotations: IAnnotation[]=[]
+
+    private static CLASS_IDENTIFIER_Described = "nominal-types.Described";
+
+    public static isInstance(instance : any) : instance is Described {
+        if(instance != null && instance.getClassIdentifier
+            && typeof(instance.getClassIdentifier) == "function"){
+
+            for (let currentIdentifier of instance.getClassIdentifier()){
+                if(currentIdentifier == Described.CLASS_IDENTIFIER_Described) return true;
+            }
+        }
+
+        return false;
+    }
+
+    public getClassIdentifier() : string[] {
+        let superIdentifiers = super.getClassIdentifier();
+
+        return superIdentifiers.concat(Described.CLASS_IDENTIFIER_Described);
+    }
 
     addAnnotation(a:IAnnotation){
         this._annotations.push(a);
@@ -166,7 +209,7 @@ export class AbstractType extends Described implements ITypeDefinition{
 
     validate(x:any):tsInterfaces.IStatus[]{
         if (!this._validator){
-            throw new Error("Validate can be used only on runtime types instances")
+            throw new Error(messageRegistry.VALIDATE_ONLY_ON_RUNTIME_TYPES_INSTANCES.message)
         }
         return this._validator(x)
     }
@@ -209,10 +252,15 @@ export class AbstractType extends Described implements ITypeDefinition{
         if (this._props){
             return this._props;
         }
-        if (ps[this.typeId()]){
+
+        var uniqueTypeId = getUniqueTypeId(<AbstractType>this);
+        
+        if (ps[uniqueTypeId]){
             return [];
         }
-        ps[this.typeId()]=this;
+        
+        ps[uniqueTypeId]=this;
+        
         var n:{[name:string]:IProperty}={}
         if (this.superTypes().length>0){
             this.superTypes().forEach(x=>{
@@ -486,14 +534,22 @@ export class AbstractType extends Described implements ITypeDefinition{
     }
     private allSuperTypesRecurrent(t:ITypeDefinition,m:{[name:string]:ITypeDefinition},result:ITypeDefinition[]){
         t.superTypes().forEach(x=>{
-            if (!m[(<AbstractType>x).typeId()]) {
+            var uniqueTypeId = getUniqueTypeId(<AbstractType>x);
+            
+            if(!uniqueTypeId) {
+                var adapter = x.getAdapter(InheritedType);
+
+                uniqueTypeId = (adapter && (adapter.id() + '')) || '';
+            }
+
+            if (!m[uniqueTypeId]) {
                 result.push(x);
-                m[(<AbstractType>x).typeId()] = x;
+                m[uniqueTypeId] = x;
                 this.allSuperTypesRecurrent(x, m, result);
             }
         })
     }
-
+    
     addSuperType(q:AbstractType){
         q._subTypes.push(this);
         this._superTypes.push(q);
@@ -679,10 +735,10 @@ export class AbstractType extends Described implements ITypeDefinition{
 
     registerCustomProperty(p:IProperty){
         if (p.domain()!=this){
-            throw new Error("Should be already owned by this");
+            throw new Error(messageRegistry.SHOULD_BE_ALREADY_OWNED.message);
         }
         if (this._customProperties.indexOf(p)!=-1){
-            throw new Error("Already included");
+            throw new Error(messageRegistry.ALREADY_INCLUDED.message);
         }
         this._customProperties.push(p);
     }
@@ -867,10 +923,10 @@ export class StructuredType extends AbstractType implements ITypeDefinition{
 
     registerProperty(p:IProperty){
         if (p.domain()!=this){
-            throw new Error("Should be already owned by this");
+            throw new Error(messageRegistry.SHOULD_BE_ALREADY_OWNED.message);
         }
         if (this._properties.indexOf(p)!=-1){
-            throw new Error("Already included");
+            throw new Error(messageRegistry.ALREADY_INCLUDED.message);
         }
         this._properties.push(p);
     }
@@ -888,6 +944,26 @@ export class Property extends Described implements IProperty{
     private _descriminates:boolean=false;
     private _defaultBooleanValue:boolean = null;
     private _defaultIntegerValue:number = null;
+
+    private static CLASS_IDENTIFIER_Property = "nominal-types.Property";
+
+    public static isInstance(instance : any) : instance is Property {
+        if(instance != null && instance.getClassIdentifier
+            && typeof(instance.getClassIdentifier) == "function"){
+
+            for (let currentIdentifier of instance.getClassIdentifier()){
+                if(currentIdentifier == Property.CLASS_IDENTIFIER_Property) return true;
+            }
+        }
+
+        return false;
+    }
+
+    public getClassIdentifier() : string[] {
+        let superIdentifiers = super.getClassIdentifier();
+
+        return superIdentifiers.concat(Property.CLASS_IDENTIFIER_Property);
+    }
 
     withMultiValue(v:boolean=true){
         this._isMultiValue=v;
@@ -1162,5 +1238,17 @@ export class ExternalType extends StructuredType implements IExternalType{
     external() {
         return this;
     }
+}
+
+function getUniqueTypeId(type: AbstractType): string {
+    var uniqueTypeId = type.typeId();
+
+    if(!uniqueTypeId) {
+        var adapter = type.getAdapter(InheritedType);
+
+        uniqueTypeId = (adapter && (adapter.id() + '')) || '';
+    }
+    
+    return uniqueTypeId;
 }
 

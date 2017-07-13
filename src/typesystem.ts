@@ -206,7 +206,7 @@ var messageText = function (messageEntry:any, params:any) {
         prev += "}}".length;
         var paramValue = params[paramName];
         if(paramValue===undefined){
-            throw new Error(`Message parameter '${paramName}' has no value specified.`);
+            throw new Error(messageText(messageRegistry.MESSAGE_PARAMETER_NO_VALUE,{paramName: paramName}));
         }
         result += paramValue;
     }
@@ -966,12 +966,16 @@ export abstract class AbstractType implements tsInterfaces.IParsedType, tsInterf
                     var facet = fds[facetName];
                     var ft = facet.value();
                     if(facet.owner() == this && cd.owner() == this){
-                        var err = error(messageRegistry.FACET_CAN_NOT_BE_FIXED_BY_THE_DECLARING_TYPE,cd);
+                        let err = error(messageRegistry.FACET_CAN_NOT_BE_FIXED_BY_THE_DECLARING_TYPE,cd);
                         err.setValidationPath({name: facetName});
                         rs.addSubStatus(err);
                     }
                     else {
-                        rs.addSubStatus(ft.validateDirect(cd.value(), false, false));
+                        let st = ft.validateDirect(cd.value(), false, false);
+                        for(var err of st.getErrors()){
+                            setValidationPath(err,{name:facetName});
+                            rs.addSubStatus(err);
+                        };
                         delete rfds[facetName];
                     }
                 }
@@ -1781,6 +1785,12 @@ export class InheritedType extends AbstractType{
                 (<any>this)[prop] = (<any>another)[prop];
             }
         }
+        for(let i = 0 ; i < this._superTypes.length; i++){
+            var st = this._superTypes[i];
+            if(st == this || st.allSuperTypes().indexOf(this)>=0){
+                this._superTypes[i] = RECURRENT;
+            }
+        }
     }
 
 }
@@ -2139,7 +2149,7 @@ export class ScalarRestriction extends GenericTypeOf{
         return ANY;
     }
     facetName(){
-        return "should be scalar"
+        return messageRegistry.SHOULD_BE_SCALAR.message;
     }
 
     value(){
@@ -2707,7 +2717,7 @@ export function applyTypeValidationPlugins(
 function toStatus(pvi:tsInterfaces.PluginValidationIssue,pluginId:string,src:any):Status{
     var severity = pvi.isWarning ? Status.WARNING : Status.ERROR;
     var issueCode = pvi.issueCode || pluginId;
-    var message = pvi.message || `The ${pluginId} plugin reports an error`;
+    var message = pvi.message || messageText(messageRegistry.PLUGIN_REPORTS_AN_ERROR, {pluginId: pluginId});
     var status = new Status(severity,issueCode,message,src);
     status.setValidationPath(pvi.path);
     return status;
