@@ -72,47 +72,7 @@ export abstract class MatchesProperty extends ts.Constraint{
 
 
     validateSelf(registry:ts.TypeRegistry):ts.Status {
-        if (this._type.isExternal()){
-            var p=ts.error(messageRegistry.EXTERNAL_IN_PROPERTY_DEFINITION, this);
-            ts.setValidationPath(p,{name: this.propId()})
-            return p;
-        }
-        if (this._type.isSubTypeOf(ts.UNKNOWN)||this._type.isSubTypeOf(ts.RECURRENT)){
-            var actualUnknown = actualUnknownType(this._type);
-            var p= ts.error(messageRegistry.UNKNOWN_IN_PROPERTY_DEFINITION,this,{
-                propName: this.propId(),
-                typeName: actualUnknown.name()
-            });
-            ts.setValidationPath(p,{name: this.propId(), child: { name: "type"}})
-            return p;
-        }
-        if (this._type.isAnonymous()){
-            var st=this._type.validateType(registry);
-            if (!st.isOk()){
-                var p= ts.error(messageRegistry.ERROR_IN_RANGE,this, {
-                    propName: this.propId(),
-                    msg: st.getMessage()
-                });
-                st.getErrors().forEach(y=>{p.addSubStatus(y)});
-
-                ts.setValidationPath(p,{name: this.propId()});
-                return p;
-            }
-            return st;
-        }
-
-        if (this._type.isUnion()){
-           var ui= _.find(this._type.typeFamily(),x=>x.isSubTypeOf(ts.UNKNOWN));
-           if (ui){
-               var p= ts.error(messageRegistry.UNKNOWN_IN_PROPERTY_DEFINITION,this,{
-                   propName: this.propId(),
-                   typeName: ui.name()
-               });
-               ts.setValidationPath(p,{name: this.propId()})
-               return p;
-           }
-        }
-        return ts.ok();
+        return validatePropertyType(this._type,this.propId(),registry,this,false);
     }
 }
 
@@ -1505,4 +1465,86 @@ function actualUnknownType(t:AbstractType):AbstractType{
         }
     }
     return t;
+}
+
+export function validatePropertyType(
+    _type:ts.AbstractType,
+    propName:string,
+    registry:ts.TypeRegistry,
+    source:any,
+    isFacet=false):ts.Status {
+
+    if (_type.isExternal()){
+        let p:ts.Status;
+        if(isFacet) {
+            p = ts.error(messageRegistry.EXTERNAL_IN_FACET_DEFINITION, source);
+        }
+        else {
+            p = ts.error(messageRegistry.EXTERNAL_IN_PROPERTY_DEFINITION, source);
+        }
+        ts.setValidationPath(p,{name: propName})
+        return p;
+    }
+    if (_type.isSubTypeOf(ts.UNKNOWN)||_type.isSubTypeOf(ts.RECURRENT)){
+        var actualUnknown = actualUnknownType(_type);
+        let p:ts.Status;
+        if(isFacet) {
+            p = ts.error(messageRegistry.UNKNOWN_IN_FACET_DEFINITION, source, {
+                facetName: propName,
+                msg: actualUnknown.name()
+            });
+        }
+        else{
+            p = ts.error(messageRegistry.UNKNOWN_IN_PROPERTY_DEFINITION,source,{
+                propName: propName,
+                typeName: actualUnknown.name()
+            });
+        }
+        ts.setValidationPath(p,{name: propName, child: { name: "type"}})
+        return p;
+    }
+    if (_type.isAnonymous()){
+        var st=_type.validateType(registry);
+        if (!st.isOk()){
+            let p:ts.Status;
+            if(isFacet) {
+                p = ts.error(messageRegistry.ERROR_IN_FACET_RANGE, source, {
+                    facetName: propName,
+                    msg: st.getMessage()
+                });
+            }
+            else{
+                p = ts.error(messageRegistry.ERROR_IN_RANGE,source, {
+                    propName: propName,
+                    msg: st.getMessage()
+                });
+            }
+            st.getErrors().forEach(y=>{p.addSubStatus(y)});
+
+            ts.setValidationPath(p,{name: propName});
+            return p;
+        }
+        return st;
+    }
+
+    if (_type.isUnion()){
+        var ui= _.find(_type.typeFamily(),x=>x.isSubTypeOf(ts.UNKNOWN));
+        if (ui){let p:ts.Status;
+            if(isFacet) {
+                p = ts.error(messageRegistry.UNKNOWN_IN_FACET_DEFINITION, source, {
+                    facetName: propName,
+                    msg: ui.name()
+                });
+            }
+            else{
+                p= ts.error(messageRegistry.UNKNOWN_IN_PROPERTY_DEFINITION,source,{
+                    propName: propName,
+                    typeName: ui.name()
+                });
+            }
+            ts.setValidationPath(p,{name: propName})
+            return p;
+        }
+    }
+    return ts.ok();
 }

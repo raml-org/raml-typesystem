@@ -2181,7 +2181,75 @@ describe("Type validation basics",function() {
         assert.isTrue(!st.isOk());
         assert.isTrue(st.getErrors().length==1);
     });
+    it("Declaring facets", function () {
+        var tp = ps.parseJSONTypeCollection({
 
+            types:{
+                T:{
+                    type: "object",
+                    facets: {
+                        f1: "number",
+                        f2: "boolean",
+                        f3: "string"
+                    }
+                }
+            }
+        });
+        var st= tp.getType("T").validateType();
+        assert.isTrue(st.isOk());
+    });
+    it("External as facet type", function () {
+        var tp = ps.parseJSONTypeCollection({
+
+            types:{
+                ET: '{"type": "object"}',
+                T:{
+                    type: "object",
+                    facets: {
+                        f1: "ET"
+                    }
+                }
+            }
+        });
+        var st= tp.getType("T").validateType();
+        assert.isTrue(!st.isOk());
+        assert.equal(st.getErrors().length,1);
+    });
+    it("Unknown as facet type", function () {
+        var tp = ps.parseJSONTypeCollection({
+
+            types:{
+                T:{
+                    type: "object",
+                    facets: {
+                        f1: "T0"
+                    }
+                }
+            }
+        });
+        var st= tp.getType("T").validateType();
+        assert.isTrue(!st.isOk());
+        assert.equal(st.getErrors().length,1);
+    });
+    it("Incorrect inlined facet type", function () {
+        var tp = ps.parseJSONTypeCollection({
+
+            types:{
+                T:{
+                    type: "object",
+                    facets: {
+                        f1: {
+                            type: "string",
+                            someUnknownField: 12
+                        }
+                    }
+                }
+            }
+        });
+        var st= tp.getType("T").validateType();
+        assert.isTrue(!st.isOk());
+        assert.equal(st.getErrors().length,1);
+    });
     it("property type with discriminator", function () {
         var tp = ps.parseJSONTypeCollection({
 
