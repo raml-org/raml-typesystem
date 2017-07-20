@@ -395,6 +395,19 @@ export class TypeRegistry implements tsInterfaces.ITypeRegistry {
 
   private typeList:AbstractType[]=[]
 
+  private static CLASS_IDENTIFIER_TypeRegistry = "typesystem.TypeRegistry";
+
+  public getClassIdentifier() : string[] {
+    var superIdentifiers:string[] = [];
+    return superIdentifiers.concat(TypeRegistry.CLASS_IDENTIFIER_TypeRegistry);
+  }
+
+  public static isInstance(instance: any): instance is TypeRegistry {
+    return instance != null && instance.getClassIdentifier
+           && typeof(instance.getClassIdentifier) == "function"
+            && _.contains(instance.getClassIdentifier(), TypeRegistry.CLASS_IDENTIFIER_TypeRegistry);
+  }
+
   put(alias:string, t:AbstractType){
       this._types[alias]=t;
   }

@@ -14,6 +14,7 @@ import {AdditionalPropertyIs} from "./restrictions";
 import {MapPropertyIs} from "./restrictions";
 import {TypeRegistry} from "./typesystem";
 import {ComponentShouldBeOfType} from "./restrictions";
+import _ = require("underscore");
 
 import su = require('./schemaUtil');
 import {KnownPropertyRestriction} from "./restrictions";
@@ -205,7 +206,18 @@ export class TypeCollection {
 
 export class AccumulatingRegistry extends ts.TypeRegistry{
 
+    private static CLASS_IDENTIFIER_AccumulatingRegistry = "parse.AccumulatingRegistry";
 
+    public getClassIdentifier() : string[] {
+        var superIdentifiers:string[] = super.getClassIdentifier();
+        return superIdentifiers.concat(AccumulatingRegistry.CLASS_IDENTIFIER_AccumulatingRegistry);
+    }
+
+    public static isInstance(instance : any) : instance is AccumulatingRegistry {
+        return instance != null && instance.getClassIdentifier
+            && typeof(instance.getClassIdentifier) == "function"
+            && _.contains(instance.getClassIdentifier(),AccumulatingRegistry.CLASS_IDENTIFIER_AccumulatingRegistry);
+    }
     constructor(private toParse:ParseNode,private schemas:ParseNode,ts:ts.TypeRegistry,private _c:TypeCollection){
         super(ts)
     }
@@ -745,7 +757,7 @@ export function parse(
             return sp;
         }
         var res=ts.derive(name,[sp]);
-        if (r instanceof AccumulatingRegistry){
+        if (AccumulatingRegistry.isInstance(r)){
             res = contributeToAccumulatingRegistry(res, r);
         }
         return res;
@@ -756,7 +768,7 @@ export function parse(
             supers.push(typeExpressions.parseToType(""+x.value(),r, n))
         })
         var res=ts.derive(name,supers);
-        if (r instanceof AccumulatingRegistry){
+        if (AccumulatingRegistry.isInstance(r)){
             res = contributeToAccumulatingRegistry(res, r);
         }
         return res;
@@ -856,7 +868,7 @@ export function parse(
         var aArr1:tsInterfaces.IAnnotation[] = typePropAnnotations[i];
         result.addSupertypeAnnotation(aArr1,i);
     }
-    if (r instanceof AccumulatingRegistry){
+    if (AccumulatingRegistry.isInstance(r)){
         result = contributeToAccumulatingRegistry(result, r);
     }
     var actualResult=result;
