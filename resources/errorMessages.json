@@ -247,13 +247,25 @@
     "code" : "EXTERNAL_IN_PROPERTY_DEFINITION",
     "message": "It is not allowed to use external types in property definitions"
   },
+  "EXTERNAL_IN_FACET_DEFINITION" : {
+    "code" : "EXTERNAL_IN_FACET_DEFINITION",
+    "message": "It is not allowed to use external types in facet definitions"
+  },
   "UNKNOWN_IN_PROPERTY_DEFINITION" : {
     "code" : "UNKNOWN_IN_PROPERTY_DEFINITION",
     "message": "Property '{{propName}}' refers to unknown type '{{typeName}}'"
   },
+  "UNKNOWN_IN_FACET_DEFINITION" : {
+    "code" : "UNKNOWN_IN_FACET_DEFINITION",
+    "message": "Facet '{{facetName}}' refers to unknown type '{{typeName}}'"
+  },
   "ERROR_IN_RANGE" : {
     "code" : "ERROR_IN_RANGE",
     "message": "Property '{{propName}}' range type has error: {{msg}}"
+  },
+  "ERROR_IN_FACET_RANGE" : {
+    "code" : "ERROR_IN_FACET_RANGE",
+    "message": "Facet '{{facetName}}' range type has error: {{msg}}"
   },
   "INCORRECT_SCHEMA" : {
     "code" : "INCORRECT_SCHEMA",

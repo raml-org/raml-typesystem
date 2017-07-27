@@ -3,6 +3,7 @@ import ts=require("./typesystem");
 var messageRegistry = ts.messageRegistry;
 import {Status} from "./typesystem";
 import {PropertyIs} from "./restrictions";
+import {validatePropertyType} from "./restrictions";
 import _=require("underscore")
 import xmlio=require("./xmlio")
 import tsInterfaces=require("./typesystem-interfaces")
@@ -164,24 +165,7 @@ export class FacetDeclaration extends MetaInfo{
     }
 
     validateSelf(registry:ts.TypeRegistry):ts.Status {
-        let result = ts.ok();
-        let st1 = super.validateSelf(registry);
-        if (!st1) {
-            result.addSubStatus(st1);
-        }
-        var st = this._type.validateType(registry);
-        if (!st.isOk()) {
-            var p = ts.error(messageRegistry.ERROR_IN_RANGE, this, {
-                propName: this.name,
-                msg: st.getMessage()
-            });
-            st.getErrors().forEach(y => {
-                p.addSubStatus(y)
-            });
-            ts.setValidationPath(p, {name: this.name});
-            result.addSubStatus(st);
-        }
-        return result;
+        return validatePropertyType(this._type,this.name,registry,this,false);
     }
 }
 export class CustomFacet extends MetaInfo{
