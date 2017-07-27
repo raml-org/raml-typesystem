@@ -1299,7 +1299,7 @@ export class Format extends FacetRestriction<string>{
             var allowedValues : string[] = [];
 
             if (this.owner().isSubTypeOf(ts.INTEGER)) {
-                allowedValues = ["int32", "int64", "int", "int16", "int8"];
+                allowedValues = ["int32", "int64", "int", "long", "int16", "int8"];
             } else if (this.owner().isSubTypeOf(ts.NUMBER)) {
                 allowedValues = ["int32", "int64", "int", "long", "float", "double", "int16", "int8"];
             } else if (this.owner().isSubTypeOf(ts.DATETIME)) {

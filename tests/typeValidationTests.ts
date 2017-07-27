@@ -341,6 +341,14 @@ describe("Other simple facet validation",function() {
         var st= tp.validateType(ts.builtInRegistry());
         assert.isTrue(st.isOk());
     });
+    it("validating integer format positive 5", function () {
+        var tp = ps.parseJSON("TestType", {
+            type: "integer",
+            format: "long"
+        })
+        var st= tp.validateType(ts.builtInRegistry());
+        assert.isTrue(st.isOk());
+    });
     it("validating integer format negative", function () {
         var tp = ps.parseJSON("TestType", {
             type: "integer",
