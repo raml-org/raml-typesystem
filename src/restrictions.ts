@@ -20,6 +20,19 @@ export abstract class MatchesProperty extends ts.Constraint{
 
     abstract path():string;
 
+    private static CLASS_IDENTIFIER_MatchesProperty = "restrictions.MatchesProperty";
+
+    public getClassIdentifier() : string[] {
+        var superIdentifiers:string[] = super.getClassIdentifier();
+        return superIdentifiers.concat(MatchesProperty.CLASS_IDENTIFIER_MatchesProperty);
+    }
+
+    public static isInstance(instance: any): instance is MatchesProperty {
+        return instance != null && instance.getClassIdentifier
+            && typeof(instance.getClassIdentifier) == "function"
+            && _.contains(instance.getClassIdentifier(), MatchesProperty.CLASS_IDENTIFIER_MatchesProperty);
+    }
+
     check(i:any,p:ts.IValidationPath):ts.Status{
         throw new Error(messageRegistry.SHOULD_BE_NEVER_CALLED.message);
     }
@@ -73,6 +86,10 @@ export abstract class MatchesProperty extends ts.Constraint{
 
     validateSelf(registry:ts.TypeRegistry):ts.Status {
         return validatePropertyType(this._type,this.propId(),registry,this,false);
+    }
+
+    range():ts.AbstractType{
+            return this._type;
     }
 }
 
@@ -287,6 +304,20 @@ export class PropertyIs extends MatchesProperty{
     constructor(private name: string,private type:ts.AbstractType, private optional:boolean=false){
         super(type);
     }
+
+    private static CLASS_IDENTIFIER_PropertyIs = "restrictions.PropertyIs";
+
+    public getClassIdentifier() : string[] {
+        var superIdentifiers:string[] = super.getClassIdentifier();
+        return superIdentifiers.concat(PropertyIs.CLASS_IDENTIFIER_PropertyIs);
+    }
+
+    public static isInstance(instance: any): instance is PropertyIs {
+        return instance != null && instance.getClassIdentifier
+            && typeof(instance.getClassIdentifier) == "function"
+            && _.contains(instance.getClassIdentifier(), PropertyIs.CLASS_IDENTIFIER_PropertyIs);
+    }
+
     matches(s:string):boolean{
         return s===this.name;
     }
@@ -351,6 +382,10 @@ export class PropertyIs extends MatchesProperty{
         }
         return null;
     }
+
+    isOptional():boolean{
+        return this.optional;
+    }
 }
 
 var anotherSource:any[] = [];
@@ -390,6 +425,20 @@ export class MapPropertyIs extends MatchesProperty{
     constructor(private regexp: string,private type:ts.AbstractType){
         super(type);
     }
+
+    private static CLASS_IDENTIFIER_MapPropertyIs = "restrictions.MapPropertyIs";
+
+    public getClassIdentifier() : string[] {
+        var superIdentifiers:string[] = super.getClassIdentifier();
+        return superIdentifiers.concat(MapPropertyIs.CLASS_IDENTIFIER_MapPropertyIs);
+    }
+
+    public static isInstance(instance: any): instance is MapPropertyIs {
+        return instance != null && instance.getClassIdentifier
+            && typeof(instance.getClassIdentifier) == "function"
+            && _.contains(instance.getClassIdentifier(), MapPropertyIs.CLASS_IDENTIFIER_MapPropertyIs);
+    }
+
     path(){
         return `/${this.regexp}/`;
     }
@@ -494,6 +543,20 @@ export class AdditionalPropertyIs extends MatchesProperty{
     constructor(private type:ts.AbstractType){
         super(type);
     }
+
+    private static CLASS_IDENTIFIER_AdditionalPropertyIs = "restrictions.AdditionalPropertyIs";
+
+    public getClassIdentifier() : string[] {
+        var superIdentifiers:string[] = super.getClassIdentifier();
+        return superIdentifiers.concat(AdditionalPropertyIs.CLASS_IDENTIFIER_AdditionalPropertyIs);
+    }
+
+    public static isInstance(instance: any): instance is AdditionalPropertyIs {
+        return instance != null && instance.getClassIdentifier
+            && typeof(instance.getClassIdentifier) == "function"
+            && _.contains(instance.getClassIdentifier(), AdditionalPropertyIs.CLASS_IDENTIFIER_AdditionalPropertyIs);
+    }
+
     path(){
         return this.facetName();
     }

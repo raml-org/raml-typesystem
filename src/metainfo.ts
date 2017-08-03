@@ -15,6 +15,19 @@ export class MetaInfo extends ts.TypeInformation {
         super(inhertitable)
     }
 
+    private static CLASS_IDENTIFIER_MetaInfo = "metainfo.MetaInfo";
+
+    public getClassIdentifier() : string[] {
+        var superIdentifiers:string[] = super.getClassIdentifier();
+        return superIdentifiers.concat(MetaInfo.CLASS_IDENTIFIER_MetaInfo);
+    }
+
+    public static isInstance(instance: any): instance is MetaInfo {
+        return instance != null && instance.getClassIdentifier
+            && typeof(instance.getClassIdentifier) == "function"
+            && _.contains(instance.getClassIdentifier(), MetaInfo.CLASS_IDENTIFIER_MetaInfo);
+    }
+
     value(){
         return this._value;
     }
@@ -78,7 +91,13 @@ export class Annotation extends MetaInfo implements tsInterfaces.IAnnotation{
         super(name,value)
     }
 
+
+
     private _ownerFacet:tsInterfaces.ITypeFacet;
+
+    name(){
+        return this.facetName();
+    }
 
     validateSelf(registry:ts.TypeRegistry,ofExample:boolean=false):ts.Status {
         var tp=registry.get(this.facetName());
@@ -638,6 +657,19 @@ export class Discriminator extends ts.TypeInformation{
 export class DiscriminatorValue extends ts.Constraint{
     constructor(public _value: any, protected strict:boolean=true){
         super(false);
+    }
+
+    private static CLASS_IDENTIFIER_DiscriminatorValue = "metainfo.DiscriminatorValue";
+
+    public getClassIdentifier() : string[] {
+        var superIdentifiers:string[] = super.getClassIdentifier();
+        return superIdentifiers.concat(DiscriminatorValue.CLASS_IDENTIFIER_DiscriminatorValue);
+    }
+
+    public static isInstance(instance: any): instance is DiscriminatorValue {
+        return instance != null && instance.getClassIdentifier
+            && typeof(instance.getClassIdentifier) == "function"
+            && _.contains(instance.getClassIdentifier(), DiscriminatorValue.CLASS_IDENTIFIER_DiscriminatorValue);
     }
 
     check(i:any,path:tsInterfaces.IValidationPath):Status{
