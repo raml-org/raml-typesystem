@@ -30,9 +30,11 @@ export function getSchemaUtils(): any {
 
 export type IStatus = tsInterfaces.IStatus;
 export type ITypeFacet = tsInterfaces.ITypeFacet;
+export type IConstraint = tsInterfaces.IConstraint;
 export type IParsedTypeCollection = tsInterfaces.IParsedTypeCollection;
 export type ITypeRegistry = tsInterfaces.ITypeRegistry;
 export type IParsedType = tsInterfaces.IParsedType;
+export type IPropertyInfo = tsInterfaces.IPropertyInfo;
 
 export function isParsedType(object : any) : object is IParsedType {
     return object instanceof ts.AbstractType;

@@ -152,6 +152,13 @@ export interface ITypeFacet {
      * Annotations applied to the facet
      */
     annotations():IAnnotation[]
+
+    isConstraint():boolean
+}
+
+export interface IConstraint extends ITypeFacet{
+
+    composeWith(r: IConstraint):IConstraint
 }
 
 /**
@@ -292,6 +299,10 @@ export interface IParsedType extends IHasExtra {
 
     declaredProperties(): IPropertyInfo[]
 
+    definedFacets(): IPropertyInfo[]
+
+    allDefinedFacets(): IPropertyInfo[]
+
     property(name: string): IPropertyInfo
 
     /**
@@ -323,6 +334,8 @@ export interface IParsedType extends IHasExtra {
      */
     customFacets():ITypeFacet[]
 
+    allCustomFacets():ITypeFacet[]
+
     /**
      * returns array of custom facets directly declared on this type
      */
@@ -340,6 +353,10 @@ export interface IParsedType extends IHasExtra {
      * returns true if this type inherits from object type
      */
     isObject():boolean
+    /**
+     * returns true if this type inherits external type
+     */
+    isExternal():boolean
     /**
      * returns true if this type inherits from string type
      */
@@ -421,6 +438,8 @@ export interface IParsedType extends IHasExtra {
     options():IParsedType[]
 
     cloneWithFilter( x:(y:ITypeFacet,transformed?:IParsedType)=>boolean|ITypeFacet,f?:(t:IParsedType)=>IParsedType):IParsedType;
+
+    kind():string
 }
 
 /**

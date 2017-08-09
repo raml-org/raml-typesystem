@@ -303,10 +303,14 @@ export abstract class TypeInformation implements tsInterfaces.ITypeFacet {
     addAnnotation(a:tsInterfaces.IAnnotation){
         this._annotations.push(a);
     }
+
+    isConstraint(){
+        return false;
+    }
 }
 var stack:RestrictionStackEntry=null;
 
-export abstract class Constraint extends TypeInformation{
+export abstract class Constraint extends TypeInformation implements tsInterfaces.IConstraint{
     constructor(_inheritable=true){super(_inheritable)}
 
     private static CLASS_IDENTIFIER_Constraint = "typesystem.TypeInformation";
@@ -395,6 +399,10 @@ export abstract class Constraint extends TypeInformation{
     }
 
     conflictMessage(otherPath:string, otherValue:any):string{ return null; }
+
+    isConstraint(){
+        return true;
+    }
 }
 
 
@@ -629,21 +637,33 @@ export class PropertyInfo implements tsInterfaces.IPropertyInfo {
 
     private isMap:boolean;
     private isProp:boolean;
+    private isFacet:boolean;
+
+    protected _matches:restr.MatchesProperty;
+    protected _facetDecl:metaInfo.FacetDeclaration;
 
 
-    constructor(protected _matches:restr.MatchesProperty){
-        let fn = this._matches.facetName();
-        if(fn=="propertyIs"){
-            this.isProp = true;
+    constructor(obj:restr.MatchesProperty|metaInfo.FacetDeclaration){
+
+        if(restr.MatchesProperty.isInstance(obj)) {
+            this._matches = <restr.MatchesProperty>obj;
+            let fn = this._matches.facetName();
+            if (fn == "propertyIs") {
+                this.isProp = true;
+            }
+            else if (fn == "mapPropertyIs") {
+                this.isMap = true;
+            }
         }
-        else if(fn=="mapPropertyIs"){
-            this.isMap = true;
+        else{
+            this.isFacet = true;
+            this._facetDecl = <metaInfo.FacetDeclaration>obj;
         }
 
     }
 
     name() {
-        return this._matches.propId();
+        return this.isFacet ? this._facetDecl.actualName() : this._matches.propId();
     }
 
     isPattern() {
@@ -651,15 +671,15 @@ export class PropertyInfo implements tsInterfaces.IPropertyInfo {
     }
 
     isAdditional() {
-        return !(this.isProp||this.isMap);
+        return !this.isFacet && !(this.isProp||this.isMap);
     }
 
     declaredAt() {
-        return this._matches.owner();
+        return this.isFacet ? this._facetDecl.owner() : this._matches.owner();
     }
 
     range() {
-        return this._matches.range();
+        return this.isFacet ? this._facetDecl.type() : this._matches.range();
     }
 
     required(): boolean{
@@ -869,6 +889,8 @@ export abstract class AbstractType implements tsInterfaces.IParsedType, tsInterf
         info._owner=this;
         this.propertyInfos = null;
         this.propertiesMap = null;
+        this.definedFacetInfos = null;
+        this.definedFacetInfosMap = null;
     }
 
     name(){
@@ -1499,20 +1521,20 @@ export abstract class AbstractType implements tsInterfaces.IParsedType, tsInterf
     }
 
     isUnion():boolean{
-        var rs=false;
+        var rs=true;
         if (this.isBuiltin()){
             return false;
         }
-        this.allSuperTypes().forEach(x=>rs=rs|| x instanceof UnionType);
+        this.allSuperTypes().forEach(x=>rs=rs&& x instanceof UnionType);
         return rs;
     }
 
     isIntersection():boolean{
-        var rs=false;
+        var rs=true;
         if (this.isBuiltin()){
             return false;
         }
-        this.allSuperTypes().forEach(x=>rs=rs|| x instanceof IntersectionType);
+        this.allSuperTypes().forEach(x=>rs=rs&& x instanceof IntersectionType);
         return rs;
     }
     
@@ -1638,11 +1660,17 @@ export abstract class AbstractType implements tsInterfaces.IParsedType, tsInterf
     }
 
     componentType(): tsInterfaces.IParsedType{
-        var vl = this.oneMeta(ComponentShouldBeOfType);
-        if (vl) {
-            return vl.value();
+        let components = this.metaOfType(ComponentShouldBeOfType);
+        if(components.length==0){
+            return null;
         }
-        return null;
+        else if(components.length==1){
+            return components[0].value();
+        }
+        else{
+            let ct = derive(null,components.map(x=>x.value()));
+            return ct;
+        }
     }
 
     canDoAc():Status{
@@ -1680,26 +1708,47 @@ export abstract class AbstractType implements tsInterfaces.IParsedType, tsInterf
     protected propertyInfos:PropertyInfo[];
     protected propertiesMap:{[key:string]:PropertyInfo};
 
+    protected definedFacetInfos:PropertyInfo[];
+    protected definedFacetInfosMap:{[key:string]:PropertyInfo};
+
     properties(): tsInterfaces.IPropertyInfo[]{
         if (this.propertyInfos == null) {
             this.propertiesMap = {};
+            this.propertyInfos = [];
             var m = this.meta();
             for (let i = m.length - 1; i >= 0; i--) {
                 if (restr.MatchesProperty.isInstance(m[i])) {
                     let p = new PropertyInfo(<restr.MatchesProperty>m[i]);
                     this.propertiesMap[p.name()] = p;
+                    this.propertyInfos.push(p);
                 }
             }
-            this.propertyInfos = [];
-            Object.keys(this.propertiesMap).forEach(x => {
-                this.propertyInfos.push(this.propertiesMap[x]);
-            })
         }
         return this.propertyInfos;
     }
 
     declaredProperties(): tsInterfaces.IPropertyInfo[]{
         return this.properties().filter(x=>x.declaredAt()==this);
+    }
+
+    allDefinedFacets(): tsInterfaces.IPropertyInfo[]{
+        if (this.definedFacetInfos == null) {
+            this.definedFacetInfosMap = {};
+            this.definedFacetInfos = [];
+            var m = this.meta();
+            for (let i = m.length - 1; i >= 0; i--) {
+                if (metaInfo.FacetDeclaration.isInstance(m[i])) {
+                    let p = new PropertyInfo(<metaInfo.FacetDeclaration>m[i]);
+                    this.definedFacetInfosMap[p.name()] = p;
+                    this.definedFacetInfos.push(p);
+                }
+            }
+        }
+        return this.definedFacetInfos;
+    }
+
+    definedFacets(): tsInterfaces.IPropertyInfo[]{
+        return this.allDefinedFacets().filter(x=>x.declaredAt()==this);
     }
 
     property(name: string): tsInterfaces.IPropertyInfo{

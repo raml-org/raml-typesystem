@@ -161,6 +161,20 @@ export class FacetDeclaration extends MetaInfo{
         private builtIn = false){
         super(name,_type,true)
     }
+
+    private static CLASS_IDENTIFIER_FacetDeclaration = "metainfo.FacetDeclaration";
+
+    public getClassIdentifier() : string[] {
+        var superIdentifiers:string[] = super.getClassIdentifier();
+        return superIdentifiers.concat(FacetDeclaration.CLASS_IDENTIFIER_FacetDeclaration);
+    }
+
+    public static isInstance(instance: any): instance is FacetDeclaration {
+        return instance != null && instance.getClassIdentifier
+            && typeof(instance.getClassIdentifier) == "function"
+            && _.contains(instance.getClassIdentifier(), FacetDeclaration.CLASS_IDENTIFIER_FacetDeclaration);
+    }
+
     actualName(){
         if (this.name.charAt(this.name.length-1)=='?'){
             return this.name.substr(0,this.name.length-1);
