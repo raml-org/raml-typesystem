@@ -663,7 +663,7 @@ export class PropertyInfo implements tsInterfaces.IPropertyInfo {
     }
 
     name() {
-        return this.isFacet ? this._facetDecl.actualName() : this._matches.propId();
+        return this.isFacet ? this._facetDecl.actualName() : this._matches.path();
     }
 
     isPattern() {
