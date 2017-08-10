@@ -817,7 +817,7 @@ export abstract class MinMaxRestriction extends FacetRestriction<Number>{
             if (mx.facetName() == this.facetName()) {
                 if (mx.isMax() == this.isMax()) {
                     if (this.isMax()){
-                        if (this.value()<mx.value()){
+                        if (this.value()>mx.value()){
                             return mx;
                         }
                         else{
@@ -825,7 +825,7 @@ export abstract class MinMaxRestriction extends FacetRestriction<Number>{
                         }
                     }
                     else{
-                        if (this.value()>mx.value()){
+                        if (this.value()<mx.value()){
                             return mx;
                         }
                         else{
