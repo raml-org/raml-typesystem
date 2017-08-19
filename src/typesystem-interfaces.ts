@@ -175,6 +175,11 @@ export interface IAnnotation extends ITypeFacet {
      * Returns owner type for annotations applied to types
      */
     owner():IParsedType
+
+    /**
+     * Annotation name
+     */
+    name():string;
 }
 
 export interface IParsedTypeCollection {
