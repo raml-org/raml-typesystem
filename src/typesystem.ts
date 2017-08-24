@@ -234,6 +234,19 @@ export abstract class TypeInformation implements tsInterfaces.ITypeFacet {
     
     _annotations:tsInterfaces.IAnnotation[] = [];
 
+    private static CLASS_IDENTIFIER_TypeInformation = "typesystem.TypeInformation";
+
+    public getClassIdentifier() : string[] {
+        var superIdentifiers:string[] = [];
+        return superIdentifiers.concat(TypeInformation.CLASS_IDENTIFIER_TypeInformation);
+    }
+
+    public static isInstance(instance: any): instance is TypeInformation {
+        return instance != null && instance.getClassIdentifier
+            && typeof(instance.getClassIdentifier) == "function"
+            && _.contains(instance.getClassIdentifier(), TypeInformation.CLASS_IDENTIFIER_TypeInformation);
+    }
+
     node(){
         return this._node;
     }
@@ -286,15 +299,32 @@ export abstract class TypeInformation implements tsInterfaces.ITypeFacet {
     annotations():tsInterfaces.IAnnotation[]{
         return this._annotations;
     }
-    
+
     addAnnotation(a:tsInterfaces.IAnnotation){
         this._annotations.push(a);
+    }
+
+    isConstraint(){
+        return false;
     }
 }
 var stack:RestrictionStackEntry=null;
 
-export abstract class Constraint extends TypeInformation{
+export abstract class Constraint extends TypeInformation implements tsInterfaces.IConstraint{
     constructor(_inheritable=true){super(_inheritable)}
+
+    private static CLASS_IDENTIFIER_Constraint = "typesystem.TypeInformation";
+
+    public getClassIdentifier() : string[] {
+        var superIdentifiers:string[] = super.getClassIdentifier();
+        return superIdentifiers.concat(Constraint.CLASS_IDENTIFIER_Constraint);
+    }
+
+    public static isInstance(instance: any): instance is Constraint {
+        return instance != null && instance.getClassIdentifier
+            && typeof(instance.getClassIdentifier) == "function"
+            && _.contains(instance.getClassIdentifier(), Constraint.CLASS_IDENTIFIER_Constraint);
+    }
 
 
 
@@ -369,6 +399,10 @@ export abstract class Constraint extends TypeInformation{
     }
 
     conflictMessage(otherPath:string, otherValue:any):string{ return null; }
+
+    isConstraint(){
+        return true;
+    }
 }
 
 
@@ -598,6 +632,73 @@ export class RestrictionsConflict extends Status{
 var globalId=0;
 
 export var VALIDATED_TYPE:AbstractType=null;
+
+export class PropertyInfo implements tsInterfaces.IPropertyInfo {
+
+    private isMap:boolean;
+    private isProp:boolean;
+    private isFacet:boolean;
+
+    protected _matches:restr.MatchesProperty;
+    protected _facetDecl:metaInfo.FacetDeclaration;
+
+
+    constructor(obj:restr.MatchesProperty|metaInfo.FacetDeclaration){
+
+        if(restr.MatchesProperty.isInstance(obj)) {
+            this._matches = <restr.MatchesProperty>obj;
+            let fn = this._matches.facetName();
+            if (fn == "propertyIs") {
+                this.isProp = true;
+            }
+            else if (fn == "mapPropertyIs") {
+                this.isMap = true;
+            }
+        }
+        else{
+            this.isFacet = true;
+            this._facetDecl = <metaInfo.FacetDeclaration>obj;
+        }
+
+    }
+
+    name() {
+        return this.isFacet ? this._facetDecl.actualName() : this._matches.propId();
+    }
+
+    isPattern() {
+        return this.isMap;
+    }
+
+    isAdditional() {
+        return !this.isFacet && !(this.isProp||this.isMap);
+    }
+
+    declaredAt() {
+        return this.isFacet ? this._facetDecl.owner() : this._matches.owner();
+    }
+
+    range() {
+        return this.isFacet ? this._facetDecl.type() : this._matches.range();
+    }
+
+    required(): boolean{
+        if(this.isProp){
+            return !this.property().isOptional();
+        }
+        return false;
+    }
+
+    private property():restr.PropertyIs{
+        return this.isProp ? <restr.PropertyIs>this._matches : null;
+    }
+
+    private mapProperty():restr.MapPropertyIs{
+        return this.isMap ? <restr.MapPropertyIs>this._matches : null;
+    }
+
+}
+
 export abstract class AbstractType implements tsInterfaces.IParsedType, tsInterfaces.IHasExtra{
 
     protected computeConfluent: boolean
@@ -612,6 +713,127 @@ export abstract class AbstractType implements tsInterfaces.IParsedType, tsInterf
 
     protected supertypeAnnotations:{[aName:string]:tsInterfaces.IAnnotation}[];
 
+
+    protected _collection: tsInterfaces.IParsedTypeCollection;
+
+    protected abstract clone(): AbstractType;
+
+    private static CLASS_IDENTIFIER_AbstractType = "typesystem.AbstractType";
+
+    public getClassIdentifier() : string[] {
+        var superIdentifiers:string[] = [];
+        return superIdentifiers.concat(AbstractType.CLASS_IDENTIFIER_AbstractType);
+    }
+
+    public static isInstance(instance: any): instance is AbstractType {
+        return instance != null && instance.getClassIdentifier
+            && typeof(instance.getClassIdentifier) == "function"
+            && _.contains(instance.getClassIdentifier(), AbstractType.CLASS_IDENTIFIER_AbstractType);
+    }
+
+    annotation(name: string): any{
+        let res:tsInterfaces.IAnnotation = null;
+        for(let x of this.annotations()){
+            if (x.name() == name) {
+                return x.value();
+            }
+        }
+        return null;
+    }
+
+    isAssignableFrom(t: tsInterfaces.IParsedType): boolean {
+        if (t.allSuperTypes().indexOf(this) != -1) {
+            return true;
+        }
+        //TODO make it better
+        var ms = this.restrictions().filter(x => !metaInfo.DiscriminatorValue.isInstance(x));
+        var another = t.restrictions();
+        var all = true;
+        ms.forEach(x => {
+            var found = false;
+            another.forEach(y => {
+                var vm = x.composeWith(<any>y);
+                if (vm == y) {
+                    found = true;
+                }
+                if (GenericTypeOf.isInstance(y) && vm != null) {
+                    if (vm == x) {
+                        found = true;
+                    }
+                }
+            })
+            all = all && found;
+        });
+        return all;
+    }
+
+    registry() {
+        return this._collection
+    }
+
+    cloneWithFilter(x: (y: TypeInformation, transformed?: tsInterfaces.IParsedType) => boolean|TypeInformation, f?: (t: tsInterfaces.IParsedType) => tsInterfaces.IParsedType): AbstractType {
+        var c = this.clone();
+        var ms: TypeInformation[] = [];
+        this.metaInfo.forEach(f => {
+            var rs = x(f, c);
+            if (typeof rs == "boolean") {
+                if (rs) {
+                    ms.push(f);
+                }
+            }
+            else {
+                if (rs) {
+                    ms.push(<TypeInformation>rs);
+                }
+            }
+        })
+        c.metaInfo = ms;
+        return c;
+    }
+
+    options():tsInterfaces.IParsedType[]{
+        if (this.isUnion()) {
+            var res: tsInterfaces.IParsedType[] = [];
+            this.allSuperTypes().forEach(x => {
+                if (UnionType.isInstance(x)) {
+                    var opts = x.options();
+                    res = res.concat(opts);
+                }
+            })
+            return _.unique(res);
+        }
+        return [this]
+    }
+
+    allOptions():tsInterfaces.IParsedType[]{
+        if (this.isUnion()) {
+            var res: tsInterfaces.IParsedType[] = [];
+            this.allSuperTypes().forEach(x => {
+                if (UnionType.isInstance(x)) {
+                    var opts = x.allOptions();
+                    res = res.concat(opts);
+                }
+            })
+            return _.unique(res);
+        }
+        return [this]
+    }
+
+    examples(): tsInterfaces.IExample[]{
+        return exO.exampleFromInheritedType2(this);
+    }
+
+    // collection() {
+    //     if (!this._collection) {
+    //         if ((<any>this)._contextMeta) {
+    //             var cm: TypeInformation = (<any>this)._contextMeta;
+    //             if (cm) {
+    //                 return cm.owner().collection();
+    //             }
+    //         }
+    //     }
+    //     return this._collection
+    // }
     getExtra(name:string):any{
         return this.extras[name];
     }
@@ -644,6 +866,10 @@ export abstract class AbstractType implements tsInterfaces.IParsedType, tsInterf
 
     }
 
+    patchName(name: string) {
+        this._name = name;
+    }
+
     allFacets():TypeInformation[]{
         return this.meta();
     }
@@ -661,6 +887,10 @@ export abstract class AbstractType implements tsInterfaces.IParsedType, tsInterf
     public addMeta(info:TypeInformation){
         this.metaInfo.push(info);
         info._owner=this;
+        this.propertyInfos = null;
+        this.propertiesMap = null;
+        this.definedFacetInfos = null;
+        this.definedFacetInfosMap = null;
     }
 
     name(){
@@ -1421,6 +1651,28 @@ export abstract class AbstractType implements tsInterfaces.IParsedType, tsInterf
         this.addMeta(new KnownPropertyRestriction(false))
     }
 
+    annotations(): metaInfo.Annotation[] {
+        return this.metaOfType(metaInfo.Annotation);
+    }
+
+    declaredAnnotations(): metaInfo.Annotation[] {
+        return <any>this.declaredMeta().filter(x =>metaInfo.Annotation.isInstance(x));
+    }
+
+    componentType(): tsInterfaces.IParsedType{
+        let components = this.metaOfType(ComponentShouldBeOfType);
+        if(components.length==0){
+            return null;
+        }
+        else if(components.length==1){
+            return components[0].value();
+        }
+        else{
+            let ct = derive(null,components.map(x=>x.value()));
+            return ct;
+        }
+    }
+
     canDoAc():Status{
         var tf:AbstractType[]= _.uniq(this.typeFamily());
         var s=new Status(Status.OK,"","",this);
@@ -1451,6 +1703,59 @@ export abstract class AbstractType implements tsInterfaces.IParsedType, tsInterf
 
         }
         return ok();
+    }
+
+    protected propertyInfos:PropertyInfo[];
+    protected propertiesMap:{[key:string]:PropertyInfo};
+
+    protected definedFacetInfos:PropertyInfo[];
+    protected definedFacetInfosMap:{[key:string]:PropertyInfo};
+
+    properties(): tsInterfaces.IPropertyInfo[]{
+        if (this.propertyInfos == null) {
+            this.propertiesMap = {};
+            this.propertyInfos = [];
+            var m = this.meta();
+            for (let i = m.length - 1; i >= 0; i--) {
+                if (restr.MatchesProperty.isInstance(m[i])) {
+                    let p = new PropertyInfo(<restr.MatchesProperty>m[i]);
+                    this.propertiesMap[p.name()] = p;
+                    this.propertyInfos.push(p);
+                }
+            }
+        }
+        return this.propertyInfos;
+    }
+
+    declaredProperties(): tsInterfaces.IPropertyInfo[]{
+        return this.properties().filter(x=>x.declaredAt()==this);
+    }
+
+    allDefinedFacets(): tsInterfaces.IPropertyInfo[]{
+        if (this.definedFacetInfos == null) {
+            this.definedFacetInfosMap = {};
+            this.definedFacetInfos = [];
+            var m = this.meta();
+            for (let i = m.length - 1; i >= 0; i--) {
+                if (metaInfo.FacetDeclaration.isInstance(m[i])) {
+                    let p = new PropertyInfo(<metaInfo.FacetDeclaration>m[i]);
+                    this.definedFacetInfosMap[p.name()] = p;
+                    this.definedFacetInfos.push(p);
+                }
+            }
+        }
+        return this.definedFacetInfos;
+    }
+
+    definedFacets(): tsInterfaces.IPropertyInfo[]{
+        return this.allDefinedFacets().filter(x=>x.declaredAt()==this);
+    }
+
+    property(name: string): tsInterfaces.IPropertyInfo{
+        if (!this.propertyInfos) {
+            this.properties();
+        }
+        return this.propertiesMap[name];
     }
 
     checkDiscriminator(t1:AbstractType, t2:AbstractType):Status {
@@ -1604,7 +1909,7 @@ export abstract class AbstractType implements tsInterfaces.IParsedType, tsInterf
      * @param clazz
      * @returns {any}
      */
-    metaOfType<T>(clazz:{ new(v:any):T } ):T[]{
+    metaOfType<T>(clazz:{ new(v:any, x?:any):T } ):T[]{
         return <any>this.meta().filter(x=>x instanceof clazz);
     }
 
@@ -1718,8 +2023,25 @@ var BUILT_IN=new BuiltIn();
 
 export class RootType extends AbstractType{
 
+    private static CLASS_IDENTIFIER_RootType = "typesystem.RootType";
+
+    public getClassIdentifier() : string[] {
+        var superIdentifiers:string[] = super.getClassIdentifier();
+        return superIdentifiers.concat(RootType.CLASS_IDENTIFIER_RootType);
+    }
+
+    public static isInstance(instance: any): instance is RootType {
+        return instance != null && instance.getClassIdentifier
+            && typeof(instance.getClassIdentifier) == "function"
+            && _.contains(instance.getClassIdentifier(), RootType.CLASS_IDENTIFIER_RootType);
+    }
+
     kind(){
         return "root";
+    }
+
+    clone() {
+        return this;
     }
 }
 
@@ -1729,8 +2051,30 @@ export class InheritedType extends AbstractType{
     
     protected _contextMeta: restr.MatchesProperty;
 
+    private static CLASS_IDENTIFIER_InheritedType = "typesystem.InheritedType";
+
+    public getClassIdentifier() : string[] {
+        var superIdentifiers:string[] = super.getClassIdentifier();
+        return superIdentifiers.concat(InheritedType.CLASS_IDENTIFIER_InheritedType);
+    }
+
+    public static isInstance(instance: any): instance is InheritedType {
+        return instance != null && instance.getClassIdentifier
+            && typeof(instance.getClassIdentifier) == "function"
+            && _.contains(instance.getClassIdentifier(), InheritedType.CLASS_IDENTIFIER_InheritedType);
+    }
+
     superTypes(){
         return this._superTypes;
+    }
+
+    clone() {
+        if (this.isBuiltin()) {
+            return this;
+        }
+        var v = new InheritedType(this._name);
+        v._superTypes = this._superTypes;
+        return v;
     }
 
     knownProperties():MatchesProperty[]{
@@ -1814,6 +2158,43 @@ export abstract class DerivedType extends AbstractType
         super(name);
     }
 
+    private static CLASS_IDENTIFIER_DerivedType = "typesystem.DerivedType";
+
+    public getClassIdentifier() : string[] {
+        var superIdentifiers:string[] = super.getClassIdentifier();
+        return superIdentifiers.concat(DerivedType.CLASS_IDENTIFIER_DerivedType);
+    }
+
+    public static isInstance(instance: any): instance is DerivedType {
+        return instance != null && instance.getClassIdentifier
+            && typeof(instance.getClassIdentifier) == "function"
+            && _.contains(instance.getClassIdentifier(), DerivedType.CLASS_IDENTIFIER_DerivedType);
+    }
+
+    cloneWithFilter(x: (y: TypeInformation, transformed?: tsInterfaces.IParsedType) => boolean|TypeInformation,
+                    f?: (t: tsInterfaces.IParsedType) => tsInterfaces.IParsedType): AbstractType {
+        var c = this.clone();
+        var ms: TypeInformation[] = [];
+        if (f) {
+            (<DerivedType>c)._options = <any>this.options().map(t => f(t));
+        }
+        this.metaInfo.forEach(f => {
+            var rs = x(f, c);
+            if (typeof rs == "boolean") {
+                if (rs) {
+                    ms.push(f);
+                }
+            }
+            else {
+                if (rs) {
+                    ms.push(<TypeInformation>rs);
+                }
+            }
+        });
+        (<DerivedType>c).metaInfo = ms;
+        return c;
+    }
+
     /**
      *
      * @returns all possible options
@@ -1837,8 +2218,24 @@ export abstract class DerivedType extends AbstractType
 }
 export class UnionType extends DerivedType{
 
+    private static CLASS_IDENTIFIER_UnionType = "typesystem.UnionType";
+
+    public getClassIdentifier() : string[] {
+        var superIdentifiers:string[] = super.getClassIdentifier();
+        return superIdentifiers.concat(UnionType.CLASS_IDENTIFIER_UnionType);
+    }
+
+    public static isInstance(instance: any): instance is UnionType {
+        return instance != null && instance.getClassIdentifier
+            && typeof(instance.getClassIdentifier) == "function"
+            && _.contains(instance.getClassIdentifier(), UnionType.CLASS_IDENTIFIER_UnionType);
+    }
+
     kind(){
         return "union"
+    }
+    clone() {
+        return new UnionType(this.name(), this.options());
     }
     constructor(name: string, _options:AbstractType[]){
         super(name,_options);
@@ -1904,8 +2301,25 @@ export class UnionType extends DerivedType{
 }
 export class IntersectionType extends DerivedType{
 
+    private static CLASS_IDENTIFIER_IntersectionType = "typesystem.IntersectionType";
+
+    public getClassIdentifier() : string[] {
+        var superIdentifiers:string[] = super.getClassIdentifier();
+        return superIdentifiers.concat(IntersectionType.CLASS_IDENTIFIER_IntersectionType);
+    }
+
+    public static isInstance(instance: any): instance is IntersectionType {
+        return instance != null && instance.getClassIdentifier
+            && typeof(instance.getClassIdentifier) == "function"
+            && _.contains(instance.getClassIdentifier(), IntersectionType.CLASS_IDENTIFIER_IntersectionType);
+    }
+
     kind(){
         return "intersection";
+    }
+
+    clone() {
+        return new IntersectionType(this.name(), this.options());
     }
 
     restrictions(){
@@ -2036,6 +2450,19 @@ export  class NothingRestrictionWithLocation extends NothingRestriction{
 }
 
 export abstract class GenericTypeOf extends Constraint{
+
+    private static CLASS_IDENTIFIER_GenericTypeOf = "typesystem.GenericTypeOf";
+
+    public getClassIdentifier() : string[] {
+        var superIdentifiers:string[] = super.getClassIdentifier();
+        return superIdentifiers.concat(GenericTypeOf.CLASS_IDENTIFIER_GenericTypeOf);
+    }
+
+    public static isInstance(instance: any): instance is GenericTypeOf {
+        return instance != null && instance.getClassIdentifier
+            && typeof(instance.getClassIdentifier) == "function"
+            && _.contains(instance.getClassIdentifier(), GenericTypeOf.CLASS_IDENTIFIER_GenericTypeOf);
+    }
 
 }
 
@@ -2379,6 +2806,19 @@ export class ExternalType extends InheritedType{
         super(name);
         this.addMeta(new restr.MatchToSchema(_content, typeAttributeProvider?typeAttributeProvider:provider));
         this.addSuper(EXTERNAL);
+    }
+
+    private static CLASS_IDENTIFIER_ExternalType = "typesystem.ExternalType";
+
+    public getClassIdentifier() : string[] {
+        var superIdentifiers:string[] = super.getClassIdentifier();
+        return superIdentifiers.concat(ExternalType.CLASS_IDENTIFIER_ExternalType);
+    }
+
+    public static isInstance(instance: any): instance is ExternalType {
+        return instance != null && instance.getClassIdentifier
+            && typeof(instance.getClassIdentifier) == "function"
+            && _.contains(instance.getClassIdentifier(), ExternalType.CLASS_IDENTIFIER_ExternalType);
     }
 
     getContentProvider() {

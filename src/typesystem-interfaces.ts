@@ -19,7 +19,7 @@ export const HAS_FACETS="HAS_FACETS";
 export const HAS_ITEMS="HAS_ITEMS";
 
 export interface IStatus extends IHasExtra {
-    
+
 
     /**
      * returns true if status does not have errors
@@ -152,6 +152,13 @@ export interface ITypeFacet {
      * Annotations applied to the facet
      */
     annotations():IAnnotation[]
+
+    isConstraint():boolean
+}
+
+export interface IConstraint extends ITypeFacet{
+
+    composeWith(r: IConstraint):IConstraint
 }
 
 /**
@@ -222,6 +229,22 @@ export  interface ITypeRegistry {
     types():IParsedType[]
 }
 
+
+export interface IPropertyInfo {
+
+    name():string;
+
+    required(): boolean
+
+    range(): IParsedType
+
+    declaredAt(): IParsedType
+
+    isPattern(): boolean
+
+    isAdditional(): boolean
+}
+
 /**
  * parsed representation of the type
  * you should not create instances of this interfaces manually
@@ -242,6 +265,10 @@ export interface IParsedType extends IHasExtra {
      */
     name(): string
 
+    examples(): IExample[]
+
+    allOptions():IParsedType[]
+
     /**
      * returns full list of known types which inherit from this type.
      * Note: built-in types does not list their not built in sub types
@@ -254,6 +281,29 @@ export interface IParsedType extends IHasExtra {
      */
 
     allSuperTypes():IParsedType[]
+
+
+    annotations(): IAnnotation[]
+
+    annotation(name: string): any
+
+    declaredAnnotations(): IAnnotation[]
+
+    registry(): IParsedTypeCollection
+
+    isAssignableFrom(t:IParsedType):boolean
+
+    componentType(): IParsedType
+
+    properties(): IPropertyInfo[]
+
+    declaredProperties(): IPropertyInfo[]
+
+    definedFacets(): IPropertyInfo[]
+
+    allDefinedFacets(): IPropertyInfo[]
+
+    property(name: string): IPropertyInfo
 
     /**
      * validates a potential instance of type and returns a status describing the results of validation
@@ -284,15 +334,29 @@ export interface IParsedType extends IHasExtra {
      */
     customFacets():ITypeFacet[]
 
+    allCustomFacets():ITypeFacet[]
+
     /**
      * returns array of custom facets directly declared on this type
      */
     restrictions():ITypeFacet[]
 
     /**
+     * returns true if this type is anonimous
+     */
+    isAnonymous(): boolean;
+    /**
+     * returns true if this type is empty
+     */
+    isEmpty(): boolean;
+    /**
      * returns true if this type inherits from object type
      */
     isObject():boolean
+    /**
+     * returns true if this type inherits external type
+     */
+    isExternal():boolean
     /**
      * returns true if this type inherits from string type
      */
@@ -302,6 +366,10 @@ export interface IParsedType extends IHasExtra {
      */
     isNumber():boolean
 
+    /**
+     * returns true if this type is builtin
+     */
+    isBuiltin(): boolean;
     /**
      * returns true if this type inherits from boolean type
      */
@@ -362,6 +430,16 @@ export interface IParsedType extends IHasExtra {
      * returns true if this type has recurrent definition;
      */
     isRecurrent():boolean;
+
+    /**
+     * Straightforward set of components. E.g. for `A|(B|C)` where `A`, `B` and `C`
+     * are not union types the result is `[A, B|C]`
+     */
+    options():IParsedType[]
+
+    cloneWithFilter( x:(y:ITypeFacet,transformed?:IParsedType)=>boolean|ITypeFacet,f?:(t:IParsedType)=>IParsedType):IParsedType;
+
+    kind():string
 }
 
 /**
@@ -399,13 +477,13 @@ export interface ITypeValidationPlugin {
     id():string;
 }
 
-
+declare var global: any
 /**
  * Retrieve a list of registered type validation plugins
  */
-export function getTypeValidationPlugins():ITypeValidationPlugin[]{
-    var rv:any = (<any>global).ramlValidation;
-    if(rv) {
+export function getTypeValidationPlugins(): ITypeValidationPlugin[] {
+    var rv: any = (<any>global).ramlValidation;
+    if (rv) {
         var typeValidators = rv.typeValidators;
         if (Array.isArray(typeValidators)) {
             return <ITypeValidationPlugin[]>typeValidators;
@@ -499,12 +577,26 @@ export interface IAnnotatedElement {
 
 }
 
+export interface IExample {
+
+    name(): string
+
+    strict(): boolean
+
+    value(): any
+    annotationsMap(): {
+        [key: string]: IAnnotation[];
+    };
+    annotations(): IAnnotation[];
+}
+
+
 /**
  * Retrieve a list of registered type validation plugins
  */
-export function getAnnotationValidationPlugins():IAnnotationValidationPlugin[]{
-    var rv:any = (<any>global).ramlValidation;
-    if(rv) {
+export function getAnnotationValidationPlugins(): IAnnotationValidationPlugin[] {
+    var rv: any = (<any>global).ramlValidation;
+    if (rv) {
         var typesystemAnnotationValidators = rv.typesystemAnnotationValidators;
         if (Array.isArray(typesystemAnnotationValidators)) {
             return <IAnnotationValidationPlugin[]>typesystemAnnotationValidators;
