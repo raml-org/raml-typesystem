@@ -1521,20 +1521,20 @@ export abstract class AbstractType implements tsInterfaces.IParsedType, tsInterf
     }
 
     isUnion():boolean{
-        var rs=true;
+        var rs=false;
         if (this.isBuiltin()){
             return false;
         }
-        this.allSuperTypes().forEach(x=>rs=rs&& x instanceof UnionType);
+        this.allSuperTypes().forEach(x=>rs=rs|| x instanceof UnionType);
         return rs;
     }
 
     isIntersection():boolean{
-        var rs=true;
+        var rs=false;
         if (this.isBuiltin()){
             return false;
         }
-        this.allSuperTypes().forEach(x=>rs=rs&& x instanceof IntersectionType);
+        this.allSuperTypes().forEach(x=>rs=rs|| x instanceof IntersectionType);
         return rs;
     }
     
