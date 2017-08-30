@@ -1715,11 +1715,14 @@ export abstract class AbstractType implements tsInterfaces.IParsedType, tsInterf
         if (this.propertyInfos == null) {
             this.propertiesMap = {};
             this.propertyInfos = [];
-            var m = this.meta();
-            for (let i = m.length - 1; i >= 0; i--) {
-                if (restr.MatchesProperty.isInstance(m[i])) {
-                    let p = new PropertyInfo(<restr.MatchesProperty>m[i]);
-                    this.propertiesMap[p.name()] = p;
+            var meta = this.meta();
+            for (let m of meta) {
+                if (restr.MatchesProperty.isInstance(m)) {
+                    let p = new PropertyInfo(<restr.MatchesProperty>m);
+                    let name = p.name();
+                    if(!this.propertiesMap[name]) {
+                        this.propertiesMap[name] = p;
+                    }
                     this.propertyInfos.push(p);
                 }
             }
