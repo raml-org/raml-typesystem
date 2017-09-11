@@ -7,6 +7,7 @@ import {AndRestriction} from "./typesystem";
 import {Constraint} from "./typesystem";
 import {AbstractType} from "./typesystem";
 import {Status} from "./typesystem";
+import {ImportedByChain} from "./metainfo";
 export type IValidationPath=ts.IValidationPath;
 /**
  * this class is an abstract super type for every constraint that can select properties from objects
@@ -68,7 +69,7 @@ export abstract class MatchesProperty extends ts.Constraint{
             var st=t.validate(vl,false,false);
             if (!st.isOk()){
                 if (t.isUnknown()|| t.isRecurrent()){
-                    var s=ts.error(messageRegistry.VALIDATING_AGAINS_UNKNOWN,
+                    var s=ts.error(messageRegistry.VALIDATING_AGAINST_UNKNOWN,
                         this,{typeName:t.name()});
                     ts.setValidationPath(s,this.patchPath(q,n));
                     return s;
@@ -1157,17 +1158,30 @@ export class ComponentShouldBeOfType extends FacetRestriction<ts.AbstractType>{
             }
             return st;
         }
-        if (this.type.isExternal()){
+        let chained = this.type.metaOfType(ImportedByChain);
+        if(chained.length>0){
+            chained.forEach(x=>{
+                let componentTypeName = this.type.name();
+                let typeName:string = null;
+                let messageEntry = messageRegistry.ARRAY_COMPONENT_TYPE_IMPORTED_THROUGH_LIBRARY_CHAIN;
+                if(x.value() != typeName){
+                    messageEntry = messageRegistry.ARRAY_COMPONENT_TYPE_DEPENDES_ON_TYPE_IMPORTED_THROUGH_LIBRARY_CHAIN;
+                    typeName = x.value();
+                }
+                st.addSubStatus(ts.error(messageEntry,this,{componentTypeName:componentTypeName,typeName:typeName}));
+            });
+        }
+        else if (this.type.isExternal()){
             st.addSubStatus(ts.error(messageRegistry.EXTERNAL_AS_COMPONENT,this));
         }
         else if (this.type.isSubTypeOf(ts.UNKNOWN) || this.type.isSubTypeOf(ts.RECURRENT)) {
-            st.addSubStatus(ts.error(messageRegistry.UNKNOWN_AS_COMPONENT,this,{ typeName: this.type.name()}));
+            st.addSubStatus(ts.error(messageRegistry.UNKNOWN_ARRAY_COMPONENT_TYPE,this,{ componentTypeName: this.type.name()}));
         }
         else if (this.type.isUnion()) {
             var ui = _.find(this.type.typeFamily(), x=>x.isSubTypeOf(ts.UNKNOWN));
             if (ui) {
                 st.addSubStatus(
-                    ts.error(messageRegistry.UNKNOWN_AS_COMPONENT,this,{ typeName: ui.name()}));
+                    ts.error(messageRegistry.UNKNOWN_ARRAY_COMPONENT_TYPE,this,{ componentTypeName: ui.name()}));
             }
         }
         return st;
@@ -1551,20 +1565,66 @@ export function validatePropertyType(
     if (_type.isSubTypeOf(ts.UNKNOWN)||_type.isSubTypeOf(ts.RECURRENT)){
         var actualUnknown = actualUnknownType(_type);
         let p:ts.Status;
+        let messageEntries:any[] = [];
+        let chained = _type.metaOfType(ImportedByChain);
+        let issues:ts.Status[] = [];
         if(isFacet) {
-            p = ts.error(messageRegistry.UNKNOWN_IN_FACET_DEFINITION, source, {
-                facetName: propName,
-                msg: actualUnknown.name()
-            });
+            if(chained.length>0){
+                chained.forEach(x=>{
+                    let messageEntry = messageRegistry.LIBRARY_CHAINIG_IN_FACET_TYPE;
+                    let typeName = actualUnknown.name();
+                    if(x.value()!=typeName){
+                        messageEntry = messageRegistry.LIBRARY_CHAINIG_IN_FACET_TYPE_SUPERTYPE;
+                        typeName = x.value();
+                    }
+                    let st = ts.error(messageEntry, source, {
+                        propName: propName,
+                        typeName: typeName
+                    })
+                    issues.push(st);
+                });
+            }
+            else {
+                st = ts.error(messageRegistry.UNKNOWN_IN_FACET_DEFINITION, source, {
+                    facetName: propName,
+                    msg: actualUnknown.name()
+                });
+                issues.push(st);
+            }
         }
         else{
-            p = ts.error(messageRegistry.UNKNOWN_IN_PROPERTY_DEFINITION,source,{
-                propName: propName,
-                typeName: actualUnknown.name()
-            });
+            if(chained.length>0){
+                chained.forEach(x=>{
+                    let messageEntry = messageRegistry.LIBRARY_CHAINIG_IN_PROPERTY_TYPE;
+                    let typeName = actualUnknown.name();
+                    if(x.value()!=typeName){
+                        messageEntry = messageRegistry.LIBRARY_CHAINIG_IN_PROPERTY_TYPE_SUPERTYPE;
+                        typeName = x.value();
+                    }
+                    let st = ts.error(messageEntry, source, {
+                        propName: propName,
+                        typeName: typeName
+                    })
+                    issues.push(st);
+                });
+            }
+            else {
+                st = ts.error(messageRegistry.UNKNOWN_IN_PROPERTY_DEFINITION, source, {
+                    propName: propName,
+                    typeName: actualUnknown.name()
+                });
+                issues.push(st);
+            }
         }
-        ts.setValidationPath(p,{name: propName, child: { name: "type"}})
-        return p;
+        issues.forEach(p=>ts.setValidationPath(p,{name: propName, child: { name: "type"}}));
+        if(issues.length==1){
+            return issues[0];
+        }
+        else{
+            let result = ts.ok();
+            issues.forEach(x=>result.addSubStatus(x));
+            return result;
+        }
     }
     if (_type.isAnonymous()){
         var st=_type.validateType(registry);

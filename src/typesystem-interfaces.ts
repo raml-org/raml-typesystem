@@ -88,6 +88,7 @@ export interface IStatus extends IHasExtra {
 export enum MetaInformationKind {
     Description,
     NotScalar,
+    ImportedByChain,
     DisplayName,
     Usage,
     Annotation,

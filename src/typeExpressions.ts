@@ -4,6 +4,7 @@ import schemaUtil = require('./schemaUtil')
 import {ComponentShouldBeOfType} from "./restrictions";
 import {ParseNode} from "./parse";
 import typeExpressionDefs = require("./typeExpressionUtil")
+import {ImportedByChain} from "./metainfo";
 
 export type BaseNode = typeExpressionDefs.BaseNode;
 export type Union = typeExpressionDefs.Union;
@@ -82,6 +83,10 @@ function parseNode(node:BaseNode,t:ts.TypeRegistry):ts.AbstractType
         var result=t.get(lit.value);
         if (!result){
             result=ts.derive(lit.value,[ts.UNKNOWN]);
+            let chained = t.getByChain(lit.value);
+            if(chained){
+                result.addMeta(new ImportedByChain(lit.value));
+            }
         }
         var a=lit.arr;
         return wrapArray(a, result);

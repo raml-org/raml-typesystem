@@ -50,7 +50,7 @@ describe("Simple validation testing",function() {
         var st=t.validateType(ts.builtInRegistry());
         var f=false;
         st.getErrors().forEach((x: any)=>{
-            if (x.getMessage().indexOf("string is expected")!=-1){
+            if (x.getMessage().indexOf("Expected type 'string' but got 'number'")!=-1){
                 f=true;
             }
         });

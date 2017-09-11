@@ -186,7 +186,7 @@ export class TypeCollection {
     }
 
     getAnnotationTypeRegistry():TypeRegistry{
-        var r=new TypeRegistry(ts.builtInRegistry());
+        var r=new TypeRegistry(ts.builtInRegistry(),this);
         this.annotationTypes().forEach(x=>r.addType(x));
         Object.keys(this.uses).forEach(x=>{
             this.uses[x].annotationTypes().forEach(y=>r.put(x+"."+ y.name(),y));
@@ -194,7 +194,7 @@ export class TypeCollection {
         return r;
     }
     getTypeRegistry():TypeRegistry{
-        var r=new TypeRegistry(ts.builtInRegistry());
+        var r=new TypeRegistry(ts.builtInRegistry(),this);
         this.types().forEach(x=>r.addType(x));
 
         Object.keys(this.uses).forEach(x=>{
@@ -218,8 +218,8 @@ export class AccumulatingRegistry extends ts.TypeRegistry{
             && typeof(instance.getClassIdentifier) == "function"
             && _.contains(instance.getClassIdentifier(),AccumulatingRegistry.CLASS_IDENTIFIER_AccumulatingRegistry);
     }
-    constructor(private toParse:ParseNode,private schemas:ParseNode,ts:ts.TypeRegistry,private _c:TypeCollection){
-        super(ts)
+    constructor(private toParse:ParseNode,private schemas:ParseNode,ts:ts.TypeRegistry,_c:TypeCollection){
+        super(ts,_c)
     }
 
 
@@ -270,6 +270,25 @@ export class AccumulatingRegistry extends ts.TypeRegistry{
             }
         }
         return result;
+    }
+
+    getByChain(name:string):AbstractType{
+        let result = this.get(name);
+        if(result){
+            return result;
+        }
+        for(let dt = name.indexOf('.'); dt >= 0 ; dt = name.indexOf('.',dt+1) ) {
+            let ln = name.substring(0, dt);
+            let tn = name.substr(dt + 1);
+            let lib = this._c.library(ln);
+            if (lib) {
+                var t = lib.getType(tn);
+                if (t) {
+                    return t;
+                }
+            }
+        }
+        return null;
     }
 }
 

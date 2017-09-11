@@ -464,7 +464,44 @@ export class TypeRegistry implements tsInterfaces.ITypeRegistry {
       return null;
   }
 
-  constructor(private _parent:TypeRegistry=null){
+  private chainedTypes:{[key:string]:AbstractType} = {};
+
+  getByChain(name:string):AbstractType{
+      let result = this.get(name);
+      if(!result){
+          result = this.chainedTypes[name];
+      }
+      if(result){
+          return result;
+      }
+      result = this.getTypeByChainFromCollection(name,this._c);
+      if(result){
+          this.chainedTypes[name] = result;
+      }
+      return result;
+  }
+
+  private getTypeByChainFromCollection(name:string,collection:parse.TypeCollection):AbstractType{
+
+      let result = collection.getType(name);
+      if(result){
+          return result;
+      }
+      for(let dt = name.indexOf('.'); dt >= 0 ; dt = name.indexOf('.',dt+1) ) {
+          let namespace = name.substring(0, dt);
+          let typeName = name.substr(dt + 1);
+          let lib = collection.library(namespace);
+          if (lib) {
+              result = this.getTypeByChainFromCollection(typeName,lib);
+              if (result) {
+                  return result;
+              }
+          }
+      }
+      return null;
+  }
+
+  constructor(private _parent:TypeRegistry=null, protected _c?:parse.TypeCollection){
 
   }
 
@@ -1068,30 +1105,94 @@ export abstract class AbstractType implements tsInterfaces.IParsedType, tsInterf
         }
 
         if (this.isSubTypeOf(UNKNOWN)) {
-            rs.addSubStatus(error(messageRegistry.INHERITING_UNKNOWN_TYPE, this),"type")
+            let chained = this.metaOfType(metaInfo.ImportedByChain);
+            if(chained.length>0){
+                let issues:Status[] = [];
+                chained.forEach(x=>{
+                    issues.push(error(messageRegistry.INHERITING_TYPE_IMPORTED_THROUGH_LIBRARY_CHAIN, this, {
+                        typeName: x.value()
+                    }));
+                });
+                issues.forEach(x=>rs.addSubStatus(x,"type"));
+            }
+            else {
+                rs.addSubStatus(error(messageRegistry.INHERITING_UNKNOWN_TYPE, this),"type")
+            }
+
         }
         if (this.isUnion()) {
             var tf = this.typeFamily();
-            if (tf.some(x=>x.isSubTypeOf(RECURRENT))) {
+            let chained: metaInfo.ImportedByChain[] = [];
+            let isRecurent = false;
+            let isUnknown = false;
+            for (let t of tf) {
+                if (t.isSubTypeOf(RECURRENT)) {
+                    isRecurent = true;
+                }
+                else if (t.isSubTypeOf(UNKNOWN)) {
+                    isUnknown = true;
+                }
+                t.metaOfType(metaInfo.ImportedByChain).forEach(x => chained.push(x));
+            }
+            if (isRecurent) {
                 rs.addSubStatus(error(messageRegistry.RECURRENT_UNION_OPTION, this),"type")
             }
-            if (tf.some(x=>x.isSubTypeOf(UNKNOWN))) {
-                rs.addSubStatus(error(messageRegistry.UNKNOWN_UNION_OPTION, this),"type")
+            if (isUnknown) {
+                if(chained.length>0){
+                    chained = _.unique(chained);
+                    if(chained.length>0){
+                        chained.forEach(x=>{
+                            let typeName = x.value();
+                            let messageEntry = messageRegistry.UNION_OPTION_TYPE_DEPENDS_ON_TYPE_IMPORTED_THROUGH_LIBRARY_CHAIN;
+                            if(this.options().some(y=>y.name() == typeName)){
+                                messageEntry = messageRegistry.UNION_OPTION_TYPE_OPTION_IMPORTED_THROUGH_LIBRARY_CHAIN;
+                            }
+                            rs.addSubStatus(error(messageEntry,this,{typeName:typeName}), "type");
+                        });
+                    }
+                }
+                else {
+                    rs.addSubStatus(error(messageRegistry.UNKNOWN_UNION_OPTION, this), "type")
+                }
             }
         }
         if (this.isArray()) {
-           const fs=this.familyWithArray();
-            var ps= this.getExtra(tsInterfaces.HAS_ITEMS)?"items":"type";
-            if ((fs.indexOf(this)!=-1)||fs.some(x=>x===RECURRENT)){
-
-               rs.addSubStatus(error(messageRegistry.RECURRENT_ARRAY_DEFINITION, this),ps)
-           }
-           else  if (fs.some(x=>x===UNKNOWN)){
-
+            const fs = this.familyWithArray();
+            var ps = this.getExtra(tsInterfaces.HAS_ITEMS) ? "items" : "type";
+            let chained: metaInfo.ImportedByChain[] = [];
+            let isRecurent = false;
+            let isUnknown = false;
+            for (let t of fs) {
+                if (t == this || t === RECURRENT) {
+                    isRecurent = true;
+                }
+                else if (t == UNKNOWN) {
+                    isUnknown = true;
+                }
+                t.metaOfType(metaInfo.ImportedByChain).forEach(x => chained.push(x));
+            }
+            if (isRecurent) {
+                rs.addSubStatus(error(messageRegistry.RECURRENT_ARRAY_DEFINITION, this), ps)
+            }
+            else if (isUnknown) {
                 var componentTypeName = this.oneMeta(ComponentShouldBeOfType).value().name();
-                rs.addSubStatus(error(messageRegistry.UNKNOWN_ARRAY_COMPONENT,
-                    this, { componentTypeName: componentTypeName }),ps)
-           }
+                if(chained.length>0){
+                    chained = _.unique(chained);
+                    chained.forEach(x=>{
+                        let typeName:string = null;
+                        let messageEntry = messageRegistry.ARRAY_COMPONENT_TYPE_IMPORTED_THROUGH_LIBRARY_CHAIN;
+                        if(x.value() != typeName){
+                            messageEntry = messageEntry.ARRAY_COMPONENT_TYPE_DEPENDES_ON_TYPE_IMPORTED_THROUGH_LIBRARY_CHAIN;
+                            typeName = x.value();
+                        }
+                        rs.addSubStatus(error(messageEntry,this,{componentTypeName:componentTypeName,typeName:typeName}),ps);
+                    });
+                }
+                else {
+                    rs.addSubStatus(error(messageRegistry.UNKNOWN_ARRAY_COMPONENT_TYPE,
+                        this, {componentTypeName: componentTypeName}), ps)
+                }
+            }
         }
         var supers=this.superTypes();
         var hasExternal:boolean=false;
@@ -2486,7 +2587,10 @@ export class TypeOfRestriction extends GenericTypeOf{
             if (to === this.val) {
                 return ok();
             }
-            return error(messageRegistry.TYPE_EXPECTED,this,{typeName: this.val});
+            return error(messageRegistry.TYPE_EXPECTED,this,{
+                expectedType: this.val,
+                actualType: to
+            });
 
     }
 
