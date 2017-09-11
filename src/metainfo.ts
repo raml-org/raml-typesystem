@@ -63,6 +63,17 @@ export  class NotScalar extends MetaInfo{
         return tsInterfaces.MetaInformationKind.NotScalar;
     }
 }
+
+export class ImportedByChain extends MetaInfo{
+    constructor(private _typeName:string){
+        super("importedByChain", _typeName, true);
+    }
+
+    kind() : tsInterfaces.MetaInformationKind {
+        return tsInterfaces.MetaInformationKind.ImportedByChain;
+    }
+}
+
 export class DisplayName extends MetaInfo{
 
 
