@@ -908,7 +908,12 @@ export abstract class AbstractType implements tsInterfaces.IParsedType, tsInterf
     }
 
     allFacets():TypeInformation[]{
-        return this.meta();
+        return this.meta().filter(x=>{
+            if(!metaInfo.DiscriminatorValue.isInstance(x)){
+                return true;
+            }
+            return (<metaInfo.DiscriminatorValue>x).isStrict();
+        });
     }
 
     declaredFacets():TypeInformation[]{
@@ -1841,7 +1846,7 @@ export abstract class AbstractType implements tsInterfaces.IParsedType, tsInterf
             this.definedFacetInfos = [];
             var m = this.meta();
             for (let i = m.length - 1; i >= 0; i--) {
-                if (metaInfo.FacetDeclaration.isInstance(m[i])) {
+                if (metaInfo.FacetDeclaration.isInstance(m[i])&&!(<metaInfo.FacetDeclaration>m[i]).isBuiltIn()) {
                     let p = new PropertyInfo(<metaInfo.FacetDeclaration>m[i]);
                     this.definedFacetInfosMap[p.name()] = p;
                     this.definedFacetInfos.push(p);
