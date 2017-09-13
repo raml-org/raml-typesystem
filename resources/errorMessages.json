@@ -171,9 +171,17 @@
     "code" : "INVALID_DATTIME",
     "message": "Valid datetime formatted string is expected"
   },
-  "UNKNOWN_ANNOTATION" : {
-    "code" : "UNKNOWN_ANNOTATION",
-    "message": "Using unknown annotation type: '{{facetName}}'"
+  "UNKNOWN_ANNOTATION_TYPE" : {
+    "code" : "UNKNOWN_ANNOTATION_TYPE",
+    "message": "Using unknown annotation type: '{{typeName}}'"
+  },
+  "LIBRARY_CHAINIG_IN_ANNOTATION_TYPE" : {
+    "code" : "LIBRARY_CHAINIG_IN_ANNOTATION_TYPE",
+    "message": "Annotation type '{{typeName}}' imported through a library chain. Library chainig is not allowed."
+  },
+  "LIBRARY_CHAINIG_IN_ANNOTATION_TYPE_SUPERTYPE" : {
+    "code" : "LIBRARY_CHAINIG_IN_ANNOTATION_TYPE_SUPERTYPE",
+    "message": "Annotation type '{{typeName}}' depends on '{{chainedType}}' imported through a library chain. Library chainig is not allowed."
   },
   "INVALID_ANNOTATION_VALUE" : {
     "code" : "INVALID_ANNOTATION_VALUE",

@@ -507,7 +507,7 @@ function scalarAnnotaitons(obj:any):meta.Annotation[]{
         x=>x.length>0&&x.charAt(0)=="("&&x.charAt(x.length-1)==")")){
         var aName = aKey.substring(1,aKey.length-1);
         var aVal = obj[aKey];
-        var a = new meta.Annotation(aName,aVal);
+        var a = new meta.Annotation(aName,aVal,aKey);
         result.push(a);
     }
     return result;

@@ -233,6 +233,12 @@ export  interface ITypeRegistry {
      * list all types stored in this registry
      */
     types():IParsedType[]
+
+    /**
+     * Retrieve type if it is available through a library chain
+     * @param name type name
+     */
+    getByChain(name:string): IParsedType
 }
 
 
