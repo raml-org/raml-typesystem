@@ -483,7 +483,7 @@ export class TypeRegistry implements tsInterfaces.ITypeRegistry {
 
   private getTypeByChainFromCollection(name:string,collection:parse.TypeCollection):AbstractType{
 
-      let result = collection.getType(name);
+      let result = this.isAnnotationsReg ? collection.getAnnotationType(name) : collection.getType(name);
       if(result){
           return result;
       }
@@ -501,9 +501,9 @@ export class TypeRegistry implements tsInterfaces.ITypeRegistry {
       return null;
   }
 
-  constructor(private _parent:TypeRegistry=null, protected _c?:parse.TypeCollection){
-
-  }
+  constructor(private _parent:TypeRegistry=null,
+              protected _c?:parse.TypeCollection,
+              protected isAnnotationsReg=false){}
 
     types():AbstractType[]{
         return this.typeList;
@@ -1182,7 +1182,7 @@ export abstract class AbstractType implements tsInterfaces.IParsedType, tsInterf
                         let typeName:string = null;
                         let messageEntry = messageRegistry.ARRAY_COMPONENT_TYPE_IMPORTED_THROUGH_LIBRARY_CHAIN;
                         if(x.value() != typeName){
-                            messageEntry = messageEntry.ARRAY_COMPONENT_TYPE_DEPENDES_ON_TYPE_IMPORTED_THROUGH_LIBRARY_CHAIN;
+                            messageEntry = messageRegistry.ARRAY_COMPONENT_TYPE_DEPENDES_ON_TYPE_IMPORTED_THROUGH_LIBRARY_CHAIN;
                             typeName = x.value();
                         }
                         rs.addSubStatus(error(messageEntry,this,{componentTypeName:componentTypeName,typeName:typeName}),ps);
@@ -2013,7 +2013,7 @@ export abstract class AbstractType implements tsInterfaces.IParsedType, tsInterf
      * @param clazz
      * @returns {any}
      */
-    metaOfType<T>(clazz:{ new(v:any, x?:any):T } ):T[]{
+    metaOfType<T>(clazz:{ new(v:any, x?:any, p?:string):T } ):T[]{
         return <any>this.meta().filter(x=>x instanceof clazz);
     }
 

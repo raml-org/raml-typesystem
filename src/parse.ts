@@ -186,7 +186,7 @@ export class TypeCollection {
     }
 
     getAnnotationTypeRegistry():TypeRegistry{
-        var r=new TypeRegistry(ts.builtInRegistry(),this);
+        var r=new TypeRegistry(ts.builtInRegistry(),this,true);
         this.annotationTypes().forEach(x=>r.addType(x));
         Object.keys(this.uses).forEach(x=>{
             this.uses[x].annotationTypes().forEach(y=>r.put(x+"."+ y.name(),y));
@@ -270,25 +270,6 @@ export class AccumulatingRegistry extends ts.TypeRegistry{
             }
         }
         return result;
-    }
-
-    getByChain(name:string):AbstractType{
-        let result = this.get(name);
-        if(result){
-            return result;
-        }
-        for(let dt = name.indexOf('.'); dt >= 0 ; dt = name.indexOf('.',dt+1) ) {
-            let ln = name.substring(0, dt);
-            let tn = name.substr(dt + 1);
-            let lib = this._c.library(ln);
-            if (lib) {
-                var t = lib.getType(tn);
-                if (t) {
-                    return t;
-                }
-            }
-        }
-        return null;
     }
 }
 
@@ -726,7 +707,7 @@ function appendAnnotations(appendedInfo:ts.TypeInformation, childNode:ParseNode)
         var key = ch.key();
         if (key && key.charAt(0) == "(" && key.charAt(key.length - 1) == ")") {
             var aName = key.substring(1, key.length - 1);
-            var aInstance = new meta.Annotation(aName, ch.value());
+            var aInstance = new meta.Annotation(aName, ch.value(), key);
             aInstance.setOwnerFacet(appendedInfo);
             appendedInfo.addAnnotation(aInstance);
         }
@@ -876,7 +857,7 @@ export function parse(
                 for(var ann of aArr) {
                     var key = ann.key();
                     var aName = key.substring(1, key.length - 1);
-                    var aInstance = new meta.Annotation(aName, ann.value());
+                    var aInstance = new meta.Annotation(aName, ann.value(), key);
                     aiArr.push(aInstance);
                 }
             }
@@ -980,7 +961,7 @@ export function parse(
                 hasfacetsOrOtherStuffDoesNotAllowedInExternals = key;
             }
             else if (key.charAt(0) == '(' && key.charAt(key.length - 1) == ')') {
-                result.addMeta(new meta.Annotation(key.substr(1, key.length - 2), x.value()));
+                result.addMeta(new meta.Annotation(key.substr(1, key.length - 2), x.value(), key));
                 return;
             }
             appendedInfo = facetR.getInstance().buildFacet(key, x.value());
