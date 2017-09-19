@@ -1,4 +1,3 @@
-/// <reference path="../typings/main.d.ts" />
 import xml2js=require("xml2js");
 import ts=require("./typesystem");
 import _=require("underscore");

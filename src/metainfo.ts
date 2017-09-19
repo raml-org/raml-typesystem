@@ -1,4 +1,3 @@
-/// <reference path="../typings/main.d.ts" />
 import ts=require("./typesystem");
 var messageRegistry = ts.messageRegistry;
 import {Status} from "./typesystem";

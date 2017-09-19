@@ -1,4 +1,3 @@
-/// <reference path="../typings/main.d.ts" />
 import _=require("underscore")
 import su=require("./schemaUtil")
 import tsInterfaces = require("./typesystem-interfaces")
@@ -2577,7 +2576,7 @@ export class TypeOfRestriction extends GenericTypeOf{
     }
     check(i:any):Status {
 
-            var to = typeof i;
+            var to:string = typeof i;
             if (i===null||i===undefined){
                 return ok();
             }
@@ -3026,6 +3025,7 @@ export class ValidationError extends Error{
     constructor(public messageEntry:any, public parameters:any={}){
         super();
         this.message = messageText(messageEntry,parameters);
+        this.getClassIdentifier = ValidationError.prototype.getClassIdentifier;
     }
 
     public isWarning = false;

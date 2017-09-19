@@ -1,5 +1,3 @@
-/// <reference path="../typings/main.d.ts" />
-
 import {JSONValidator} from "raml-json-validation";
 
 declare function require(s:string):any;
