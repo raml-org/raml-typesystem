@@ -814,3 +814,11 @@ export class DiscriminatorValue extends ts.Constraint{
     
     isStrict():boolean{ return this.strict; }
 }
+
+export interface ChainingData{
+
+    kind: string,
+
+    value: string
+
+}
