@@ -337,7 +337,13 @@ export class JSONSchemaObject {
             if(reference.indexOf('#') === -1) {
                 reference = reference + '#';
             }
-            var resolvedRef = this.provider.resolvePath(currentPath, reference);
+            let resolvedRef:string;
+            if(this.provider.isAbsolutePath(reference)){
+                resolvedRef = this.toProperWebURL(reference);
+            }
+            else {
+                resolvedRef = this.provider.resolvePath(currentPath, reference);
+            }
             refConatiner['$ref'] = resolvedRef;
         });
     }
@@ -434,10 +440,11 @@ export class JSONSchemaObject {
 
         var acceptedReferences: any = [];
 
-        missingReferences.forEach((reference: any) => {
+        missingReferences.forEach((_reference: any) => {
             var remoteSchemeContent: any;
 
-            var result: any = {reference: reference};
+            let reference = this.decodeURL(_reference);
+            var result: any = {reference: _reference};
 
             try {
                 var api = require('json-schema-compatibility');
@@ -527,20 +534,21 @@ export class JSONSchemaObject {
         }
 
         var validator = jsonUtil.getValidator();
-        if(alreadyAccepted.length==0&&this.jsonSchema.id){
-            let schemaId = this.jsonSchema.id;
-            if(schemaId.charAt(schemaId.length-1)=="#"){
-                let schemaId1 = schemaId.substring(0,schemaId.length-1);
-                alreadyAccepted.push({
-                    reference: schemaId1,
-                    content: this.jsonSchema
-                });
-            }
-        }
+        // if(alreadyAccepted.length==0&&this.jsonSchema.id){
+        //     let schemaId = this.jsonSchema.id;
+        //     if(schemaId.charAt(schemaId.length-1)=="#"){
+        //         let schemaId1 = schemaId.substring(0,schemaId.length-1);
+        //         alreadyAccepted.push({
+        //             reference: schemaId1,
+        //             content: this.jsonSchema
+        //         });
+        //     }
+        // }
 
         alreadyAccepted.forEach(accepted => validator.setRemoteReference(accepted.reference, accepted.content));
 
         try {
+            delete this.jsonSchema.id;
             validator.validateSchema(this.jsonSchema);
         } catch (error) {
             let illegalRequiredMessageStart = "Cannot assign to read only property '__$validated' of ";
@@ -575,10 +583,11 @@ export class JSONSchemaObject {
 
         var acceptedReferences: any = [];
 
-        missingReferences.forEach((reference: any) => {
+        missingReferences.forEach((_reference: any) => {
             var remoteSchemeContent: any;
 
-            var result: any = {reference: reference};
+            let reference = this.decodeURL(_reference);
+            var result: any = {reference: _reference};
 
             try {
                 var api = require('json-schema-compatibility');
@@ -628,18 +637,53 @@ export class JSONSchemaObject {
         this.removeFragmentPartOfIDs(json);
 
         if(json.id) {
-            json.id = json.id.trim();
-
-            if(json.id.indexOf('#')< 0) {
-                json.id = json.id + '#';
+            if(!this.provider.isAbsolutePath(json.id)){
+                json.id = this.provider.resolvePath(path,json.id);
             }
-
-            return;
         }
 
-        json.id = path.replace(/\\/g,'/') + '#';
-
+        json.id = path.replace(/\\/g,'/');
+        if(json.id.charAt(json.id.length-1)!='#') {
+            json.id = json.id + '#';
+        }
+        json.id = this.toProperWebURL(json.id);
         this.patchSchema(json);
+    }
+
+    private toProperWebURL(p:string):string{
+        if(p==null||p.trim().length==0){
+            return p;
+        }
+        let l = "https://".length;
+        if(p.length>=l && p.substring(0,l)=="https://"){
+            return p;
+        }
+
+        p = p.replace("//","__\/DOUBLESLASH\/__");
+        p = p.replace(/^([a-zA-Z]):/,'$1__\/COLON\/__');
+
+        let protoclStr = "https://__/APPENDED_PROTOCOL/__";
+        if(p.charAt(0)!="/"){
+            protoclStr += "/";
+        }
+        return protoclStr + p;
+    }
+
+    private decodeURL(p:string):string{
+        if(p==null||p.trim().length==0){
+            return p;
+        }
+        let protocolStr = "https://__/APPENDED_PROTOCOL/__";
+        let l = protocolStr.length;
+        if(p.length<l||p.substring(0,l)!=protocolStr){
+            return p;
+        }
+        p = p.substring(l,p.length);
+        if(p.indexOf("__/COLON/__")>0&&p.charAt(0)=="/"){
+            p = p.substring(1);
+        }
+        p = p.replace("__/DOUBLESLASH/__","//").replace("__/COLON/__",":");
+        return p;
     }
 
     private acceptErrors(
@@ -685,7 +729,8 @@ export class JSONSchemaObject {
         globalCache.setValue(key, 1);
     }
 
-    contentAsync(reference: any): Promise {
+    contentAsync(_reference: any): Promise {
+        let reference = this.decodeURL(_reference);
         var remoteSchemeContent: any;
 
         var api: any = require('json-schema-compatibility');
@@ -701,7 +746,7 @@ export class JSONSchemaObject {
         }
 
         var result = contentPromise.then((cnt: any) => {
-            var content: any = {reference: reference};
+            var content: any = {reference: _reference};
 
             try {
                 var jsonObject = JSON.parse(cnt);
@@ -715,6 +760,7 @@ export class JSONSchemaObject {
                 content.content = remoteSchemeContent;
             } catch(exception) {
                 content.error = exception;
+                content.reference = reference;
             }
 
             return content;

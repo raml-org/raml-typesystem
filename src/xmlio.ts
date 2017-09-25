@@ -297,9 +297,10 @@ function postProcess(result: any, type: ts.AbstractType):any{
 
     var expectedRootNodeName = rootXmlName(type);
 
-    if(expectedRootNodeName !== rootNodeName) {
-        errors.push('Unexpected root node "' + rootNodeName + '", "' + expectedRootNodeName + '" is expected.');
-    }
+    //allowing arbitrary root tags
+    // if(expectedRootNodeName !== rootNodeName) {
+    //     errors.push('Unexpected root node "' + rootNodeName + '", "' + expectedRootNodeName + '" is expected.');
+    // }
 
     var newJson: any;
 

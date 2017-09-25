@@ -50,7 +50,7 @@ describe("Simple validation testing",function() {
         var st=t.validateType(ts.builtInRegistry());
         var f=false;
         st.getErrors().forEach((x: any)=>{
-            if (x.getMessage().indexOf("string is expected")!=-1){
+            if (x.getMessage().indexOf("Expected type 'string' but got 'number'")!=-1){
                 f=true;
             }
         });
@@ -472,6 +472,100 @@ describe("Simple validation testing",function() {
         var t=tp.getType("a");
         var st=t.validateType(ts.builtInRegistry());
         assert.isTrue(st.getErrors().length===0);
+    });
+    it("Null, 'false' or empty string value is examples with 'strict' set to 'false' 1", function () {
+        var tp = ps.parseJSONTypeCollection({
+
+            types:{
+                T1: {
+                    "type":"object",
+                    properties:{
+                        x:"string",
+                        y:{
+                            type:"string",
+                            required: false
+                        }
+                    },
+                    examples: {
+                        e1: {
+                            strict: false,
+                            value: null
+                        },
+                        e2: {
+                            strict: false,
+                            value: false
+                        },
+                        e3: {
+                            strict: false,
+                            value: ""
+                        }
+                    }
+                }
+
+            }
+        });
+        var t=tp.getType("T1");
+        var st=t.validateType(ts.builtInRegistry());
+        assert.isTrue(st.getErrors().length===0);
+    });
+    it("Null, 'false' or empty string value is examples with 'strict' set to 'false' 2", function () {
+        var tp = ps.parseJSONTypeCollection({
+
+            types:{
+                T1: {
+                    "type":"object",
+                    properties:{
+                        x:"string",
+                        y:{
+                            type:"string",
+                            required: false
+                        }
+                    },
+                    example: {
+                        strict: false,
+                        value: null
+                    }
+                },
+                T2: {
+                    "type":"object",
+                    properties:{
+                        x:"string",
+                        y:{
+                            type:"string",
+                            required: false
+                        }
+                    },
+                    example: {
+                        strict: false,
+                        value: false
+                    }
+                },
+                T3: {
+                    "type":"object",
+                    properties:{
+                        x:"string",
+                        y:{
+                            type:"string",
+                            required: false
+                        }
+                    },
+                    example: {
+                        strict: false,
+                        value: ""
+                    }
+                }
+
+            }
+        });
+        let t1=tp.getType("T1");
+        let st1=t1.validateType(ts.builtInRegistry());
+        assert.isTrue(st1.getErrors().length===0);
+        let t2=tp.getType("T2");
+        let st2=t2.validateType(ts.builtInRegistry());
+        assert.isTrue(st2.getErrors().length===0);
+        let t3=tp.getType("T3");
+        let st3=t3.validateType(ts.builtInRegistry());
+        assert.isTrue(st3.getErrors().length===0);
     });
     it("incorrect strict in examples", function () {
         var tp = ps.parseJSONTypeCollection({

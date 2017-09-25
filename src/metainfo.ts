@@ -63,6 +63,17 @@ export  class NotScalar extends MetaInfo{
         return tsInterfaces.MetaInformationKind.NotScalar;
     }
 }
+
+export class ImportedByChain extends MetaInfo{
+    constructor(private _typeName:string){
+        super("importedByChain", _typeName, true);
+    }
+
+    kind() : tsInterfaces.MetaInformationKind {
+        return tsInterfaces.MetaInformationKind.ImportedByChain;
+    }
+}
+
 export class DisplayName extends MetaInfo{
 
 
@@ -87,7 +98,7 @@ export class Usage extends MetaInfo{
 }
 export class Annotation extends MetaInfo implements tsInterfaces.IAnnotation{
 
-    constructor(name: string,value:any){
+    constructor(name: string,value:any,protected path:string){
         super(name,value)
     }
 
@@ -102,7 +113,17 @@ export class Annotation extends MetaInfo implements tsInterfaces.IAnnotation{
     validateSelf(registry:ts.TypeRegistry,ofExample:boolean=false):ts.Status {
         var tp=registry.get(this.facetName());
         if (!tp){
-            return ts.error(messageRegistry.UNKNOWN_ANNOTATION,this,{facetName: this.facetName()});
+            let err:ts.Status;
+            if(registry.getByChain(this.facetName())){
+                 err = ts.error(messageRegistry.LIBRARY_CHAINIG_IN_ANNOTATION_TYPE,
+                    this, {typeName: this.facetName()});
+            }
+            else {
+                err = ts.error(messageRegistry.UNKNOWN_ANNOTATION_TYPE,
+                    this, {typeName: this.facetName()});
+            }
+            err.setValidationPath({name: this.path});
+            return err;
         }
         var result = ts.ok();
         var q=this.value();
@@ -130,13 +151,24 @@ export class Annotation extends MetaInfo implements tsInterfaces.IAnnotation{
                 result.addSubStatus(targetStatus);
             }
         }
-        var valOwner=tp.validateDirect(q,true,false);
-        if (!valOwner.isOk()){
-            var res = ts.error(messageRegistry.INVALID_ANNOTATION_VALUE, this, { msg: valOwner.getMessage() });
-            res.addSubStatus(valOwner);
+        let res:ts.Status;
+        let chained = tp.metaOfType(ImportedByChain);
+        if(chained.length>0 && tp.isSubTypeOf(ts.UNKNOWN) && registry.getByChain(tp.name())){
+            let chainedType = chained[0].value();
+            res = ts.error(messageRegistry.LIBRARY_CHAINIG_IN_ANNOTATION_TYPE_SUPERTYPE,
+                this, { typeName: this.facetName(), chainedType: chainedType});
+        }
+        else {
+            let valOwner = tp.validateDirect(q, true, false);
+            if (!valOwner.isOk()) {
+                res = ts.error(messageRegistry.INVALID_ANNOTATION_VALUE, this, {msg: valOwner.getMessage()});
+                res.addSubStatus(valOwner);
+            }
+        }
+        if(res) {
             result.addSubStatus(res);
         }
-        ts.setValidationPath(result,{name:`(${this.facetName()})`});
+        ts.setValidationPath(result,{name:this.path});
         return result;
     }
 
@@ -284,7 +316,7 @@ export class Example extends MetaInfo{
         var isVal=false;
         var result = ts.ok();
         if (typeof val==="object"&&val){
-            if (val.value){
+            if (val.hasOwnProperty("value")){
                 
 
                 for(var y of exampleScalarProperties) {
@@ -295,7 +327,7 @@ export class Example extends MetaInfo{
                         if(typeof(propObj)=="object") {
                             Object.keys(propObj).forEach(key=> {
                                 if (key.charAt(0) == '(' && key.charAt(key.length - 1) == ')') {
-                                    var a = new Annotation(key.substring(1, key.length - 1), propObj[key]);
+                                    var a = new Annotation(key.substring(1, key.length - 1), propObj[key], key);
                                     var aRes = a.validateSelf(registry, true);
                                     ts.setValidationPath(aRes,{
                                             name: "example",
@@ -364,7 +396,7 @@ export class Example extends MetaInfo{
                 for(var ua of usedAnnotations) {
                     var aValue = val[ua];
                     var aName = ua.substring(1,ua.length-1);
-                    var aInstance = new Annotation(aName,aValue);
+                    var aInstance = new Annotation(aName,aValue,ua);
                     status.addSubStatus(aInstance.validateSelf(registry,true));
                 }
             }
@@ -487,10 +519,11 @@ export class Examples extends MetaInfo{
                 Object.keys(v).forEach(x=> {
                     var exampleObj = v[x];
                     if (exampleObj) {
-                        if (typeof exampleObj=="object"&&exampleObj.value) {
+                        let hasVal = exampleObj.hasOwnProperty('value');
+                        if (typeof exampleObj=="object"&&hasVal) {
                             Object.keys(exampleObj).forEach(key=> {
                                 if (key.charAt(0) == '(' && key.charAt(key.length - 1) == ')') {
-                                    var a = new Annotation(key.substring(1, key.length - 1), v[x][key]);
+                                    var a = new Annotation(key.substring(1, key.length - 1), v[x][key],key);
                                     var aRes = a.validateSelf(registry,true);
                                     ts.setValidationPath(aRes,
                                         {name:"examples",child:{name: x, child: {name: key}}});
@@ -498,12 +531,9 @@ export class Examples extends MetaInfo{
                                 }
                             });
                         }
-                        var val=exampleObj.value;
-                        var noVal=!val;
-                        if (noVal){
-                            val=exampleObj;
-                        }
-                        else{
+                        let val = exampleObj;
+                        if (hasVal){
+                            val = exampleObj.value;
                             for(var y of exampleScalarProperties) {
                                 this.checkScalarProperty(exampleObj, x, y, registry,rs);
                             }
@@ -516,7 +546,7 @@ export class Examples extends MetaInfo{
                         if(!this.owner().isExternal()) {
                             example = parseExampleIfNeeded(val, this.owner());
                             if (example instanceof ts.Status) {
-                                examplesPatchPath(example, noVal, x)
+                                examplesPatchPath(example, !hasVal, x)
                                 rs.addSubStatus(example);
                                 return;
                             }
@@ -524,7 +554,7 @@ export class Examples extends MetaInfo{
                         var res = this.owner().validate(example, true, false);
                         res.getErrors().forEach(ex=> {
                             rs.addSubStatus(ex);
-                            examplesPatchPath(ex,noVal,x)
+                            examplesPatchPath(ex,!hasVal,x)
                         });
                     }
                 });
@@ -553,7 +583,7 @@ export class Examples extends MetaInfo{
                 vp = {name: "value"};
                 Object.keys(propObj).forEach(key=> {
                     if (key.charAt(0) == '(' && key.charAt(key.length - 1) == ')') {
-                        var a = new Annotation(key.substring(1, key.length - 1), exampleObj[propName][key]);
+                        var a = new Annotation(key.substring(1, key.length - 1), exampleObj[propName][key],key);
                         var aRes = a.validateSelf(registry, true);
                         ts.setValidationPath(aRes,
                             {
@@ -781,4 +811,12 @@ export class DiscriminatorValue extends ts.Constraint{
     }
     
     isStrict():boolean{ return this.strict; }
+}
+
+export interface ChainingData{
+
+    kind: string,
+
+    value: string
+
 }

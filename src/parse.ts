@@ -37,6 +37,8 @@ export interface ParseNode {
 
     kind(): NodeKind
 
+    getMeta(key:string): any
+
     anchor?():any
 }
 
@@ -95,6 +97,10 @@ class JSObjectNode implements ParseNode{
     contentProvider(): su.IContentProvider {
         return this.provider;
     };
+
+    getMeta(key:string):any{
+        return null;
+    }
 }
 export function parseJSON(name: string,n:any,r:ts.TypeRegistry=ts.builtInRegistry(), provider?: su.IContentProvider):ts.AbstractType {
     return parse(name,new JSObjectNode(null,n, false, provider),r);
@@ -186,7 +192,7 @@ export class TypeCollection {
     }
 
     getAnnotationTypeRegistry():TypeRegistry{
-        var r=new TypeRegistry(ts.builtInRegistry());
+        var r=new TypeRegistry(ts.builtInRegistry(),this,true);
         this.annotationTypes().forEach(x=>r.addType(x));
         Object.keys(this.uses).forEach(x=>{
             this.uses[x].annotationTypes().forEach(y=>r.put(x+"."+ y.name(),y));
@@ -194,7 +200,7 @@ export class TypeCollection {
         return r;
     }
     getTypeRegistry():TypeRegistry{
-        var r=new TypeRegistry(ts.builtInRegistry());
+        var r=new TypeRegistry(ts.builtInRegistry(),this);
         this.types().forEach(x=>r.addType(x));
 
         Object.keys(this.uses).forEach(x=>{
@@ -218,8 +224,8 @@ export class AccumulatingRegistry extends ts.TypeRegistry{
             && typeof(instance.getClassIdentifier) == "function"
             && _.contains(instance.getClassIdentifier(),AccumulatingRegistry.CLASS_IDENTIFIER_AccumulatingRegistry);
     }
-    constructor(private toParse:ParseNode,private schemas:ParseNode,ts:ts.TypeRegistry,private _c:TypeCollection){
-        super(ts)
+    constructor(private toParse:ParseNode,private schemas:ParseNode,ts:ts.TypeRegistry,_c:TypeCollection){
+        super(ts,_c)
     }
 
 
@@ -315,6 +321,10 @@ class WrapArrayNode implements ParseNode{
     kind():NodeKind{
         return NodeKind.MAP;
     }
+
+    getMeta(key:string):any{
+        return null;
+    }
 }
 
 function  transformToArray(n:ParseNode):ParseNode{
@@ -393,9 +403,9 @@ export function parseTypeCollection(n:ParseNode,tr:ts.TypeRegistry):TypeCollecti
 export function parsePropertyBean(n:ParseNode,tr:ts.TypeRegistry):PropertyBean{
     var result=new PropertyBean();
     var hasRequiredFacet = false;
-    var rs=n.childWithKey("required");
-    if (rs){
-        var rsValue = rs.value();
+    var requiredNode=n.childWithKey("required");
+    if (requiredNode){
+        var rsValue = requiredNode.value();
         if (typeof rsValue=="boolean"){
             hasRequiredFacet = true;
         }
@@ -418,6 +428,43 @@ export function parsePropertyBean(n:ParseNode,tr:ts.TypeRegistry):PropertyBean{
         result.regExp=true;
     }
     result.type=parse(null, n,tr,false,false,false);
+    let chainingData = <meta.ChainingData[]>n.getMeta("chaining");
+    if(chainingData && chainingData.length>0){
+        if(result.type.metaOfType(meta.ImportedByChain).length==0){
+            let target = result.type;
+            if(result.type.isArray()){
+                let compMeta = result.type.metaOfType(rs.ComponentShouldBeOfType);
+                if(compMeta&&compMeta.length>0){
+                    let rt = compMeta[0].value();
+                    target = ts.derive("",[rt]);
+                    (<any>compMeta[0]).type = target;
+                }
+            }
+            else if (result.type.isUnion()){
+                let opts = result.type.allOptions();
+                if(opts.length>0){
+                    target = ts.derive("",[<ts.AbstractType>opts[0]]);
+                    opts[0] = target;
+                }
+            }
+            if(target.metaOfType(meta.ImportedByChain).length==0){
+                if(!target.isSubTypeOf(ts.UNKNOWN)&&ts.InheritedType.isInstance(target)) {
+                    (<ts.InheritedType>target).addSuper(ts.UNKNOWN);
+                }
+                for(let cd of chainingData) {
+                    target.addMeta(new meta.ImportedByChain(cd.value));
+                }
+            }
+            if(!target.isSubTypeOf(ts.UNKNOWN)) {
+                if(ts.InheritedType.isInstance(target)) {
+                    (<ts.InheritedType>target).addSuper(ts.UNKNOWN);
+                }
+            }
+            for(let cd of chainingData) {
+                target.addMeta(new meta.ImportedByChain(cd.value));
+            }
+        }
+    }
     result.id=name;
     return result;
 }
@@ -707,7 +754,7 @@ function appendAnnotations(appendedInfo:ts.TypeInformation, childNode:ParseNode)
         var key = ch.key();
         if (key && key.charAt(0) == "(" && key.charAt(key.length - 1) == ")") {
             var aName = key.substring(1, key.length - 1);
-            var aInstance = new meta.Annotation(aName, ch.value());
+            var aInstance = new meta.Annotation(aName, ch.value(), key);
             aInstance.setOwnerFacet(appendedInfo);
             appendedInfo.addAnnotation(aInstance);
         }
@@ -757,6 +804,33 @@ export function parse(
             return sp;
         }
         var res=ts.derive(name,[sp]);
+        let chainingData = <meta.ChainingData[]>n.getMeta("chaining");
+        if(sp && chainingData && chainingData.length > 0){
+            let target = res;
+            if(sp.isArray()){
+                let compMeta = sp.metaOfType(rs.ComponentShouldBeOfType);
+                if(compMeta&&compMeta.length>0){
+                    let rt = compMeta[0].value();
+                    target = ts.derive("",[rt]);
+                    (<any>compMeta[0]).type = target;
+                }
+            }
+            else if (sp.isUnion()){
+                let opts = sp.allOptions();
+                if(opts.length>0){
+                    target = ts.derive("",[<ts.AbstractType>opts[0]]);
+                    opts[0] = target;
+                }
+            }
+            if(target.metaOfType(meta.ImportedByChain).length==0){
+                if(!target.isSubTypeOf(ts.UNKNOWN)) {
+                    target.addSuper(ts.UNKNOWN);
+                }
+                for(let cd of chainingData) {
+                    target.addMeta(new meta.ImportedByChain(cd.value));
+                }
+            }
+        }
         if (AccumulatingRegistry.isInstance(r)){
             res = contributeToAccumulatingRegistry(res, r);
         }
@@ -857,7 +931,7 @@ export function parse(
                 for(var ann of aArr) {
                     var key = ann.key();
                     var aName = key.substring(1, key.length - 1);
-                    var aInstance = new meta.Annotation(aName, ann.value());
+                    var aInstance = new meta.Annotation(aName, ann.value(), key);
                     aiArr.push(aInstance);
                 }
             }
@@ -961,7 +1035,7 @@ export function parse(
                 hasfacetsOrOtherStuffDoesNotAllowedInExternals = key;
             }
             else if (key.charAt(0) == '(' && key.charAt(key.length - 1) == ')') {
-                result.addMeta(new meta.Annotation(key.substr(1, key.length - 2), x.value()));
+                result.addMeta(new meta.Annotation(key.substr(1, key.length - 2), x.value(), key));
                 return;
             }
             appendedInfo = facetR.getInstance().buildFacet(key, x.value());

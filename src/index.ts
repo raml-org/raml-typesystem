@@ -473,7 +473,7 @@ export class TypeConstructor {
      * @returns {TypeConstructor}
      */
     annotate(name:string, value:any):TypeConstructor {
-        (<ts.AbstractType>this.target).addMeta(new Annotation(name, value));
+        (<ts.AbstractType>this.target).addMeta(new Annotation(name, value, `(${value})`));
         return this;
     }
 

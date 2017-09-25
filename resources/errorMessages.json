@@ -23,6 +23,10 @@
     "code" : "INHERITING_UNKNOWN_TYPE",
     "message": "Inheriting from unknown type"
   },
+  "INHERITING_TYPE_IMPORTED_THROUGH_LIBRARY_CHAIN" : {
+    "code" : "INHERITING_TYPE_IMPORTED_THROUGH_LIBRARY_CHAIN",
+    "message": "Inheriting the '{{typeName}}' type imported through a library chain. Library chaining is not allowed."
+  },
   "RECURRENT_UNION_OPTION" : {
     "code" : "RECURRENT_UNION_OPTION",
     "message": "Recurrent type as an option of union type"
@@ -31,13 +35,29 @@
     "code" : "UNKNOWN_UNION_OPTION",
     "message": "Unknown type as an option of union type"
   },
+  "UNION_OPTION_TYPE_OPTION_IMPORTED_THROUGH_LIBRARY_CHAIN" : {
+    "code" : "UNION_OPTION_TYPE_OPTION_IMPORTED_THROUGH_LIBRARY_CHAIN",
+    "message": "Union type option '{{typeName}}' imported through a library chain. Library chaining is not allowed."
+  },
+  "UNION_OPTION_TYPE_DEPENDS_ON_TYPE_IMPORTED_THROUGH_LIBRARY_CHAIN" : {
+    "code" : "UNION_OPTION_TYPE_OPTION_DEPENDS_ON_TYPE_IMPORTED_THROUGH_LIBRARY_CHAIN",
+    "message": "Union type depends on '{{typeName}}' type imported through a library chain. Library chaining is not allowed."
+  },
   "RECURRENT_ARRAY_DEFINITION" : {
     "code" : "RECURRENT_ARRAY_DEFINITION",
     "message": "Recurrent array type definition"
   },
-  "UNKNOWN_ARRAY_COMPONENT" : {
+  "UNKNOWN_ARRAY_COMPONENT_TYPE" : {
     "code" : "UNKNOWN_ARRAY_COMPONENT",
     "message": "Referring to unknown type '{{componentTypeName}}' as an array component type"
+  },
+  "ARRAY_COMPONENT_TYPE_IMPORTED_THROUGH_LIBRARY_CHAIN" : {
+    "code" : "ARRAY_COMPONENT_TYPE_IMPORTED_THROUGH_LIBRARY_CHAIN",
+    "message": "Array component type '{{componentTypeName}}' imported through a library chain. Library chaining is not allowed."
+  },
+  "ARRAY_COMPONENT_TYPE_DEPENDES_ON_TYPE_IMPORTED_THROUGH_LIBRARY_CHAIN" : {
+    "code" : "ARRAY_COMPONENT_TYPE_DEPENDES_ON_TYPE_IMPORTED_THROUGH_LIBRARY_CHAIN",
+    "message": "Array component type '{{componentTypeName}}' inherits the '{{typeName}}' type imported through a library chain. Library chaining is not allowed."
   },
   "EXTERNALS_MIX" : {
     "code" : "EXTERNALS_MIX",
@@ -105,7 +125,7 @@
   },
   "TYPE_EXPECTED" : {
     "code" : "TYPE_EXPECTED",
-    "message": "{{typeName}} is expected"
+    "message": "Expected type '{{expectedType}}' but got '{{actualType}}'"
   },
   "INTEGER_EXPECTED" : {
     "code" : "INTEGER_EXPECTED",
@@ -151,9 +171,17 @@
     "code" : "INVALID_DATTIME",
     "message": "Valid datetime formatted string is expected"
   },
-  "UNKNOWN_ANNOTATION" : {
-    "code" : "UNKNOWN_ANNOTATION",
-    "message": "Using unknown annotation type: '{{facetName}}'"
+  "UNKNOWN_ANNOTATION_TYPE" : {
+    "code" : "UNKNOWN_ANNOTATION_TYPE",
+    "message": "Using unknown annotation type: '{{typeName}}'"
+  },
+  "LIBRARY_CHAINIG_IN_ANNOTATION_TYPE" : {
+    "code" : "LIBRARY_CHAINIG_IN_ANNOTATION_TYPE",
+    "message": "Annotation type '{{typeName}}' imported through a library chain. Library chainig is not allowed."
+  },
+  "LIBRARY_CHAINIG_IN_ANNOTATION_TYPE_SUPERTYPE" : {
+    "code" : "LIBRARY_CHAINIG_IN_ANNOTATION_TYPE_SUPERTYPE",
+    "message": "Annotation type '{{typeName}}' depends on '{{chainedType}}' imported through a library chain. Library chainig is not allowed."
   },
   "INVALID_ANNOTATION_VALUE" : {
     "code" : "INVALID_ANNOTATION_VALUE",
@@ -239,8 +267,8 @@
     "code" : "FACETS_MAP",
     "message": "'facets' should be a map"
   },
-  "VALIDATING_AGAINS_UNKNOWN" : {
-    "code" : "VALIDATING_AGAINS_UNKNOWN",
+  "VALIDATING_AGAINST_UNKNOWN" : {
+    "code" : "VALIDATING_AGAINST_UNKNOWN",
     "message": "Validating instance against unknown type: '{{typeName}}'"
   },
   "EXTERNAL_IN_PROPERTY_DEFINITION" : {
@@ -255,9 +283,25 @@
     "code" : "UNKNOWN_IN_PROPERTY_DEFINITION",
     "message": "Property '{{propName}}' refers to unknown type '{{typeName}}'"
   },
+  "LIBRARY_CHAINIG_IN_PROPERTY_TYPE" : {
+    "code" : "LIBRARY_CHAINIG_IN_PROPERTY_TYPE",
+    "message": "Property '{{propName}}' refers to type '{{typeName}}' imported through a library chain. Library chainig is not allowed."
+  },
+  "LIBRARY_CHAINIG_IN_PROPERTY_TYPE_SUPERTYPE" : {
+    "code" : "LIBRARY_CHAINIG_IN_PROPERTY_TYPE_SUPERTYPE",
+    "message": "Property '{{propName}}' type depends on '{{typeName}}' type imported through a library chain. Library chainig is not allowed."
+  },
   "UNKNOWN_IN_FACET_DEFINITION" : {
     "code" : "UNKNOWN_IN_FACET_DEFINITION",
     "message": "Facet '{{facetName}}' refers to unknown type '{{typeName}}'"
+  },
+  "LIBRARY_CHAINIG_IN_FACET_TYPE" : {
+    "code" : "LIBRARY_CHAINIG_IN_FACET_TYPE",
+    "message": "Facet '{{propName}}' refers to type '{{typeName}}' imported through a library chain. Library chainig is not allowed."
+  },
+  "LIBRARY_CHAINIG_IN_FACET_TYPE_SUPERTYPE" : {
+    "code" : "LIBRARY_CHAINIG_IN_FACET_TYPE_SUPERTYPE",
+    "message": "Facet '{{propName}}' type depends on '{{typeName}}' type imported through a library chain. Library chainig is not allowed."
   },
   "ERROR_IN_RANGE" : {
     "code" : "ERROR_IN_RANGE",
@@ -334,10 +378,6 @@
   "EXTERNAL_AS_COMPONENT" : {
     "code" : "EXTERNAL_AS_COMPONENT",
     "message": "It is not allowed to use external types in component type definitions"
-  },
-  "UNKNOWN_AS_COMPONENT" : {
-    "code" : "UNKNOWN_AS_COMPONENT",
-    "message": "Component refers to unknown type {{typeName}}"
   },
   "PATTERN_VIOLATION" : {
     "code" : "PATTERN_VIOLATION",

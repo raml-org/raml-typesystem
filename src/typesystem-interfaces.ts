@@ -88,6 +88,7 @@ export interface IStatus extends IHasExtra {
 export enum MetaInformationKind {
     Description,
     NotScalar,
+    ImportedByChain,
     DisplayName,
     Usage,
     Annotation,
@@ -227,6 +228,12 @@ export  interface ITypeRegistry {
      * list all types stored in this registry
      */
     types():IParsedType[]
+
+    /**
+     * Retrieve type if it is available through a library chain
+     * @param name type name
+     */
+    getByChain(name:string): IParsedType
 }
 
 
