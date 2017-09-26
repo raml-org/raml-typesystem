@@ -316,7 +316,7 @@ export class Example extends MetaInfo{
         var isVal=false;
         var result = ts.ok();
         if (typeof val==="object"&&val){
-            if (val.value){
+            if (val.hasOwnProperty("value")){
                 
 
                 for(var y of exampleScalarProperties) {
@@ -519,7 +519,8 @@ export class Examples extends MetaInfo{
                 Object.keys(v).forEach(x=> {
                     var exampleObj = v[x];
                     if (exampleObj) {
-                        if (typeof exampleObj=="object"&&exampleObj.value) {
+                        let hasVal = exampleObj.hasOwnProperty('value');
+                        if (typeof exampleObj=="object"&&hasVal) {
                             Object.keys(exampleObj).forEach(key=> {
                                 if (key.charAt(0) == '(' && key.charAt(key.length - 1) == ')') {
                                     var a = new Annotation(key.substring(1, key.length - 1), v[x][key],key);
@@ -530,12 +531,9 @@ export class Examples extends MetaInfo{
                                 }
                             });
                         }
-                        var val=exampleObj.value;
-                        var noVal=!val;
-                        if (noVal){
-                            val=exampleObj;
-                        }
-                        else{
+                        let val = exampleObj;
+                        if (hasVal){
+                            val = exampleObj.value;
                             for(var y of exampleScalarProperties) {
                                 this.checkScalarProperty(exampleObj, x, y, registry,rs);
                             }
@@ -548,7 +546,7 @@ export class Examples extends MetaInfo{
                         if(!this.owner().isExternal()) {
                             example = parseExampleIfNeeded(val, this.owner());
                             if (example instanceof ts.Status) {
-                                examplesPatchPath(example, noVal, x)
+                                examplesPatchPath(example, !hasVal, x)
                                 rs.addSubStatus(example);
                                 return;
                             }
@@ -556,7 +554,7 @@ export class Examples extends MetaInfo{
                         var res = this.owner().validate(example, true, false);
                         res.getErrors().forEach(ex=> {
                             rs.addSubStatus(ex);
-                            examplesPatchPath(ex,noVal,x)
+                            examplesPatchPath(ex,!hasVal,x)
                         });
                     }
                 });
@@ -813,4 +811,12 @@ export class DiscriminatorValue extends ts.Constraint{
     }
     
     isStrict():boolean{ return this.strict; }
+}
+
+export interface ChainingData{
+
+    kind: string,
+
+    value: string
+
 }

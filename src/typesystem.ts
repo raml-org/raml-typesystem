@@ -210,7 +210,7 @@ var messageText = function (messageEntry:any, params:any) {
         }
         result += paramValue;
     }
-    result += msg.substring(prev,msg.length);    
+    result += msg.substring(prev,msg.length);
     return result;
 };
 export function error(
@@ -1184,9 +1184,12 @@ export abstract class AbstractType implements tsInterfaces.IParsedType, tsInterf
                 if(chained.length>0){
                     chained = _.unique(chained);
                     chained.forEach(x=>{
-                        let typeName:string = null;
+                        let typeName:string = componentTypeName;
                         let messageEntry = messageRegistry.ARRAY_COMPONENT_TYPE_IMPORTED_THROUGH_LIBRARY_CHAIN;
-                        if(x.value() != typeName){
+                        if(!typeName){
+                            componentTypeName = x.value();
+                        }
+                        else if(x.value() != typeName){
                             messageEntry = messageRegistry.ARRAY_COMPONENT_TYPE_DEPENDES_ON_TYPE_IMPORTED_THROUGH_LIBRARY_CHAIN;
                             typeName = x.value();
                         }
@@ -1240,7 +1243,7 @@ export abstract class AbstractType implements tsInterfaces.IParsedType, tsInterf
         var mn=this.oneMeta(ComponentShouldBeOfType);
         if (mn){
             var at:AbstractType=mn.value();
-            ts=ts.concat(at.familyWithArray());
+            ts=ts.concat(at.familyWithArray().concat(at));
         }
         return ts;
     }
