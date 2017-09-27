@@ -1,5 +1,4 @@
 //import _ = require("underscore")
-/// <reference path="../typings/main.d.ts" />
 declare function require(s:string):any;
 declare var __dirname: string;
 

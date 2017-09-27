@@ -1,7 +1,7 @@
 import ps= require("./actualParse")
 import ts = require("../src/typesystem")
 import chai = require("chai");
-import assert = chai.assert;
+const assert = chai.assert;
 import nm=require("../src/nominals")
 
 describe("Simple validation testing",function() {
