@@ -516,10 +516,12 @@ export class Examples extends MetaInfo{
             var v=this.value();
             if (v) {
                 Object.keys(v).forEach(x=> {
-                    var exampleObj = v[x];
-                    if (exampleObj) {
-                        let hasVal = exampleObj.hasOwnProperty('value');
-                        if (typeof exampleObj=="object"&&hasVal) {
+                    let exampleObj = v[x];
+                    if (exampleObj!==undefined) {
+                        let hasVal = (exampleObj!=null) && (typeof exampleObj=="object")
+                            && exampleObj.hasOwnProperty('value');
+
+                        if (hasVal) {
                             Object.keys(exampleObj).forEach(key=> {
                                 if (key.charAt(0) == '(' && key.charAt(key.length - 1) == ')') {
                                     var a = new Annotation(key.substring(1, key.length - 1), v[x][key],key);
