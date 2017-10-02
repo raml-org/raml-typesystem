@@ -31,16 +31,16 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/raml-org/typesystem-ts.git"
+    "url": "https://github.com/raml-org/raml-typesystem.git"
   },
   "keywords": [
     "raml",
     "typesystem"
   ],
-  "homepage": "https://github.com/raml-org/typesystem-ts",
+  "homepage": "https://github.com/raml-org/raml-typesystem",
   "license": "Apache-2.0",
   "bugs": {
-    "url": "https://github.com/raml-org/typesystem-ts/issues"
+    "url": "https://github.com/raml-org/raml-typesystem/issues"
   },
   "typings": "./dist/src/index.d.ts",
   "devDependencies": {
