@@ -264,6 +264,9 @@ export abstract class TypeInformation implements tsInterfaces.ITypeFacet {
 
     validateSelf(registry:TypeRegistry):Status{
         var result = ok();
+        if(this.node()&&this.node().getMeta("skipValidation")){
+            return result;
+        }
         for(var a of this._annotations){
             var aStatus = <Status>a.validateSelf(registry);
             if(!aStatus.isOk()) {
@@ -272,12 +275,19 @@ export abstract class TypeInformation implements tsInterfaces.ITypeFacet {
         }
         var facetEntry = new AnnotatedFacet(this,registry);
         var aPluginStatuses = applyAnnotationValidationPlugins(facetEntry);
-        for(var ps of aPluginStatuses){
-            result.addSubStatus(ps);
+        for(let ps of aPluginStatuses){
+            if(!ps.isOk()) {
+                result.addSubStatus(ps);
+            }
         }
         setValidationPath(result,{name:this.facetName()});
-        return result;
+        return this.validateSelfIndividual(result,registry);
     }
+
+    protected validateSelfIndividual(parentStatus:Status,registry:TypeRegistry):Status{
+        return parentStatus;
+    }
+
     abstract facetName():string
     abstract value():any;
     abstract requiredType():AbstractType
@@ -1103,7 +1113,7 @@ export abstract class AbstractType implements tsInterfaces.IParsedType, tsInterf
             rs.addSubStatus(error(messageRegistry.RECURRENT_DEFINITION, this),"type")
         }
 
-        if (this.isSubTypeOf(UNKNOWN)) {
+        if (isUnknown(this)) {
             let chained = this.metaOfType(metaInfo.ImportedByChain);
             if(chained.length>0){
                 let issues:Status[] = [];
@@ -1233,11 +1243,17 @@ export abstract class AbstractType implements tsInterfaces.IParsedType, tsInterf
     };
 
     private familyWithArray(){
-        var ts=this.allSuperTypes();
-        var mn=this.oneMeta(ComponentShouldBeOfType);
+        if(this.oneMeta(metaInfo.SkipValidation)){
+            return [];
+        }
+        let ts:AbstractType[]=[];
+        this.fillSuperTypes(ts,true);
+        let mn=this.oneMeta(ComponentShouldBeOfType);
         if (mn){
             var at:AbstractType=mn.value();
-            ts=ts.concat(at.familyWithArray().concat(at));
+            if(!at.oneMeta(metaInfo.SkipValidation)) {
+                ts = ts.concat(at.familyWithArray().concat(at));
+            }
         }
         return ts;
     }
@@ -1307,6 +1323,9 @@ export abstract class AbstractType implements tsInterfaces.IParsedType, tsInterf
         for(var x of this.meta()){
             if (x instanceof CustomFacet) {
                 var cd:CustomFacet = x;
+                if(cd.node()&&cd.node().getMeta("skipValidation")){
+                    continue;
+                }
                 var facetName = cd.facetName();
                 if (fds.hasOwnProperty(facetName)) {
                     var facet = fds[facetName];
@@ -1362,13 +1381,16 @@ export abstract class AbstractType implements tsInterfaces.IParsedType, tsInterf
         this.fillSuperTypes(rs);
         return rs;
     }
-    private fillSuperTypes(r:AbstractType[]){
-        this.superTypes().forEach(x=>{
+    private fillSuperTypes(r:AbstractType[],forValidation=false){
+        for(let x of this.superTypes()){
+            if(forValidation && x.oneMeta(metaInfo.SkipValidation)){
+                continue;
+            }
             if (!_.contains(r,x)) {
                 r.push(x);
                 x.fillSuperTypes(r);
             }
-        })
+        }
     }
     public allSubTypes():AbstractType[]{
         var rs:AbstractType[]=[];
@@ -1436,6 +1458,9 @@ export abstract class AbstractType implements tsInterfaces.IParsedType, tsInterf
 
 
     checkConfluent():Status{
+        if(this.oneMeta(metaInfo.SkipValidation)){
+            return ok();
+        }
         if (this.computeConfluent){
             return ok();
         }
@@ -3317,4 +3342,8 @@ export function toValidationPath(p:string):tsInterfaces.IValidationPath{
         prev = vp;
     }
     return result;
+}
+
+export function isUnknown(t:AbstractType):boolean{
+    return !t || (t.isSubTypeOf(UNKNOWN)&&!t.oneMeta(metaInfo.SkipValidation));
 }

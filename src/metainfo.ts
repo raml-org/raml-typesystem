@@ -73,6 +73,17 @@ export class ImportedByChain extends MetaInfo{
     }
 }
 
+export class SkipValidation extends MetaInfo{
+    constructor(){
+        super("skipValidation", null, true);
+    }
+
+    kind() : tsInterfaces.MetaInformationKind {
+        return tsInterfaces.MetaInformationKind.SkipValidation;
+    }
+}
+
+
 export class DisplayName extends MetaInfo{
 
 
@@ -97,7 +108,7 @@ export class Usage extends MetaInfo{
 }
 export class Annotation extends MetaInfo implements tsInterfaces.IAnnotation{
 
-    constructor(name: string,value:any,protected path:string){
+    constructor(name: string,value:any,protected path:string, protected ofExample=false){
         super(name,value)
     }
 
@@ -109,7 +120,7 @@ export class Annotation extends MetaInfo implements tsInterfaces.IAnnotation{
         return this.facetName();
     }
 
-    validateSelf(registry:ts.TypeRegistry,ofExample:boolean=false):ts.Status {
+    validateSelfIndividual(parentStatus:ts.Status,registry:ts.TypeRegistry):ts.Status {
         var tp=registry.get(this.facetName());
         if (!tp){
             let err:ts.Status;
@@ -132,7 +143,7 @@ export class Annotation extends MetaInfo implements tsInterfaces.IAnnotation{
             }
         }
         var aTargets = tp.metaOfType(AllowedTargets);
-        var contextTarget = ofExample ? "Example" : "TypeDeclaration";
+        var contextTarget = this.ofExample ? "Example" : "TypeDeclaration";
         if(aTargets.length>0) {
             var arr:string[] = [];
             var at = aTargets.filter(x=> {
@@ -152,7 +163,7 @@ export class Annotation extends MetaInfo implements tsInterfaces.IAnnotation{
         }
         let res:ts.Status;
         let chained = tp.metaOfType(ImportedByChain);
-        if(chained.length>0 && tp.isSubTypeOf(ts.UNKNOWN) && registry.getByChain(tp.name())){
+        if(chained.length>0 && ts.isUnknown(tp) && registry.getByChain(tp.name())){
             let chainedType = chained[0].value();
             res = ts.error(messageRegistry.LIBRARY_CHAINIG_IN_ANNOTATION_TYPE_SUPERTYPE,
                 this, { typeName: this.facetName(), chainedType: chainedType});
@@ -228,7 +239,7 @@ export class FacetDeclaration extends MetaInfo{
         return this.builtIn;
     }
 
-    validateSelf(registry:ts.TypeRegistry):ts.Status {
+    validateSelfIndividual(parentStatue:ts.Status,registry:ts.TypeRegistry):ts.Status {
         return validatePropertyType(this._type,this.name,registry,this,false);
     }
 }
@@ -301,16 +312,19 @@ export class Example extends MetaInfo{
         super("example",value)
     }
 
-    validateSelf(registry:ts.TypeRegistry):ts.Status {
-        var status = ts.ok();
+    validateSelfIndividual(parentStatus:ts.Status,registry:ts.TypeRegistry):ts.Status {
+        let status = ts.ok();
         status.addSubStatus(this.validateValue(registry));
-        var aStatus = this.validateAnnotations(registry);
+        let aStatus = this.validateAnnotations(registry);
         ts.setValidationPath(aStatus,{name:this.facetName()});
         status.addSubStatus(aStatus);
         return status;
     }
 
     validateValue(registry:ts.TypeRegistry):ts.Status {
+        if(this.owner().oneMeta(SkipValidation)){
+            return;
+        }
         var val=this.value();
         var isVal=false;
         var result = ts.ok();
@@ -326,8 +340,8 @@ export class Example extends MetaInfo{
                         if(typeof(propObj)=="object") {
                             Object.keys(propObj).forEach(key=> {
                                 if (key.charAt(0) == '(' && key.charAt(key.length - 1) == ')') {
-                                    var a = new Annotation(key.substring(1, key.length - 1), propObj[key], key);
-                                    var aRes = a.validateSelf(registry, true);
+                                    var a = new Annotation(key.substring(1, key.length - 1), propObj[key], key, true);
+                                    var aRes = a.validateSelf(registry);
                                     ts.setValidationPath(aRes,{
                                             name: "example",
                                             child: {name: propName, child: {name: key}}
@@ -395,8 +409,8 @@ export class Example extends MetaInfo{
                 for(var ua of usedAnnotations) {
                     var aValue = val[ua];
                     var aName = ua.substring(1,ua.length-1);
-                    var aInstance = new Annotation(aName,aValue,ua);
-                    status.addSubStatus(aInstance.validateSelf(registry,true));
+                    var aInstance = new Annotation(aName,aValue,ua,true);
+                    status.addSubStatus(aInstance.validateSelf(registry));
                 }
             }
         }
@@ -434,8 +448,7 @@ export class Required extends MetaInfo{
         super("required",value)
     }
 
-    validateSelf(registry:ts.TypeRegistry):ts.Status {
-        var result = super.validateSelf(registry);
+    validateSelfIndividual(result:ts.Status,registry:ts.TypeRegistry):ts.Status {
         if (typeof this.value()!=="boolean"){
             result =  ts.error(messageRegistry.REQUIRED_BOOLEAN,this);
             ts.setValidationPath(result,{name:this.facetName()});
@@ -510,7 +523,7 @@ export class Examples extends MetaInfo{
         return result;
     }
 
-    validateSelf(registry:ts.TypeRegistry):ts.Status {
+    validateSelfIndividual(parentStatus:ts.Status,registry:ts.TypeRegistry):ts.Status {
         if (typeof this.value()==='object'){
             var rs=new Status(Status.OK,"","",this);
             var v=this.value();
@@ -524,8 +537,8 @@ export class Examples extends MetaInfo{
                         if (hasVal) {
                             Object.keys(exampleObj).forEach(key=> {
                                 if (key.charAt(0) == '(' && key.charAt(key.length - 1) == ')') {
-                                    var a = new Annotation(key.substring(1, key.length - 1), v[x][key],key);
-                                    var aRes = a.validateSelf(registry,true);
+                                    var a = new Annotation(key.substring(1, key.length - 1), v[x][key],key,true);
+                                    var aRes = a.validateSelf(registry);
                                     ts.setValidationPath(aRes,
                                         {name:"examples",child:{name: x, child: {name: key}}});
                                     rs.addSubStatus(aRes);
@@ -584,8 +597,8 @@ export class Examples extends MetaInfo{
                 vp = {name: "value"};
                 Object.keys(propObj).forEach(key=> {
                     if (key.charAt(0) == '(' && key.charAt(key.length - 1) == ')') {
-                        var a = new Annotation(key.substring(1, key.length - 1), exampleObj[propName][key],key);
-                        var aRes = a.validateSelf(registry, true);
+                        var a = new Annotation(key.substring(1, key.length - 1), exampleObj[propName][key],key,true);
+                        var aRes = a.validateSelf(registry);
                         ts.setValidationPath(aRes,
                             {
                                 name: "examples",
@@ -635,8 +648,7 @@ export class Default extends MetaInfo{
         super("default",value)
     }
 
-    validateSelf(registry:ts.TypeRegistry):ts.Status {
-        var result = super.validateSelf(registry);
+    validateSelfIndividual(result:ts.Status,registry:ts.TypeRegistry):ts.Status {
         var valOwner=this.owner().validateDirect(this.value(),true);
         if (!valOwner.isOk()){
             var c = ts.error(messageRegistry.INVALID_DEFAULT_VALUE, this, { msg : valOwner.getMessage() });
@@ -667,8 +679,7 @@ export class Discriminator extends ts.TypeInformation{
     }
     facetName(){return "discriminator"}
 
-    validateSelf(registry:ts.TypeRegistry):ts.Status {
-        var result = super.validateSelf(registry);
+    validateSelfIndividual(result:ts.Status,registry:ts.TypeRegistry):ts.Status {
         if (this.owner().isUnion()){
             result = ts.error(messageRegistry.DISCRIMINATOR_FOR_UNION, this);
         }
@@ -769,8 +780,7 @@ export class DiscriminatorValue extends ts.Constraint{
     }
     facetName(){return "discriminatorValue"}
 
-    validateSelf(registry:ts.TypeRegistry):ts.Status {
-        var st = super.validateSelf(registry);
+    validateSelfIndividual(st:ts.Status,registry:ts.TypeRegistry):ts.Status {
         if(this.strict) {
             var ds = this.owner().oneMeta(Discriminator);
             if (!this.owner().isSubTypeOf(ts.OBJECT)) {

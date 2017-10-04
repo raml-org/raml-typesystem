@@ -755,11 +755,19 @@ function appendAnnotations(appendedInfo:ts.TypeInformation, childNode:ParseNode)
         if (key && key.charAt(0) == "(" && key.charAt(key.length - 1) == ")") {
             var aName = key.substring(1, key.length - 1);
             var aInstance = new meta.Annotation(aName, ch.value(), key);
+            aInstance.setNode(ch);
             aInstance.setOwnerFacet(appendedInfo);
             appendedInfo.addAnnotation(aInstance);
         }
     }
 }
+
+let checkIfSkipValidation = function (sp: AbstractType, n: ParseNode) {
+    if (n.getMeta("skipValidation")) {
+        sp.addMeta(new meta.SkipValidation());
+    }
+};
+
 /**
  * parses a type from a JSON structure
  * @param name
@@ -801,6 +809,7 @@ export function parse(
             sp = typeExpressions.parseToType(""+valString,r, n)
         }
         if (name==null){
+            checkIfSkipValidation(sp, n);
             return sp;
         }
         var res=ts.derive(name,[sp]);
@@ -834,6 +843,7 @@ export function parse(
         if (AccumulatingRegistry.isInstance(r)){
             res = contributeToAccumulatingRegistry(res, r);
         }
+        checkIfSkipValidation(res, n);
         return res;
     }
     if (n.kind()==NodeKind.ARRAY){
@@ -845,6 +855,7 @@ export function parse(
         if (AccumulatingRegistry.isInstance(r)){
             res = contributeToAccumulatingRegistry(res, r);
         }
+        checkIfSkipValidation(res, n);
         return res;
     }
 
@@ -932,6 +943,7 @@ export function parse(
                     var key = ann.key();
                     var aName = key.substring(1, key.length - 1);
                     var aInstance = new meta.Annotation(aName, ann.value(), key);
+                    aInstance.setNode(ann);
                     aiArr.push(aInstance);
                 }
             }
@@ -987,6 +999,7 @@ export function parse(
                     }
                     else{
                         componentTypes=[typeExpressions.parseToType(""+valString,r, n)];
+                        checkIfSkipValidation(componentTypes[0],x);
                     }
                 }
                 else if (x.kind()==NodeKind.ARRAY){
@@ -1005,8 +1018,12 @@ export function parse(
                         else{
                             sAnnotations.push([]);
                         }
-                        return y.value();
-                    }).map(y=>typeExpressions.parseToType(""+y,r, n));
+                        return y;
+                    }).map(y=>{
+                        let result = typeExpressions.parseToType(""+y.value(),r, n);
+                        checkIfSkipValidation(result,y);
+                        return result;
+                    });
 
                     var err=ts.error(messageRegistry.ITEMS_SHOULD_BE_REFERENCE_OR_INLINE_TYPE,actualResult);
                     err.setValidationPath({ name:"items"})
@@ -1035,7 +1052,9 @@ export function parse(
                 hasfacetsOrOtherStuffDoesNotAllowedInExternals = key;
             }
             else if (key.charAt(0) == '(' && key.charAt(key.length - 1) == ')') {
-                result.addMeta(new meta.Annotation(key.substr(1, key.length - 2), x.value(), key));
+                let a = new meta.Annotation(key.substr(1, key.length - 2), x.value(), key);
+                a.setNode(x);
+                result.addMeta(a);
                 return;
             }
             appendedInfo = facetR.getInstance().buildFacet(key, x.value());
@@ -1114,7 +1133,9 @@ export function parse(
     }
     if (result.isAnonymous()&&result.isEmpty()){
         if (result.superTypes().length==1){
-            return result.superTypes()[0];
+            let res = result.superTypes()[0];
+            checkIfSkipValidation(res, n);
+            return res;
         }
     }
     if (n.kind()!=NodeKind.SCALAR){
@@ -1126,7 +1147,8 @@ export function parse(
     actualResult.putExtra(ts.GLOBAL,global);
     actualResult.putExtra(ts.SOURCE_EXTRA, n);
     actualResult.putExtra(tsInterfaces.HAS_FACETS, hasfacetsOrOtherStuffDoesNotAllowedInExternals);
-    
+
+    checkIfSkipValidation(actualResult, n);
     return actualResult;
 }
 

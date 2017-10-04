@@ -7,6 +7,7 @@ import {Constraint} from "./typesystem";
 import {AbstractType} from "./typesystem";
 import {Status} from "./typesystem";
 import {ImportedByChain} from "./metainfo";
+import {SkipValidation} from "./metainfo";
 export type IValidationPath=ts.IValidationPath;
 /**
  * this class is an abstract super type for every constraint that can select properties from objects
@@ -84,7 +85,7 @@ export abstract class MatchesProperty extends ts.Constraint{
     abstract propId():string
 
 
-    validateSelf(registry:ts.TypeRegistry):ts.Status {
+    validateSelfIndividual(st:ts.Status,registry:ts.TypeRegistry):ts.Status {
         return validatePropertyType(this._type,this.propId(),registry,this,false);
     }
 
@@ -466,12 +467,12 @@ export class MapPropertyIs extends MatchesProperty{
     regexpValue(){
         return this.regexp;
     }
-    validateSelf(t:ts.TypeRegistry):ts.Status{
+    validateSelfIndividual(st:Status,t:ts.TypeRegistry):ts.Status{
         var m=this.checkValue();
         if (m){
             return ts.error(messageRegistry.INVALID_REGEXP,this,{ msg: m });
         }
-        return super.validateSelf(t);
+        return super.validateSelfIndividual(st,t);
     }
     checkValue(){
         try{
@@ -657,6 +658,9 @@ export abstract class FacetRestriction<T> extends ts.Constraint{
     }
 
     private checkOwner(requiredType : ts.AbstractType) : boolean {
+        if(this.owner().oneMeta(SkipValidation)){
+            return true;
+        }
         var ownerIsCorrect = false;
 
         if(requiredType.isUnion()){
@@ -675,9 +679,7 @@ export abstract class FacetRestriction<T> extends ts.Constraint{
         return ownerIsCorrect;
     }
 
-    validateSelf(registry:ts.TypeRegistry):ts.Status{
-        
-        var superStatus = super.validateSelf(registry);
+    validateSelfIndividual(superStatus:ts.Status,registry:ts.TypeRegistry):ts.Status{
         var ownerIsCorrect = false;
         if (this.checkOwner(this.requiredType())) {
             if (this.requiredTypes() && this.requiredTypes().length > 0) {
@@ -1147,8 +1149,7 @@ export class ComponentShouldBeOfType extends FacetRestriction<ts.AbstractType>{
         }
         return rs;
     }
-    validateSelf(registry:ts.TypeRegistry):ts.Status {
-        var st = super.validateSelf(registry);
+    validateSelfIndividual(st:ts.Status,registry:ts.TypeRegistry):ts.Status {
         if (this.type.isAnonymous()) {
             var typeStatus = this.type.validateType(registry);
             if (!typeStatus.isOk()) {
@@ -1173,11 +1174,11 @@ export class ComponentShouldBeOfType extends FacetRestriction<ts.AbstractType>{
         else if (this.type.isExternal()){
             st.addSubStatus(ts.error(messageRegistry.EXTERNAL_AS_COMPONENT,this));
         }
-        else if (this.type.isSubTypeOf(ts.UNKNOWN) || this.type.isSubTypeOf(ts.RECURRENT)) {
+        else if (ts.isUnknown(this.type) || this.type.isSubTypeOf(ts.RECURRENT)) {
             st.addSubStatus(ts.error(messageRegistry.UNKNOWN_ARRAY_COMPONENT_TYPE,this,{ componentTypeName: this.type.name()}));
         }
         else if (this.type.isUnion()) {
-            var ui = _.find(this.type.typeFamily(), x=>x.isSubTypeOf(ts.UNKNOWN));
+            var ui = _.find(this.type.typeFamily(),x=>ts.isUnknown(x));
             if (ui) {
                 st.addSubStatus(
                     ts.error(messageRegistry.UNKNOWN_ARRAY_COMPONENT_TYPE,this,{ componentTypeName: ui.name()}));
@@ -1528,7 +1529,7 @@ export function optimize(r:ts.Constraint[]){
 
 function actualUnknownType(t:AbstractType):AbstractType{
     
-    if(!t.isSubTypeOf(ts.UNKNOWN)){
+    if(!ts.isUnknown(t)){
         return null;
     }
     if(t.name()!=null){
@@ -1561,7 +1562,7 @@ export function validatePropertyType(
         ts.setValidationPath(p,{name: propName})
         return p;
     }
-    if (_type.isSubTypeOf(ts.UNKNOWN)||_type.isSubTypeOf(ts.RECURRENT)){
+    if (ts.isUnknown(_type)||_type.isSubTypeOf(ts.RECURRENT)){
         var actualUnknown = actualUnknownType(_type);
         let p:ts.Status;
         let messageEntries:any[] = [];
@@ -1650,7 +1651,7 @@ export function validatePropertyType(
     }
 
     if (_type.isUnion()){
-        var ui= _.find(_type.typeFamily(),x=>x.isSubTypeOf(ts.UNKNOWN));
+        var ui= _.find(_type.typeFamily(),x=>ts.isUnknown(x));
         if (ui){let p:ts.Status;
             if(isFacet) {
                 p = ts.error(messageRegistry.UNKNOWN_IN_FACET_DEFINITION, source, {
