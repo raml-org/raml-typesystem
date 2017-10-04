@@ -1,7 +1,7 @@
 import ps= require("./actualParse")
 import ts = require("../src/typesystem")
 import chai = require("chai");
-import assert = chai.assert;
+const assert = chai.assert;
 
 describe("Simple validation testing",function() {
     it("Unknown property error message #8", function () {

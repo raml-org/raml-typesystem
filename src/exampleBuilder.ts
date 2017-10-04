@@ -455,33 +455,36 @@ class TSExample implements tsInterfaces.IExample{
     hasScalarAnnotations():boolean{ return this._hasScalarAnnotations; }
 }
 
-var toExample = function (owner: any, exampleObj:any, name:string=null,isSingle:boolean=false) {
-    var example:Example;
+const toExample = function (owner: any, exampleObj:any, name:string=null,isSingle:boolean=false) {
+    let example:Example;
     if (exampleObj!=null) {
-        var val = exampleObj.value;
+        let val = exampleObj.value;
         if (!val) {
             val = exampleObj
             example = new Example(val, name, undefined, undefined, true, undefined, isSingle);
         }
         else {
-            var displayName = scalarValue(exampleObj, "displayName");
-            var description = scalarValue(exampleObj, "description");
-            var strict:boolean = scalarValue(exampleObj, "strict");
-            var aObj:{[key:string]:meta.Annotation} = {};
+            let displayName = scalarValue(exampleObj, "displayName");
+            let description = scalarValue(exampleObj, "description");
+            let strict:boolean = scalarValue(exampleObj, "strict");
+            let aObj:{[key:string]:meta.Annotation} = {};
             scalarAnnotaitons(exampleObj).forEach(x=>{
                 aObj[x.facetName()] = x;
             });
             example = new Example(val, name, displayName, description, strict, aObj, isSingle);
-            for(var a of scalarAnnotaitons(exampleObj["displayName"])){
+            for(let a of scalarAnnotaitons(exampleObj["displayName"])){
                 example.registerScalarAnnotatoion(a,"displayName");
             }
-            for(var a of scalarAnnotaitons(exampleObj["description"])){
+            for(let a of scalarAnnotaitons(exampleObj["description"])){
                 example.registerScalarAnnotatoion(a,"description");
             }
-            for(var a of scalarAnnotaitons(exampleObj["strict"])){
+            for(let a of scalarAnnotaitons(exampleObj["strict"])){
                 example.registerScalarAnnotatoion(a,"strict");
             }
         }
+    }
+    else{
+        example = new Example(null, name, null, null, true, {}, isSingle);
     }
     
     if(example) {
