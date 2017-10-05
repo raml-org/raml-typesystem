@@ -13,13 +13,13 @@
     "devInstall": "dev-env-installer install"
   },
   "dependencies": {
-    "date-and-time": "^0.3.0",
+    "date-and-time": "^0.5.0",
     "json-schema-compatibility": "^1.1.0",
-    "json-to-ast": "^2.0.0-alpha1.2",
-    "lrucache": "^1.0.0",
+    "json-to-ast": "^2.0.0-alpha1.3",
+    "lrucache": "^1.0.3",
     "underscore": "^1.8.3",
-    "xml2js": "^0.4.16",
-    "xmldom": "^0.1.22"
+    "xml2js": "^0.4.19",
+    "xmldom": "^0.1.27"
   },
   "optionalDependencies": {
     "raml-xml-validation": "0.0.12",
@@ -57,7 +57,7 @@
     "typedoc": "^0.3.12",
     "typescript": "2.5.2",
     "dev-env-installer": "0.0.5",
-    "json-loader": "^0.5.1",
+    "json-loader": "^0.5.7",
     "rimraf": "*"
   }
 }
