@@ -1,7 +1,5 @@
-/// <reference path="../typings/main.d.ts" />
-
-
 import chai = require("chai");
+const assert = chai.assert;
 import ts=require("../src/typesystem")
 import rs=require("../src/restrictions")
 import ms=require("../src/metainfo")
@@ -9,7 +7,6 @@ import ms=require("../src/metainfo")
 import facetRegistry=require("../src/facetRegistry")
 import typeExpressions=require("../src/typeExpressions")
 
-import assert = chai.assert;
 import {NothingRestriction} from "../src/typesystem";
 import {MaxProperties} from "../src/restrictions";
 import {MinProperties} from "../src/restrictions";

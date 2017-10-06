@@ -1,6 +1,6 @@
 # RAML Data Type System
 
-[![Build Status](https://travis-ci.org/raml-org/typesystem-ts.svg?branch=master)](https://travis-ci.org/raml-org/typesystem-ts)
+[![Build Status](https://travis-ci.org/raml-org/raml-typesystem.svg?branch=master)](https://travis-ci.org/raml-org/raml-typesystem)
 
 This module contains a lightweight implementation of the type system that was introduced with [RAML 1.0](http://raml.org).
 
@@ -75,7 +75,7 @@ var isValid = typeCollection.getType("Person").validate({dd: true})
 
 ## Contribute
 
-The typesystem-ts repo is an open source project and any contribution is always welcome. Please follow these simple steps when contributing to this project:
+The raml-typesystem repo is an open source project and any contribution is always welcome. Please follow these simple steps when contributing to this project:
 
 1. Check for open issues or open a fresh issue to start a discussion around an idea or a bug.
 2. Fork the repository on Github and make your changes on the develop branch (or branch off of it).

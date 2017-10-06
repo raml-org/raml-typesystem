@@ -1,5 +1,3 @@
-/// <reference path="../typings/main.d.ts" />
-
 import {XMLValidator, XMLSchemaReference} from "raml-xml-validation";
 
 declare function require(s:string):any;
@@ -77,7 +75,7 @@ function objectToXml(object: any) {
                 child[key] = root[key] || '';
 
                 result = result + objectToXml(child);
-            } else if(typeof root[key] === 'array' || root[key].length) {
+            } else if(typeof root[key] === 'object' && root[key].length) {
                 var children: any[] = root[key];
 
                 for(var i = 0; i < children.length; i++) {

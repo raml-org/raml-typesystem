@@ -89,6 +89,7 @@ export enum MetaInformationKind {
     Description,
     NotScalar,
     ImportedByChain,
+    SkipValidation,
     DisplayName,
     Usage,
     Annotation,
@@ -619,8 +620,17 @@ export function getAnnotationValidationPlugins(): IAnnotationValidationPlugin[] 
 
 
 export interface MarkerObject{
+    /**
+     * Line number, starting from zero
+     */
     line: number
+    /**
+     * Column number, starting from zero
+     */
     column: number
+    /**
+     * Position, starting from zero
+     */
     position: number
 }
 
