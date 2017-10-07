@@ -13,7 +13,7 @@ import _ = require("./utils");
 import xmlUtil = require('./xmlUtil');
 import jsonUtil = require('./jsonUtil');
 
-var DOMParser = require('xmldom').DOMParser;
+///var DOMParser = require('xmldom').DOMParser;
 import ts = require("./typesystem");
 import {messageRegistry} from "./typesystem";
 var jsonToAST = require("json-to-ast");
@@ -840,7 +840,7 @@ export class XMLSchemaObject {
             throw new ts.ValidationError(messageRegistry.INVALID_XML_SCHEMA);
         }
 
-        this.schemaString = this.handleReferenceElement(schema);
+        this.schemaString = schema;
     }
 
     getType() : string {
@@ -881,7 +881,7 @@ export class XMLSchemaObject {
     collectReferences(xmlString: string, context: string, references: any): string {
         var doc: any;
 
-        doc = new DOMParser(domParserOptions).parseFromString(xmlString);
+        doc = "";
 
         var schema = elementChildrenByName(doc, 'schema', this.namspacePrefix)[0];
 
@@ -926,7 +926,7 @@ export class XMLSchemaObject {
     getMissingReferences(): string[] {
         var doc: any;
 
-        doc = new DOMParser(domParserOptions).parseFromString(this.schemaString);
+        doc = "";
 
         var schema = elementChildrenByName(doc, 'schema', this.namspacePrefix)[0];
 
@@ -953,7 +953,7 @@ export class XMLSchemaObject {
     private collectReferencesAsync(xmlString: string, context: string, references: any): Promise {
         var doc: any;
 
-        doc = new DOMParser(domParserOptions).parseFromString(xmlString);
+        doc = "";
 
         var schema = elementChildrenByName(doc, 'schema', this.namspacePrefix)[0];
 
@@ -1040,7 +1040,7 @@ export class XMLSchemaObject {
     }
 
     private handleReferenceElement(content: string): string {
-        var doc = new DOMParser(domParserOptions).parseFromString(content);
+        var doc = "";
         this.namspacePrefix = extractNamespace(doc);
 
         var schema = elementChildrenByName(doc, 'schema', this.namspacePrefix)[0];
