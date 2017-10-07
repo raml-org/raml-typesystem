@@ -1,6 +1,6 @@
 {
   "name": "raml-typesystem",
-  "version": "0.0.74",
+  "version": "0.0.75",
   "main": "dist/src/index.js",
   "scripts": {
     "test-cov": " ./node_modules/.bin/istanbul cover _mocha dist/tests/*Tests.js",
@@ -22,8 +22,8 @@
     "xmldom": "^0.1.22"
   },
   "optionalDependencies": {
-    "raml-xml-validation": "0.0.11",
-    "raml-json-validation": "0.0.12"
+    "raml-xml-validation": "0.0.12",
+    "raml-json-validation": "0.0.13"
   },
   "browser": {
     "raml-json-validation": false,
@@ -31,28 +31,31 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/raml-org/typesystem-ts.git"
+    "url": "https://github.com/raml-org/raml-typesystem.git"
   },
   "keywords": [
     "raml",
     "typesystem"
   ],
-  "homepage": "https://github.com/raml-org/typesystem-ts",
+  "homepage": "https://github.com/raml-org/raml-typesystem",
   "license": "Apache-2.0",
   "bugs": {
-    "url": "https://github.com/raml-org/typesystem-ts/issues"
+    "url": "https://github.com/raml-org/raml-typesystem/issues"
   },
   "typings": "./dist/src/index.d.ts",
   "devDependencies": {
-    "chai": "^2.2.0",
-    "chai-as-promised": "^5.2.0",
+    "@types/chai": "^4.0.1",
+    "@types/mocha": "^2.2.41",
+    "@types/node": "4.2.20",
+    "@types/underscore": "1.8.3",
+    "@types/xml2js": "0.4.0",
+    "chai": "^4.0.1",
     "gulp": "^3.8.11",
     "gulp-typedoc": "^1.2.1",
     "istanbul": "^0.4.2",
-    "mocha": "^2.2.1",
+    "mocha": "^3.4.2",
     "typedoc": "^0.3.12",
-    "typescript": "1.8.7",
-    "typings": "^0.5.1",
+    "typescript": "2.5.2",
     "dev-env-installer": "0.0.5",
     "json-loader": "^0.5.1",
     "rimraf": "*"

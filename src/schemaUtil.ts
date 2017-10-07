@@ -1,5 +1,3 @@
-/// <reference path="../typings/main.d.ts" />
-
 import {XMLSchemaReference} from "raml-xml-validation";
 import tsInterfaces = require("./typesystem-interfaces");
 

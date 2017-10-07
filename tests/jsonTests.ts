@@ -1,7 +1,7 @@
 import ps= require("./actualParse")
 import ts = require("../src/typesystem")
 import chai = require("chai");
-import assert = chai.assert;
+const assert = chai.assert;
 
 describe("JSON Schemas testing",function() {
     it("schema with reference, example is valid", function () {
