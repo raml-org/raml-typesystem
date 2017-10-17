@@ -732,11 +732,10 @@ export abstract class FacetRestriction<T> extends ts.Constraint{
 
 }
 function is_int(value:any){
-    if((parseFloat(value) == parseInt(value)) && !isNaN(value)){
-        return true;
-    } else {
-        return false;
+    if(typeof value === 'number'){
+        return (<any>Number).isInteger(value);
     }
+    return false;
 }
 /**
  * abstract super type for every min max restriction
