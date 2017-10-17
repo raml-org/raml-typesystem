@@ -759,6 +759,7 @@ export class JSONSchemaObject {
             } catch(exception) {
                 content.error = exception;
                 content.reference = reference;
+                throw exception;
             }
 
             return content;
