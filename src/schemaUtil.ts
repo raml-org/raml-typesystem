@@ -747,6 +747,7 @@ export class JSONSchemaObject {
             var content: any = {reference: _reference};
 
             try {
+                tryParseJSON(cnt,true);
                 var jsonObject = JSON.parse(cnt);
 
                 this.setupId(jsonObject, this.provider.normalizePath(reference));
@@ -759,6 +760,7 @@ export class JSONSchemaObject {
             } catch(exception) {
                 content.error = exception;
                 content.reference = reference;
+                throw exception;
             }
 
             return content;
