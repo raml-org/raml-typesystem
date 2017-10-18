@@ -11,7 +11,7 @@ import _ = require("./utils");
 import xmlUtil = require('./xmlUtil');
 import jsonUtil = require('./jsonUtil');
 
-///var DOMParser = require('xmldom').DOMParser;
+var DOMParser = require('xmldom').DOMParser;
 import ts = require("./typesystem");
 import {messageRegistry} from "./typesystem";
 var jsonToAST = require("json-to-ast");
@@ -826,7 +826,7 @@ export class XMLSchemaObject {
     private schemaString: string;
 
     private extraElementData: any = null;
-    
+
     private namspacePrefix:string;
 
     references: any = {};
@@ -840,7 +840,7 @@ export class XMLSchemaObject {
             throw new ts.ValidationError(messageRegistry.INVALID_XML_SCHEMA);
         }
 
-        this.schemaString = schema;
+        this.schemaString = this.handleReferenceElement(schema);
     }
 
     getType() : string {
@@ -874,14 +874,14 @@ export class XMLSchemaObject {
                 object[this.extraElementData.name] = root;
             }
         }
-        
+
         this.validate(xmlUtil.jsonToXml(object));
     }
 
     collectReferences(xmlString: string, context: string, references: any): string {
         var doc: any;
 
-        doc = "";
+        doc = new DOMParser(domParserOptions).parseFromString(xmlString);
 
         var schema = elementChildrenByName(doc, 'schema', this.namspacePrefix)[0];
 
@@ -904,7 +904,7 @@ export class XMLSchemaObject {
                     var loadedContent: string = this.provider.content(fullPath);
 
                     var patchedContent: string;
-                    
+
                     try {
                         patchedContent = this.collectReferences(loadedContent, fullPath, references);
                     } catch(exception) {
@@ -919,14 +919,14 @@ export class XMLSchemaObject {
                 refElement.setAttribute('schemaLocation', "file_" + reference.virtualIndex + ".xsd");
             }
         });
-        
+
         return doc.toString();
     }
 
     getMissingReferences(): string[] {
         var doc: any;
 
-        doc = "";
+        doc = new DOMParser(domParserOptions).parseFromString(this.schemaString);
 
         var schema = elementChildrenByName(doc, 'schema', this.namspacePrefix)[0];
 
@@ -934,9 +934,9 @@ export class XMLSchemaObject {
         var includes: any[] = elementChildrenByName(schema, 'include', this.namspacePrefix);
 
         var refElements: any = imports.concat(includes);
-        
+
         var result: string[] = [];
-        
+
         refElements.forEach((refElement: any) => {
             var refString = refElement.getAttribute('schemaLocation');
 
@@ -946,14 +946,14 @@ export class XMLSchemaObject {
                 result.push(fullPath);
             }
         });
-        
+
         return result;
     }
 
     private collectReferencesAsync(xmlString: string, context: string, references: any): Promise {
         var doc: any;
 
-        doc = "";
+        doc = new DOMParser(domParserOptions).parseFromString(xmlString);
 
         var schema = elementChildrenByName(doc, 'schema', this.namspacePrefix)[0];
 
@@ -969,7 +969,7 @@ export class XMLSchemaObject {
                 var fullPath = this.provider.resolvePath(context, refString);
 
                 var reference: XMLSchemaReference = references[fullPath];
-                
+
                 if(reference) {
                     refElement.setAttribute('schemaLocation', "file_" + reference.virtualIndex + ".xsd");
 
@@ -996,7 +996,7 @@ export class XMLSchemaObject {
             return {};
         })).then((resolve: any) => Promise.resolve(doc.toString()));
     }
-    
+
     loadSchemaReferencesAsync(): Promise {
         return this.collectReferencesAsync(this.schemaString, this.provider.contextPath(), {});
     }
@@ -1004,17 +1004,17 @@ export class XMLSchemaObject {
     validate(xml: any) {
         try {
             var rs = this.contentToResult[xml];
-            
+
             if(rs === false) {
                 return;
             }
-            
+
             if(rs) {
                 throw rs;
             }
-            
+
             var references: any = {};
-            
+
             var patchedSchema = this.collectReferences(this.schemaString, this.provider.contextPath(), references);
 
             var validator = xmlUtil.getValidator(patchedSchema);
@@ -1022,25 +1022,25 @@ export class XMLSchemaObject {
             if(this.provider.hasAsyncRequests()) {
                 return;
             }
-            
+
             var validationErrors = validator.validate(xml, Object.keys(references).map((key: string) => references[key]));
 
             this.acceptErrors("key", validationErrors, true);
-            
+
             this.contentToResult[xml]=false;
-            
+
             if(Object.keys(this.contentToResult).length>MAX_EXAMPLES_TRESHOLD){
                 this.contentToResult={}
             }
         } catch (e){
             this.contentToResult[xml]=e;
-            
+
             throw e;
         }
     }
 
     private handleReferenceElement(content: string): string {
-        var doc = "";
+        var doc = new DOMParser(domParserOptions).parseFromString(content);
         this.namspacePrefix = extractNamespace(doc);
 
         var schema = elementChildrenByName(doc, 'schema', this.namspacePrefix)[0];
@@ -1072,7 +1072,7 @@ export class XMLSchemaObject {
 
         return doc.toString();
     }
-    
+
     private acceptErrors(key: any, errors: any[], throwImmediately = false): void {
         if(errors && errors.length>0){
             var msg = errors.map(x=>x.message).join(", ");
