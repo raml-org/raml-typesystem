@@ -732,11 +732,31 @@ export abstract class FacetRestriction<T> extends ts.Constraint{
 
 }
 function is_int(value:any){
-    if((parseFloat(value) == parseInt(value)) && !isNaN(value)){
-        return true;
-    } else {
+    if(typeof (<any>Number).isInteger == "function"){
+        return (<any>Number).isInteger(value);
+    }
+    if(typeof value != "number" || isNaN(value)){
         return false;
     }
+    let stringValue = ""+value;
+    let expInd = stringValue.indexOf("e");
+    let exp = 0;
+    let mantissa = stringValue;
+    if(expInd>0){
+        mantissa = stringValue.substring(0,expInd);
+        exp = parseInt(stringValue.substring(expInd+1));
+    }
+    let dotInd = mantissa.indexOf(".");
+    let mantissaFractureLength = 0;
+    if(dotInd>=0){
+        mantissaFractureLength = mantissa.substring(dotInd+1).length;
+    }
+    else{
+        for(let i = mantissa.length-1; i >= 0 && mantissa.charAt(i)=='0'  ; i--){
+            mantissaFractureLength--;
+        }
+    }
+    return exp >= mantissaFractureLength;
 }
 /**
  * abstract super type for every min max restriction
