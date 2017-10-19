@@ -8,6 +8,7 @@ import {AbstractType} from "./typesystem";
 import {Status} from "./typesystem";
 import {ImportedByChain} from "./metainfo";
 import {SkipValidation} from "./metainfo";
+import {AcceptAllScalarsAsStrings} from "./metainfo";
 export type IValidationPath=ts.IValidationPath;
 /**
  * this class is an abstract super type for every constraint that can select properties from objects
@@ -1435,6 +1436,9 @@ export class Enum extends FacetRestriction<string[]>{
     check(i:any):ts.Status{
         if (!this.checkStatus) {
             var opts = this.value();
+            if(this.owner().oneMeta(AcceptAllScalarsAsStrings)&&i!=null){
+                opts = opts.concat(opts.map(x=>""+x));
+            }
             if (!Array.isArray(opts)){
                 opts=[<string><any>opts];
             }

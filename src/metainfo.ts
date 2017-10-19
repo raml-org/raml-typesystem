@@ -73,6 +73,17 @@ export class ImportedByChain extends MetaInfo{
     }
 }
 
+export class AcceptAllScalarsAsStrings extends MetaInfo{
+    constructor(){
+        super("acceptAllScalarsAsStrings", null, true);
+    }
+
+    kind() : tsInterfaces.MetaInformationKind {
+        return tsInterfaces.MetaInformationKind.AcceptAllScalarsAsStrings;
+    }
+}
+
+
 export class SkipValidation extends MetaInfo{
     constructor(){
         super("skipValidation", null, true);
