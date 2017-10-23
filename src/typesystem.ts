@@ -2455,7 +2455,11 @@ export class IntersectionType extends DerivedType{
 
     restrictions(){
         var rs:Constraint[]=[];
-        this.allOptions().forEach(x=>rs=rs.concat(x.restrictions()));
+        this.allOptions().forEach(x=>{
+            if(!x.oneMeta(metaInfo.SkipValidation)) {
+                rs = rs.concat(x.restrictions());
+            }
+        });
         return [new AndRestriction(rs)]
     }
 
