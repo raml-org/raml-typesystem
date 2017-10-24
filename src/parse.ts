@@ -1149,6 +1149,9 @@ export function parse(
     actualResult.putExtra(tsInterfaces.HAS_FACETS, hasfacetsOrOtherStuffDoesNotAllowedInExternals);
 
     checkIfSkipValidation(actualResult, n);
+    if(n.getMeta("acceptAllScalarsAsStrings")){
+        actualResult.addMeta(new meta.AcceptAllScalarsAsStrings());
+    }
     return actualResult;
 }
 

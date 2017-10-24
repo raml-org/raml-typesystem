@@ -110,9 +110,22 @@ class Example implements nm.IExpandableExample{
         return this._empty;
     }
 
+    private _isJSONString:boolean;
+
     isJSONString():boolean {
+        if(this._isJSONString !== undefined){
+            return this._isJSONString;
+        }
+        this._isJSONString = false;
         var ch = this.firstCharacter();
-        return ch == "{" || ch== "[";
+        if(ch == "{" || ch== "["){
+            try {
+                JSON.parse(this._value);
+                this._isJSONString = true;
+            }
+            catch(e){}
+        }
+        return this._isJSONString;
     }
 
     isXMLString():boolean {

@@ -1,4 +1,5 @@
 import ts=require("./typesystem");
+import {BigNumber} from "bignumber.js";
 var messageRegistry = ts.messageRegistry;
 import su=require("./schemaUtil")
 import _= require("underscore");
@@ -8,6 +9,7 @@ import {AbstractType} from "./typesystem";
 import {Status} from "./typesystem";
 import {ImportedByChain} from "./metainfo";
 import {SkipValidation} from "./metainfo";
+import {AcceptAllScalarsAsStrings} from "./metainfo";
 export type IValidationPath=ts.IValidationPath;
 /**
  * this class is an abstract super type for every constraint that can select properties from objects
@@ -731,13 +733,6 @@ export abstract class FacetRestriction<T> extends ts.Constraint{
     }
 
 }
-function is_int(value:any){
-    if((parseFloat(value) == parseInt(value)) && !isNaN(value)){
-        return true;
-    } else {
-        return false;
-    }
-}
 /**
  * abstract super type for every min max restriction
  */
@@ -800,7 +795,7 @@ export abstract class MinMaxRestriction extends FacetRestriction<Number>{
                 this,{ facetName: this.facetName()},ts.Status.ERROR,true);
         }
         if (this.isIntConstraint()){
-            if (!is_int(this.value())){
+            if (!new BigNumber(this.value().toString()).isInteger()){
                 return ts.error(messageRegistry.FACET_REQUIRE_INTEGER,
                     this,{ facetName: this.facetName()},ts.Status.ERROR,true);
             }
@@ -885,9 +880,11 @@ export class MultipleOf extends FacetRestriction<Number>{
         return this._value;
     }
     check(o:any):ts.Status{
-        if (typeof  o=='number'){
-            var q=o/this.value();
-            if (!is_int(q)){
+        if (typeof o == 'number'){
+            let devided = new BigNumber(o.toString());
+            let devisor = new BigNumber(this.value().toString());
+            let quotient = devided.dividedBy(devisor);
+            if (!quotient.isInteger()){
                 return ts.error(messageRegistry.EVEN_RATIO, this, { val1: o, val2 : this.value() });
             }
         }
@@ -1415,6 +1412,9 @@ export class Enum extends FacetRestriction<string[]>{
     check(i:any):ts.Status{
         if (!this.checkStatus) {
             var opts = this.value();
+            if(this.owner().oneMeta(AcceptAllScalarsAsStrings)&&i!=null){
+                opts = opts.concat(opts.map(x=>""+x));
+            }
             if (!Array.isArray(opts)){
                 opts=[<string><any>opts];
             }
