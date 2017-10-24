@@ -13,6 +13,7 @@
     "devInstall": "dev-env-installer install"
   },
   "dependencies": {
+    "bignumber.js": "^4.1.0",
     "date-and-time": "^0.5.0",
     "json-schema-compatibility": "^1.1.0",
     "json-to-ast": "^2.0.0-alpha1.3",
@@ -49,6 +50,7 @@
     "@types/node": "4.2.20",
     "@types/underscore": "1.8.3",
     "@types/xml2js": "0.4.0",
+    "@types/bignumber.js": "^4.0.3",
     "chai": "^4.1.2",
     "gulp": "^3.9.1",
     "gulp-typedoc": "^2.1.0",

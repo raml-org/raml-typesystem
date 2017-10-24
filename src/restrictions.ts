@@ -1,4 +1,5 @@
 import ts=require("./typesystem");
+import {BigNumber} from "bignumber.js";
 var messageRegistry = ts.messageRegistry;
 import su=require("./schemaUtil")
 import _= require("underscore");
@@ -732,33 +733,6 @@ export abstract class FacetRestriction<T> extends ts.Constraint{
     }
 
 }
-function is_int(value:any){
-    if(typeof (<any>Number).isInteger == "function"){
-        return (<any>Number).isInteger(value);
-    }
-    if(typeof value != "number" || isNaN(value)){
-        return false;
-    }
-    let stringValue = ""+value;
-    let expInd = stringValue.indexOf("e");
-    let exp = 0;
-    let mantissa = stringValue;
-    if(expInd>0){
-        mantissa = stringValue.substring(0,expInd);
-        exp = parseInt(stringValue.substring(expInd+1));
-    }
-    let dotInd = mantissa.indexOf(".");
-    let mantissaFractureLength = 0;
-    if(dotInd>=0){
-        mantissaFractureLength = mantissa.substring(dotInd+1).length;
-    }
-    else{
-        for(let i = mantissa.length-1; i >= 0 && mantissa.charAt(i)=='0'  ; i--){
-            mantissaFractureLength--;
-        }
-    }
-    return exp >= mantissaFractureLength;
-}
 /**
  * abstract super type for every min max restriction
  */
@@ -821,7 +795,7 @@ export abstract class MinMaxRestriction extends FacetRestriction<Number>{
                 this,{ facetName: this.facetName()},ts.Status.ERROR,true);
         }
         if (this.isIntConstraint()){
-            if (!is_int(this.value())){
+            if (!new BigNumber(this.value().toString()).isInteger()){
                 return ts.error(messageRegistry.FACET_REQUIRE_INTEGER,
                     this,{ facetName: this.facetName()},ts.Status.ERROR,true);
             }
@@ -906,9 +880,11 @@ export class MultipleOf extends FacetRestriction<Number>{
         return this._value;
     }
     check(o:any):ts.Status{
-        if (typeof  o=='number'){
-            var q=o/this.value();
-            if (!is_int(q)){
+        if (typeof o == 'number'){
+            let devided = new BigNumber(o.toString());
+            let devisor = new BigNumber(this.value().toString());
+            let quotient = devided.dividedBy(devisor);
+            if (!quotient.isInteger()){
                 return ts.error(messageRegistry.EVEN_RATIO, this, { val1: o, val2 : this.value() });
             }
         }

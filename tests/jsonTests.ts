@@ -2166,6 +2166,27 @@ describe("Type collection parse and store",function(){
         assert.isTrue(val);
     });
 
+    it ("multiple of (precision)",function(){
+        var st={
+
+
+            types:{
+                t1:{
+                    type:"number",
+                    format: "long",
+                    multipleOf: 0.001,
+                    example: 99999999999.999
+                },
+
+            }
+        };
+        var col=ps.parseJSONTypeCollection(st);
+        var t=col.getType("t1");
+        var status=t.validateType(ts.builtInRegistry());
+        var val=status .isOk();
+        assert.isTrue(val);
+    });
+
     it ("multiple of (large numbers)",function(){
         var st={
 
