@@ -16,7 +16,7 @@
     "bignumber.js": "^4.1.0",
     "date-and-time": "^0.5.0",
     "json-schema-compatibility": "^1.1.0",
-    "json-to-ast": "^2.0.0-alpha1.3",
+    "json-to-ast": "2.0.0-alpha1.3",
     "lrucache": "^1.0.3",
     "underscore": "^1.8.3",
     "xml2js": "^0.4.19",
