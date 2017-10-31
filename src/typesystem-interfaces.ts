@@ -89,6 +89,7 @@ export enum MetaInformationKind {
     Description,
     NotScalar,
     ImportedByChain,
+    AcceptAllScalarsAsStrings,
     SkipValidation,
     DisplayName,
     Usage,
