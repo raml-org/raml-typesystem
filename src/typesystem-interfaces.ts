@@ -88,9 +88,6 @@ export interface IStatus extends IHasExtra {
 export enum MetaInformationKind {
     Description,
     NotScalar,
-    ImportedByChain,
-    AcceptAllScalarsAsStrings,
-    SkipValidation,
     DisplayName,
     Usage,
     Annotation,
@@ -106,7 +103,10 @@ export enum MetaInformationKind {
     Constraint,
     Modifier,
     Discriminator,
-    DiscriminatorValue
+    DiscriminatorValue,
+    ImportedByChain,
+    AcceptAllScalarsAsStrings,
+    SkipValidation
 }
 
 /**
@@ -183,6 +183,16 @@ export interface IAnnotation extends ITypeFacet {
      * Annotation name
      */
     name():string;
+
+    /**
+     * Annotation value
+     */
+    value(): any;
+
+    /**
+     * Annotation definition type
+     */
+    definition(): IParsedType;
 }
 
 export interface IParsedTypeCollection {
@@ -259,11 +269,18 @@ export interface IPropertyInfo {
     isAdditional(): boolean
 }
 
+export interface IAnnotated {
+
+    annotations(): IAnnotation[]
+
+    annotation(name: string): any
+}
+
 /**
  * parsed representation of the type
  * you should not create instances of this interfaces manually
  */
-export interface IParsedType extends IHasExtra {
+export interface IParsedType extends IAnnotated, IHasExtra {
 
     /**
      * returns  list of directly declared sub types of this type
@@ -302,6 +319,8 @@ export interface IParsedType extends IHasExtra {
     annotation(name: string): any
 
     declaredAnnotations(): IAnnotation[]
+
+    scalarsAnnotations(): {[key:string]:IAnnotation[][]};
 
     registry(): IParsedTypeCollection
 

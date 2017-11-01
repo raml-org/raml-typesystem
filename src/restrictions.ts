@@ -265,6 +265,20 @@ export class HasProperty extends ts.Constraint{
     constructor(private name: string){
         super();
     }
+
+    private static CLASS_IDENTIFIER_HasProperty = "restrictions.HasProperty";
+
+    public getClassIdentifier() : string[] {
+        var superIdentifiers:string[] = super.getClassIdentifier();
+        return superIdentifiers.concat(HasProperty.CLASS_IDENTIFIER_HasProperty);
+    }
+
+    public static isInstance(instance: any): instance is HasProperty {
+        return instance != null && instance.getClassIdentifier
+            && typeof(instance.getClassIdentifier) == "function"
+            && _.contains(instance.getClassIdentifier(), HasProperty.CLASS_IDENTIFIER_HasProperty);
+    }
+
     check(i:any):ts.Status{
         if (i&&typeof i=='object'&&!Array.isArray(i)) {
             if (i.hasOwnProperty(this.name)) {
