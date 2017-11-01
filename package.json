@@ -1,6 +1,6 @@
 {
   "name": "raml-typesystem",
-  "version": "0.0.77",
+  "version": "0.0.79",
   "main": "dist/src/index.js",
   "scripts": {
     "test-cov": " ./node_modules/.bin/istanbul cover _mocha dist/tests/*Tests.js",
@@ -13,14 +13,14 @@
     "devInstall": "dev-env-installer install"
   },
   "dependencies": {
-    "bignumber.js": "^4.1.0",
-    "date-and-time": "^0.5.0",
-    "json-schema-compatibility": "^1.1.0",
-    "json-to-ast": "^2.0.0-alpha1.3",
-    "lrucache": "^1.0.3",
-    "underscore": "^1.8.3",
-    "xml2js": "^0.4.19",
-    "xmldom": "^0.1.27"
+    "bignumber.js": "4.1.0",
+    "date-and-time": "0.5.0",
+    "json-schema-compatibility": "1.1.0",
+    "json-to-ast": "2.0.0-alpha1.3",
+    "lrucache": "1.0.3",
+    "underscore": "1.8.3",
+    "xml2js": "0.4.19",
+    "xmldom": "0.1.27"
   },
   "optionalDependencies": {
     "raml-xml-validation": "0.0.13",
@@ -45,21 +45,21 @@
   },
   "typings": "./dist/src/index.d.ts",
   "devDependencies": {
-    "@types/chai": "^4.0.1",
-    "@types/mocha": "^2.2.41",
+    "@types/chai": "4.0.1",
+    "@types/mocha": "2.2.41",
     "@types/node": "4.2.20",
     "@types/underscore": "1.8.3",
     "@types/xml2js": "0.4.0",
-    "@types/bignumber.js": "^4.0.3",
-    "chai": "^4.1.2",
-    "gulp": "^3.9.1",
-    "gulp-typedoc": "^2.1.0",
-    "istanbul": "^0.4.5",
-    "mocha": "^3.4.2",
-    "typedoc": "^0.3.12",
+    "@types/bignumber.js": "4.0.3",
+    "chai": "4.1.2",
+    "gulp": "3.9.1",
+    "gulp-typedoc": "2.1.0",
+    "istanbul": "0.4.5",
+    "mocha": "3.4.2",
+    "typedoc": "0.3.12",
     "typescript": "2.5.2",
-    "dev-env-installer": "^0.0.14",
-    "json-loader": "^0.5.7",
+    "dev-env-installer": "0.0.14",
+    "json-loader": "0.5.7",
     "rimraf": "*"
   }
 }
