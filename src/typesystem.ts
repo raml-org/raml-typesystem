@@ -1687,6 +1687,25 @@ export abstract class AbstractType implements tsInterfaces.IParsedType, tsInterf
             var result = new Status(Status.OK, "", "", this);
             if (!nullAllowed && (i === null || i === undefined)) {
                 if (!this.nullable) {
+                    var typeRestriction: TypeOfRestriction = null;
+
+                    this.restrictions(true).forEach(restriction => {
+                        if(restriction instanceof TypeOfRestriction) {
+                            if(typeRestriction) {
+                                return;
+                            }
+
+                            typeRestriction = restriction;
+                        }
+                    });
+
+                    if (typeRestriction) {
+                        return error(messageRegistry.TYPE_EXPECTED, typeRestriction, {
+                            expectedType: typeRestriction.value(),
+                            actualType: 'null'
+                        });
+                    }
+
                     return error(messageRegistry.OBJECT_EXPECTED, this)
                 }
             }
