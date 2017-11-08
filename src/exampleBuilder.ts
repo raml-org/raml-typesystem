@@ -471,12 +471,11 @@ class TSExample implements tsInterfaces.IExample{
 const toExample = function (owner: any, exampleObj:any, name:string=null,isSingle:boolean=false) {
     let example:Example;
     if (exampleObj!=null) {
-        let val = exampleObj.value;
-        if (!val) {
-            val = exampleObj
-            example = new Example(val, name, undefined, undefined, true, undefined, isSingle);
+        if (!exampleObj.hasOwnProperty("value")) {
+            example = new Example(exampleObj, name, undefined, undefined, true, undefined, isSingle);
         }
         else {
+            let val = exampleObj.value;
             let displayName = scalarValue(exampleObj, "displayName");
             let description = scalarValue(exampleObj, "description");
             let strict:boolean = scalarValue(exampleObj, "strict");

@@ -19,9 +19,7 @@ export abstract class MatchesProperty extends ts.Constraint{
          return false;
      }
 
-    constructor(private _type:ts.AbstractType){super()}
-
-    abstract path():string;
+    constructor(private _type:ts.AbstractType, protected optional=false){super()}
 
     private static CLASS_IDENTIFIER_MatchesProperty = "restrictions.MatchesProperty";
 
@@ -35,6 +33,8 @@ export abstract class MatchesProperty extends ts.Constraint{
             && typeof(instance.getClassIdentifier) == "function"
             && _.contains(instance.getClassIdentifier(), MatchesProperty.CLASS_IDENTIFIER_MatchesProperty);
     }
+
+    abstract path():string;
 
     check(i:any,p:ts.IValidationPath):ts.Status{
         throw new Error(messageRegistry.SHOULD_BE_NEVER_CALLED.message);
@@ -93,6 +93,10 @@ export abstract class MatchesProperty extends ts.Constraint{
 
     range():ts.AbstractType{
             return this._type;
+    }
+
+    isOptional():boolean{
+        return this.optional;
     }
 }
 
@@ -188,6 +192,19 @@ export class MatchToSchema extends  ts.Constraint{
  * this is a constraint which checks that object has no unknown properties if at has not additional properties
  */
 export class KnownPropertyRestriction extends ts.Constraint{
+
+    private static CLASS_IDENTIFIER_KnownPropertyRestriction = "typesystem.KnownPropertyRestriction";
+
+    public getClassIdentifier() : string[] {
+        var superIdentifiers:string[] = super.getClassIdentifier();
+        return superIdentifiers.concat(KnownPropertyRestriction.CLASS_IDENTIFIER_KnownPropertyRestriction);
+    }
+
+    public static isInstance(instance: any): instance is KnownPropertyRestriction {
+        return instance != null && instance.getClassIdentifier
+            && typeof(instance.getClassIdentifier) == "function"
+            && _.contains(instance.getClassIdentifier(), KnownPropertyRestriction.CLASS_IDENTIFIER_KnownPropertyRestriction);
+    }
 
     facetName(){
         return "closed"
@@ -318,8 +335,8 @@ export class HasProperty extends ts.Constraint{
  */
 export class PropertyIs extends MatchesProperty{
 
-    constructor(private name: string,private type:ts.AbstractType, private optional:boolean=false){
-        super(type);
+    constructor(private name: string,private type:ts.AbstractType,optional=false){
+        super(type,optional);
     }
 
     private static CLASS_IDENTIFIER_PropertyIs = "restrictions.PropertyIs";
@@ -399,10 +416,6 @@ export class PropertyIs extends MatchesProperty{
         }
         return null;
     }
-
-    isOptional():boolean{
-        return this.optional;
-    }
 }
 
 var anotherSource:any[] = [];
@@ -439,8 +452,8 @@ export function anotherRestrictionComponentsCount():number{
  */
 export class MapPropertyIs extends MatchesProperty{
 
-    constructor(private regexp: string,private type:ts.AbstractType){
-        super(type);
+    constructor(private regexp: string,private type:ts.AbstractType,optional=false){
+        super(type,optional);
     }
 
     private static CLASS_IDENTIFIER_MapPropertyIs = "restrictions.MapPropertyIs";
@@ -469,9 +482,9 @@ export class MapPropertyIs extends MatchesProperty{
     requiredType(){
         return ts.OBJECT;
     }
-     propId():string{
-         return '['+this.regexp+']'
-     }
+    propId():string{
+        return '['+this.regexp+']'
+    }
 
     facetName(){
         return "mapPropertyIs"
@@ -557,8 +570,8 @@ export class MapPropertyIs extends MatchesProperty{
  */
 export class AdditionalPropertyIs extends MatchesProperty{
 
-    constructor(private type:ts.AbstractType){
-        super(type);
+    constructor(private type:ts.AbstractType,optional=false){
+        super(type,optional);
     }
 
     private static CLASS_IDENTIFIER_AdditionalPropertyIs = "restrictions.AdditionalPropertyIs";
@@ -575,7 +588,7 @@ export class AdditionalPropertyIs extends MatchesProperty{
     }
 
     path(){
-        return this.facetName();
+        return "/.*/";
     }
     matches(s:string):boolean{
         return true;

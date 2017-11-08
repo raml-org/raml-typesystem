@@ -58,6 +58,19 @@ export  class NotScalar extends MetaInfo{
         super("notScalar",true)
     }
 
+    private static CLASS_IDENTIFIER_NotScalar = "metainfo.NotScalar";
+
+    public getClassIdentifier() : string[] {
+        var superIdentifiers:string[] = super.getClassIdentifier();
+        return superIdentifiers.concat(NotScalar.CLASS_IDENTIFIER_NotScalar);
+    }
+
+    public static isInstance(instance: any): instance is NotScalar {
+        return instance != null && instance.getClassIdentifier
+            && typeof(instance.getClassIdentifier) == "function"
+            && _.contains(instance.getClassIdentifier(), NotScalar.CLASS_IDENTIFIER_NotScalar);
+    }
+
     kind() : tsInterfaces.MetaInformationKind {
         return tsInterfaces.MetaInformationKind.NotScalar;
     }
@@ -489,6 +502,19 @@ export class HasPropertiesFacet extends MetaInfo{
         super("hasPropertiesFacet",null);
     }
 
+    private static CLASS_IDENTIFIER_HasPropertiesFacet = "metainfo.HasPropertiesFacet";
+
+    public getClassIdentifier() : string[] {
+        var superIdentifiers:string[] = super.getClassIdentifier();
+        return superIdentifiers.concat(HasPropertiesFacet.CLASS_IDENTIFIER_HasPropertiesFacet);
+    }
+
+    public static isInstance(instance: any): instance is HasPropertiesFacet {
+        return instance != null && instance.getClassIdentifier
+            && typeof(instance.getClassIdentifier) == "function"
+            && _.contains(instance.getClassIdentifier(), HasPropertiesFacet.CLASS_IDENTIFIER_HasPropertiesFacet);
+    }
+
     kind() : tsInterfaces.MetaInformationKind {
         return tsInterfaces.MetaInformationKind.HasPropertiesFacet;
     }
@@ -687,6 +713,50 @@ export class Default extends MetaInfo{
         return tsInterfaces.MetaInformationKind.Default;
     }
 }
+
+export class SchemaPath extends MetaInfo{
+    constructor(path:string){
+        super("schemaPath",path,true);
+    }
+
+    kind() : tsInterfaces.MetaInformationKind {
+        return tsInterfaces.MetaInformationKind.SchemaPath;
+    }
+}
+
+export class SourceMap extends MetaInfo{
+    constructor(value:Object){
+        super("sourceMap",value);
+    }
+
+    private static CLASS_IDENTIFIER_SourceMap = "metainfo.SourceMap";
+
+    public getClassIdentifier() : string[] {
+        var superIdentifiers:string[] = super.getClassIdentifier();
+        return superIdentifiers.concat(SourceMap.CLASS_IDENTIFIER_SourceMap);
+    }
+
+    public static isInstance(instance: any): instance is SourceMap {
+        return instance != null && instance.getClassIdentifier
+            && typeof(instance.getClassIdentifier) == "function"
+            && _.contains(instance.getClassIdentifier(), SourceMap.CLASS_IDENTIFIER_SourceMap);
+    }
+
+    kind() : tsInterfaces.MetaInformationKind {
+        return tsInterfaces.MetaInformationKind.SourceMap;
+    }
+}
+
+export class ParserMetadata extends MetaInfo{
+    constructor(value:Object){
+        super("__METADATA__",value);
+    }
+
+    kind() : tsInterfaces.MetaInformationKind {
+        return tsInterfaces.MetaInformationKind.ParserMetadata;
+    }
+}
+
 export class Discriminator extends ts.TypeInformation{
 
     constructor(public property: string){

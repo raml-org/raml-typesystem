@@ -230,7 +230,7 @@ export abstract class TypeInformation implements tsInterfaces.ITypeFacet {
     _owner:AbstractType;
 
     _node:parse.ParseNode;
-    
+
     _annotations:tsInterfaces.IAnnotation[] = [];
 
     private static CLASS_IDENTIFIER_TypeInformation = "typesystem.TypeInformation";
@@ -683,7 +683,10 @@ export class PropertyInfo implements tsInterfaces.IPropertyInfo {
 
     private isMap:boolean;
     private isProp:boolean;
+    private isAdditionalProp:boolean;
     private isFacet:boolean;
+
+    private _required:boolean;
 
     protected _matches:restr.MatchesProperty;
     protected _facetDecl:metaInfo.FacetDeclaration;
@@ -699,6 +702,9 @@ export class PropertyInfo implements tsInterfaces.IPropertyInfo {
             }
             else if (fn == "mapPropertyIs") {
                 this.isMap = true;
+            }
+            else if (fn == "additionalProperties") {
+                this.isAdditionalProp = true;
             }
         }
         else{
@@ -717,7 +723,7 @@ export class PropertyInfo implements tsInterfaces.IPropertyInfo {
     }
 
     isAdditional() {
-        return !this.isFacet && !(this.isProp||this.isMap);
+        return this.isAdditionalProp;
     }
 
     declaredAt() {
@@ -729,10 +735,23 @@ export class PropertyInfo implements tsInterfaces.IPropertyInfo {
     }
 
     required(): boolean{
+        if(this._required!==undefined){
+            return this._required;
+        }
         if(this.isProp){
             return !this.property().isOptional();
         }
+        else if(this.isMap){
+            return !this.mapProperty().isOptional();
+        }
+        else if(this.isAdditionalProp){
+            return !this.additionalProperty().isOptional();
+        }
         return false;
+    }
+
+    setRequired(val:boolean){
+        this._required = val;
     }
 
     private property():restr.PropertyIs{
@@ -743,9 +762,13 @@ export class PropertyInfo implements tsInterfaces.IPropertyInfo {
         return this.isMap ? <restr.MapPropertyIs>this._matches : null;
     }
 
+    private additionalProperty():restr.AdditionalPropertyIs{
+        return this.isAdditionalProp ? <restr.AdditionalPropertyIs>this._matches : null;
+    }
+
 }
 
-export abstract class AbstractType implements tsInterfaces.IParsedType, tsInterfaces.IHasExtra{
+export abstract class AbstractType implements tsInterfaces.IParsedType, tsInterfaces.IHasExtra, tsInterfaces.HasSource{
 
     protected computeConfluent: boolean
 
@@ -1432,11 +1455,14 @@ export abstract class AbstractType implements tsInterfaces.IParsedType, tsInterf
             return false;
         }
         return this.metaInfo.filter(x=>{
-                if(x instanceof NotScalar){
+                if(NotScalar.isInstance(x)){
                     return false;
                 }
-                else if(x instanceof metaInfo.DiscriminatorValue){
+                else if(metaInfo.DiscriminatorValue.isInstance(x)){
                     return (<metaInfo.DiscriminatorValue>x).isStrict();
+                }
+                else if(metaInfo.SourceMap.isInstance(x)){
+                    return false;
                 }
                 return true;
             }).length==0;
@@ -2099,6 +2125,10 @@ export abstract class AbstractType implements tsInterfaces.IParsedType, tsInterf
 
     hasPropertiesFacet():boolean{
         return this.metaInfo.some(x=>x instanceof metaInfo.HasPropertiesFacet);
+    }
+
+    sourceMap():tsInterfaces.ElementSourceInfo{
+        return null;
     }
 }
 

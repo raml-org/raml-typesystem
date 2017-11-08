@@ -128,7 +128,7 @@ export class PropertyBean{
             matchesPropertyFacet = new rs.AdditionalPropertyIs(this.type);
         }
         else if (this.regExp){
-            matchesPropertyFacet = new rs.MapPropertyIs(this.id,this.type);
+            matchesPropertyFacet = new rs.MapPropertyIs(this.id,this.type,this.optional);
         }
         else{
             matchesPropertyFacet = new rs.PropertyIs(this.id,this.type,this.optional);
@@ -539,7 +539,7 @@ export class TypeProto{
                     nm="/.*/"
                 }
                 if (x.regExp){
-                    nm="/"+nm+"/";
+                    nm="/"+x.id+"/";
                 }
                 var vl:any=null;
                 if (x.type.isAnonymous()){
@@ -614,20 +614,23 @@ export function toProto(type:AbstractType):TypeProto{
 
                 var pbean=new PropertyBean();
                 pbean.optional=false;
-                pbean.id= "/.*/";
+                pbean.id= ".*";
                 pbean.additonal=true;
                 pbean.type= x.value();
+                pbean.optional = x.isOptional();
+                pbean.regExp=true;
                 pmap['/.*/']=pbean;
             }
-            else if (x instanceof rs.MapPropertyIs){
+            else if (rs.MapPropertyIs.isInstance(x)){
                 var pbean=new PropertyBean();
                 pbean.optional=false;
                 pbean.id= x.regexpValue();
                 pbean.regExp=true;
                 pbean.type= x.value();
+                pbean.optional = x.isOptional();
                 pmap[x.regexpValue()]=pbean;
             }
-            else if (x instanceof rs.PropertyIs){
+            else if (rs.PropertyIs.isInstance(x)){
                 if (pmap.hasOwnProperty(x.propertyName())){
                     pmap[x.propertyName()].type= x.value();
                 }
@@ -639,15 +642,15 @@ export function toProto(type:AbstractType):TypeProto{
                     pmap[x.propertyName()]=pbean;
                 }
             }
-            else if (x instanceof rs.KnownPropertyRestriction) {
+            else if (rs.KnownPropertyRestriction.isInstance(x)) {
                 result.additionalProperties = x.value();
             }
-            else if(x instanceof meta.DiscriminatorValue){
+            else if(meta.DiscriminatorValue.isInstance(x)){
                 if((<meta.DiscriminatorValue>x).isStrict()){
                     result.basicFacets.push(x);
                 }
             }
-            else if(!(x instanceof meta.HasPropertiesFacet)) {
+            else if(!meta.HasPropertiesFacet.isInstance(x)) {
                 result.basicFacets.push(x);
             }
         }
@@ -850,7 +853,7 @@ export function parse(
         var supers:ts.AbstractType[]=[];
         n.children().forEach(x=>{
             supers.push(typeExpressions.parseToType(""+x.value(),r, n))
-        })
+        });
         var res=ts.derive(name,supers);
         if (AccumulatingRegistry.isInstance(r)){
             res = contributeToAccumulatingRegistry(res, r);
@@ -1065,10 +1068,10 @@ export function parse(
                 result.addMeta(appendedInfo);
             }
             else {
-                if (annotation && key === "allowedTargets") {
-                    result.addMeta(new meta.AllowedTargets(x.value()));
-                }
-                else {
+                // if (annotation && key === "allowedTargets") {
+                //     result.addMeta(new meta.AllowedTargets(x.value()));
+                // }
+                {//else {
                     var customFacet = new meta.CustomFacet(key, x.value());
                     customFacet.setNode(x);
                     result.addMeta(customFacet);

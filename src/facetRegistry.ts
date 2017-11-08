@@ -10,11 +10,9 @@ import {MinProperties, MaxProperties, MinLength, MaxLength, MinItems , MaxItems,
         PropertyIs, AdditionalPropertyIs , MapPropertyIs, HasProperty,
         KnownPropertyRestriction, ComponentShouldBeOfType, Format, FileTypes} from "./restrictions";
 
-import {Default, Example, Description, DisplayName} from "./metainfo";
+import {Default, Example, Description, DisplayName, SourceMap, ParserMetadata} from "./metainfo";
 import {AbstractType} from "./typesystem";
-import {XMLInfo} from "./metainfo";
-import {Required} from "./metainfo";
-import {Usage} from "./metainfo";
+import {XMLInfo,Required,AllowedTargets,HasPropertiesFacet} from "./metainfo";
 import {MultipleOf} from "./restrictions";
 
 
@@ -98,6 +96,9 @@ export class Registry {
         new FacetPrototype(()=>new Abstract(), (x)=>new Abstract()),
         new FacetPrototype(()=>new Polymorphic(), (x)=>new Polymorphic()),
         new FacetPrototype(()=>new XMLInfo({}), (x)=>new XMLInfo(x)),
+        new FacetPrototype(()=>new AllowedTargets({}), (x)=>new AllowedTargets(x)),
+        new FacetPrototype(()=>new SourceMap({}), (x)=>new SourceMap(x)),
+        new FacetPrototype(()=>new ParserMetadata({}), (x)=>new ParserMetadata(x))
     ];
 
     known:{ [name:string]:FacetPrototype}={};
