@@ -377,7 +377,7 @@
   },
   "EXTERNAL_AS_COMPONENT" : {
     "code" : "EXTERNAL_AS_COMPONENT",
-    "message": "It is not allowed to use external types in component type definitions"
+    "message": "It is not allowed to use external types as array component types in types and type properties declarations"
   },
   "PATTERN_VIOLATION" : {
     "code" : "PATTERN_VIOLATION",
@@ -525,7 +525,7 @@
   },
   "ITEMS_SHOULD_BE_OF_TYPE" : {
     "code" : "ITEMS_SHOULD_BE_OF_TYPE",
-    "message" : "items should be of type {{type}}"
+    "message" : "items should be of type '{{type}}'"
   },
   "RESTRICTIONS_CANNT_BE_COMPOSED" : {
     "code" : "RESTRICTIONS_CANNT_BE_COMPOSED",
