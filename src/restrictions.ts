@@ -1150,7 +1150,8 @@ export class ComponentShouldBeOfType extends FacetRestriction<ts.AbstractType>{
     }
 
     public toString() {
-        return ts.error(messageRegistry.ITEMS_SHOULD_BE_OF_TYPE, this, {type:this.type}).getMessage();
+        let typeName = this.type && this.type.name();
+        return ts.error(messageRegistry.ITEMS_SHOULD_BE_OF_TYPE, this, {type: typeName}).getMessage();
     }
     check(i:any):ts.Status{
 
@@ -1196,7 +1197,9 @@ export class ComponentShouldBeOfType extends FacetRestriction<ts.AbstractType>{
             });
         }
         else if (this.type.isExternal()){
-            st.addSubStatus(ts.error(messageRegistry.EXTERNAL_AS_COMPONENT,this));
+            let itemsErr = ts.error(messageRegistry.EXTERNAL_AS_COMPONENT,this);
+            itemsErr.setValidationPath({name:"items"});
+            st.addSubStatus(itemsErr);
         }
         else if (ts.isUnknown(this.type) || this.type.isSubTypeOf(ts.RECURRENT)) {
             st.addSubStatus(ts.error(messageRegistry.UNKNOWN_ARRAY_COMPONENT_TYPE,this,{ componentTypeName: this.type.name()}));
