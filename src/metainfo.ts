@@ -132,7 +132,7 @@ export class Usage extends MetaInfo{
 }
 export class Annotation extends MetaInfo implements tsInterfaces.IAnnotation{
 
-    constructor(name: string,value:any,protected path:string, protected ofExample=false){
+    constructor(name: string,value:any,protected path:string, protected ofExample=false, private _index:number=-1){
         super(name,value)
     }
 
@@ -228,6 +228,10 @@ export class Annotation extends MetaInfo implements tsInterfaces.IAnnotation{
 
     setOwnerFacet(ownerFacet:tsInterfaces.ITypeFacet){
         this._ownerFacet = ownerFacet;
+    }
+
+    getPath():string{
+        return this.path;
     }
 }
 export class FacetDeclaration extends MetaInfo{
@@ -746,6 +750,30 @@ export class SourceMap extends MetaInfo{
         return tsInterfaces.MetaInformationKind.SourceMap;
     }
 }
+
+export class TypeAttributeValue extends MetaInfo{
+    constructor(value:any){
+        super("typeAttributeValue",value);
+    }
+
+    private static CLASS_IDENTIFIER_TypeAttributeValue = "metainfo.TypeAttributeValue";
+
+    public getClassIdentifier() : string[] {
+        var superIdentifiers:string[] = super.getClassIdentifier();
+        return superIdentifiers.concat(TypeAttributeValue.CLASS_IDENTIFIER_TypeAttributeValue);
+    }
+
+    public static isInstance(instance: any): instance is TypeAttributeValue {
+        return instance != null && instance.getClassIdentifier
+            && typeof(instance.getClassIdentifier) == "function"
+            && _.contains(instance.getClassIdentifier(), TypeAttributeValue.CLASS_IDENTIFIER_TypeAttributeValue);
+    }
+
+    kind() : tsInterfaces.MetaInformationKind {
+        return tsInterfaces.MetaInformationKind.TypeAttributeValue;
+    }
+}
+
 
 export class ParserMetadata extends MetaInfo{
     constructor(value:Object){

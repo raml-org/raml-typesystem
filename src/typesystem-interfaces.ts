@@ -109,7 +109,8 @@ export enum MetaInformationKind {
     ParserMetadata,
     ImportedByChain,
     AcceptAllScalarsAsStrings,
-    SkipValidation
+    SkipValidation,
+    TypeAttributeValue
 }
 
 /**
@@ -270,6 +271,8 @@ export interface IPropertyInfo {
     isPattern(): boolean
 
     isAdditional(): boolean
+
+    annotations(): IAnnotation[]
 }
 
 export interface IAnnotated {
@@ -324,6 +327,8 @@ export interface IParsedType extends IAnnotated, IHasExtra {
     declaredAnnotations(): IAnnotation[]
 
     scalarsAnnotations(): {[key:string]:IAnnotation[][]};
+
+    declaredScalarsAnnotations(): {[key:string]:IAnnotation[][]};
 
     registry(): IParsedTypeCollection
 

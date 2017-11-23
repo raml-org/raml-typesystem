@@ -14,6 +14,9 @@ export type Parens = typeExpressionDefs.Parens;
 
 export function parseToType(val:string,t:ts.TypeRegistry, contentProvidingNode?:ParseNode,
     typeAttributeContentProvider: schemaUtil.IContentProvider = null):ts.AbstractType{
+    if(val==null){
+        return null;
+    }
     try {
 
         var q=val.trim();
