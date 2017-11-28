@@ -81,6 +81,19 @@ export class ImportedByChain extends MetaInfo{
         super("importedByChain", _typeName, true);
     }
 
+    private static CLASS_IDENTIFIER_ImportedByChain = "metainfo.ImportedByChain";
+
+    public getClassIdentifier() : string[] {
+        var superIdentifiers:string[] = super.getClassIdentifier();
+        return superIdentifiers.concat(ImportedByChain.CLASS_IDENTIFIER_ImportedByChain);
+    }
+
+    public static isInstance(instance: any): instance is ImportedByChain {
+        return instance != null && instance.getClassIdentifier
+            && typeof(instance.getClassIdentifier) == "function"
+            && _.contains(instance.getClassIdentifier(), ImportedByChain.CLASS_IDENTIFIER_ImportedByChain);
+    }
+
     kind() : tsInterfaces.MetaInformationKind {
         return tsInterfaces.MetaInformationKind.ImportedByChain;
     }

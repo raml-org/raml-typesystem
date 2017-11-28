@@ -1468,6 +1468,9 @@ export abstract class AbstractType implements tsInterfaces.IParsedType, tsInterf
                 else if(metaInfo.SourceMap.isInstance(x)){
                     return false;
                 }
+                else if(metaInfo.ImportedByChain.isInstance(x)){
+                    return false;
+                }
                 return true;
             }).length==0;
     }
@@ -1885,7 +1888,22 @@ export abstract class AbstractType implements tsInterfaces.IParsedType, tsInterf
             return components[0].value();
         }
         else{
-            let ct = derive(null,components.map(x=>x.value()));
+            let componentTypes:AbstractType[] = components.map(x=>x.value());
+            let componentTypes1:AbstractType[] = [].concat(componentTypes);
+            for(let x of componentTypes1){
+                let toRemove:AbstractType[] = []
+                for(let y of componentTypes){
+                    if(x==y){
+                        continue;
+                    }
+                    if(y.isAssignableFrom(x)){
+                        toRemove.push(y);
+                    }
+                }
+                componentTypes = componentTypes.filter(y=>toRemove.indexOf(y)<0);
+            }
+
+            let ct = derive(null,componentTypes);
             return ct;
         }
     }
@@ -2588,6 +2606,9 @@ export function derive(name: string,t:AbstractType[]):InheritedType{
     var r=new InheritedType(name);
     t.forEach(x=>r.addSuper(x));
     if (r.isSubTypeOf(NIL)){
+        r.nullable=true;
+    }
+    else if(t.length==1&&t[0]==ANY){
         r.nullable=true;
     }
     return r;

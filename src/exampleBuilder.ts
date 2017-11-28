@@ -578,7 +578,14 @@ export function exampleFromInheritedType2(inheritedType:rt.AbstractType):tsInter
             e.annotations(),
             e.isSingle(),
             e.isEmpty());
-        (<any>te)._scalarsAnnotations = e.scalarsAnnotations();
+        if(e.scalarsAnnotations()){
+            for(let pName of Object.keys(e.scalarsAnnotations())){
+                const pAnnotations = e.scalarsAnnotations()[pName];
+                for(let aName of Object.keys(pAnnotations)){
+                    te.registerScalarAnnotatoion(pAnnotations[aName],pName);
+                }
+            }
+        }
         result.push(te);
     }
     return result;

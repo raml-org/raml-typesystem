@@ -449,7 +449,7 @@ export function parsePropertyBean(n:ParseNode,tr:ts.TypeRegistry):PropertyBean{
         name=name.substr(0,name.length-1);
         result.optional=true;
     }
-    if (name.length==0||name==='/.*/'){
+    if (name != null && name.length==0||name==='/.*/'){
         result.additonal=true;
 
     }
@@ -907,7 +907,7 @@ export function parse(
         }
     }
     var typePropAnnotations:tsInterfaces.IAnnotation[][] = [];
-    if (!tp||ignoreTypeAttr){
+    if (!tp||(!tp.children().length&&!tp.value())||ignoreTypeAttr){
         if (defaultsToAny){
             if (n.childWithKey("properties")) {
                 superTypes = [ts.OBJECT];
