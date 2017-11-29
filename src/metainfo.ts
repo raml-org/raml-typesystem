@@ -847,6 +847,12 @@ export class Discriminator extends ts.TypeInformation{
 export class DiscriminatorValue extends ts.Constraint{
     constructor(public _value: any, protected strict:boolean=true){
         super(false);
+        if(this._value && typeof this._value === "object"){
+            if(typeof this._value.strict === "boolean"){
+                this.strict = this._value.strict;
+            }
+            this._value = this._value.value;
+        }
     }
 
     private static CLASS_IDENTIFIER_DiscriminatorValue = "metainfo.DiscriminatorValue";

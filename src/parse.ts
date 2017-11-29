@@ -1005,7 +1005,7 @@ export function parse(
         var key = childNode.key();
         actual = childNode.childWithKey("value");
         var x = childNode;
-        if(key!="example"&&actual){
+        if(key!="example"&&key!="discriminatorValue"&&actual){
             x = actual;
         }
         if (!key){
