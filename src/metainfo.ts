@@ -354,12 +354,6 @@ function parseExampleIfNeeded(val:any,type:ts.AbstractType):any{
     return val;
 }
 
-var exampleScalarProperties = [
-    {propName: "strict", propType: "boolean", messageEntry:messageRegistry.STRICT_BOOLEAN},
-    {propName: "displayName", propType: "string", messageEntry:messageRegistry.DISPLAY_NAME_STRING},
-    {propName: "description", propType: "string", messageEntry:messageRegistry.DESCRIPTION_STRING}
-];
-
 export class Example extends MetaInfo{
     constructor(value:any){
         super("example",value)
@@ -383,38 +377,8 @@ export class Example extends MetaInfo{
         var result = ts.ok();
         if (typeof val==="object"&&val){
             if (val.hasOwnProperty("value")){
-                
-
-                for(var y of exampleScalarProperties) {
-                    var propName = y.propName;
-                    var propType = y.propType;
-                    var propObj = val[propName];
-                    if (propObj&&typeof propObj!=propType){
-                        if(typeof(propObj)=="object") {
-                            Object.keys(propObj).forEach(key=> {
-                                if (key.charAt(0) == '(' && key.charAt(key.length - 1) == ')') {
-                                    var a = new Annotation(key.substring(1, key.length - 1), propObj[key], key, true);
-                                    var aRes = a.validateSelf(registry);
-                                    ts.setValidationPath(aRes,{
-                                            name: "example",
-                                            child: {name: propName, child: {name: key}}
-                                        });
-                                    result.addSubStatus(aRes);
-                                }
-                            });
-                        }
-
-                        if(!propObj.value&&typeof propObj.value!=propType) {
-                            var s = ts.error(y.messageEntry, this);
-                            var vp = propObj.value ? {name: "value"} : null;
-                            ts.setValidationPath(s,{name: "example", child: {name: propName, child: vp}});
-                            result.addSubStatus(s);
-                        }
-                    }
-                    
-                }
-                
-                if (val.strict===false||(typeof(val.strict)=="object"&&val.strict.value===false)){
+                checkExampleScalarProperties(val,null,registry,result,this.facetName());
+                if (val.strict===false||(val.strict && typeof(val.strict)=="object"&&val.strict.value===false)){
                     return result;
                 }
                 val=val.value;
@@ -614,10 +578,8 @@ export class Examples extends MetaInfo{
                         let val = exampleObj;
                         if (hasVal){
                             val = exampleObj.value;
-                            for(var y of exampleScalarProperties) {
-                                this.checkScalarProperty(exampleObj, x, y, registry,rs);
-                            }
-                            if (exampleObj.strict===false||(
+                            checkExampleScalarProperties(exampleObj,x,registry,rs,this.facetName());
+                            if (exampleObj.strict===false||(exampleObj.strict &&
                                 typeof(exampleObj.strict)=="object" && exampleObj.strict.value === false)){
                                 return ;
                             }
@@ -643,45 +605,6 @@ export class Examples extends MetaInfo{
         }
         else{
             return ts.error(messageRegistry.EXMAPLES_MAP,this);
-        }
-    }
-
-    private checkScalarProperty(
-        exampleObj:any,
-        exampleName:string,
-        y:any,
-        registry:ts.TypeRegistry,
-        status:Status) {
-        
-        var propName = y.propName;
-        var propType = y.propType;
-        var propObj = exampleObj[propName];
-
-        if (propObj && typeof propObj != propType) {
-            var vp:tsInterfaces.IValidationPath = null;
-            if (typeof(propObj) == "object") {
-                vp = {name: "value"};
-                Object.keys(propObj).forEach(key=> {
-                    if (key.charAt(0) == '(' && key.charAt(key.length - 1) == ')') {
-                        var a = new Annotation(key.substring(1, key.length - 1), exampleObj[propName][key],key,true);
-                        var aRes = a.validateSelf(registry);
-                        ts.setValidationPath(aRes,
-                            {
-                                name: "examples",
-                                child: {name: exampleName, child: {name: propName, child: {name: key}}}
-                            });
-                        status.addSubStatus(aRes);
-                    }
-                });
-            }
-            if (!propObj.value && typeof(propObj.value) != propType) {
-                var s = ts.error(y.messageEntry, this);
-                ts.setValidationPath(s,{
-                    name: "examples",
-                    child: {name: exampleName, child: {name: propName, child: vp}}
-                });
-                status.addSubStatus(s);
-            }
         }
     }
 
@@ -971,3 +894,88 @@ export interface ChainingData{
     value: string
 
 }
+
+function checkExampleScalarProperties(
+    exampleObj:any,
+    exampleName:string,
+    registry:ts.TypeRegistry,
+    status:Status,
+    facetName:string){
+    for(var y of exampleScalarProperties) {
+        checkScalarProperty(exampleObj, exampleName, y, registry,status,facetName);
+    }
+}
+
+
+function checkScalarProperty(
+    exampleObj:any,
+    exampleName:string,
+    y:any,
+    registry:ts.TypeRegistry,
+    status:Status,
+    facetName:string,) {
+
+    let propName = y.propName;
+    let propType = y.propType;
+
+    if(!exampleObj
+        ||(typeof exampleObj != "object")
+        ||!exampleObj.hasOwnProperty(propName)){
+        return;
+    }
+    let propObj = exampleObj[propName];
+
+    if(propObj==null){
+        let s = ts.error(y.messageEntry, this);
+        let vp:ts.IValidationPath = toExampleScalarPropertyPath(exampleName,facetName,{name: propName});
+        ts.setValidationPath(s,vp);
+        status.addSubStatus(s);
+    }
+    else if (typeof propObj != propType) {
+        let vp:tsInterfaces.IValidationPath = null;
+        if (typeof(propObj) == "object") {
+            vp = toExampleScalarPropertyPath(exampleName,facetName,{name: "value"});
+            Object.keys(propObj).forEach(key=> {
+                if (key.charAt(0) == '(' && key.charAt(key.length - 1) == ')') {
+                    let a = new Annotation(key.substring(1, key.length - 1), exampleObj[propName][key],key,true);
+                    let aRes = a.validateSelf(registry);
+                    let vp:ts.IValidationPath = toExampleScalarPropertyPath(exampleName,facetName,{name: propName, child: {name: key}});
+                    ts.setValidationPath(aRes,vp);
+                    status.addSubStatus(aRes);
+                }
+            });
+        }
+        if (!propObj.value && typeof(propObj.value) != propType) {
+            let s = ts.error(y.messageEntry, this);
+            ts.setValidationPath(s,{
+                name: "examples",
+                child: {name: exampleName, child: {name: propName, child: vp}}
+            });
+            status.addSubStatus(s);
+        }
+    }
+}
+
+function toExampleScalarPropertyPath(
+    exampleName:string,
+    facetName:string,
+    vp:ts.IValidationPath):ts.IValidationPath{
+
+    let p = vp;
+    if (exampleName) {
+        p = {
+            name: exampleName,
+            child: vp
+        };
+    }
+    return {
+        name: facetName,
+        child: p
+    };
+}
+
+const exampleScalarProperties = [
+    {propName: "strict", propType: "boolean", messageEntry:messageRegistry.STRICT_BOOLEAN},
+    {propName: "displayName", propType: "string", messageEntry:messageRegistry.DISPLAY_NAME_STRING},
+    {propName: "description", propType: "string", messageEntry:messageRegistry.DESCRIPTION_STRING}
+];

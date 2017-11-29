@@ -89,6 +89,9 @@ class Example implements nm.IExpandableExample{
         else{
             this._hasAnnotations = true;
         }
+        if(typeof this._strict != "boolean"){
+            this._strict = false;
+        }
     }
 
     rawValue():any{ return this._value }
