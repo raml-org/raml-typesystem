@@ -1144,7 +1144,7 @@ export function parse(
 
     var props=n.childWithKey("facets");
     if (props){
-        if (props.kind()==NodeKind.MAP||props.kind()==NodeKind.ARRAY){
+        if (props.kind()==NodeKind.MAP){
             props.children().forEach(x=>{
                 var bean=parsePropertyBean(x,r);
                 result.addMeta(new meta.FacetDeclaration(bean.id,bean.type,bean.optional));
