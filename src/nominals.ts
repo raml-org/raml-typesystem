@@ -1,4 +1,5 @@
 import ts=require("./typesystem")
+import ti=require("./nominal-interfaces")
 import nt=require("./nominal-types")
 import parse=require("./parse")
 import restrictions = require("./restrictions");
@@ -135,16 +136,32 @@ export function toNominal(t:ts.AbstractType,callback:StringToBuiltIn,customizer:
 
     var proto=parse.toProto(t);
     proto.properties.forEach(x=>{
-        var propName = x.regExp ? `/${x.id}/` : x.id; 
+        var propName = x.regExp ? `/${x.id}/` : x.id;
         var prop=pc ? pc(propName):new nt.Property(propName);
         prop.withDomain(<nt.StructuredType>vs);
         prop.withRange(toNominal(x.type,callback));
+        const descrMeta = x.type.metaOfType(metainfo.Description)
+        if (descrMeta && descrMeta.length > 0 && descrMeta[0].value() && descrMeta[0].value().length && descrMeta[0].value().length > 0) {
+            prop.withDescription(descrMeta[0].value())
+        }
+        const annMetas = x.type.metaOfType(<{ new(v:any):metainfo.Annotation }>metainfo.Annotation)
+        if (annMetas && annMetas.length && annMetas.length > 0) {
+            annMetas.forEach(ann => {
+                const nameId = () => ann.facetName()
+                const val = { value: ann.value() }
+                prop.addAnnotation(new nt.Annotation(<ti.IAnnotationType>{nameId: nameId }, val))
+            })
+        }
         if (!x.optional){
             prop.withRequired(true);
         }
         if(x.regExp){
             prop.withKeyRegexp(propName);
         }
+    });
+    proto.annotations.forEach(ann => {
+        const nameId = () => ann.facetName()
+        vs.addAnnotation(new nt.Annotation(<ti.IAnnotationType>{ nameId: nameId }, ann.value()))
     });
     proto.facetDeclarations.filter(x=>!x.isBuiltIn()).forEach(x=>{
         var prop=pc?pc(x.facetName()):new nt.Property(x.facetName());

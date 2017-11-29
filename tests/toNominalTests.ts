@@ -247,4 +247,55 @@ describe("To nominals",function() {
         var nt=nm.toNominal(tp,x=>null);
         assert.isTrue(nt.superTypes().length==2);
     });
+    it("to nominal properties inherit annotations", function () {
+        const tps = ps.parseJSONTypeCollection({
+            annotationTypes: {"(testAnnotation)" : {type: "string"}},
+            types: {
+                A: { type: "object", properties: {
+                    x: { type: "string", "(testAnnotation)" : "testVal"}}}
+            }
+        },ts.builtInRegistry());
+        const tp=tps.getType("A");
+        const nt=nm.toNominal(tp,x=>null);
+        const prop = nt.property("x");
+
+        assert.isDefined(prop.annotations());
+        assert.equal(prop.annotations().length, 1);
+        assert.equal(prop.annotations()[0].nameId(), "testAnnotation");
+        assert.equal(prop.annotations()[0].parameterNames()[0], "value");
+        assert.equal(prop.annotations()[0].parameter("value"), "testVal");
+    });
+    it("to nominal types inherit annotations", function () {
+        const tps = ps.parseJSONTypeCollection({
+            annotationTypes: {"(testAnnotation)" : {
+                type: "object",
+                properties: {
+                    propA: "string",
+                    propB: "integer",
+                }
+            }},
+            types: {
+                A: {
+                    type: "object",
+                    "(testAnnotation)": {
+                        propA : "string ann prop",
+                        propB : 123
+                    },
+                    properties: {
+                        x: "string"
+                    }
+                }
+            }
+        },ts.builtInRegistry());
+        const tp=tps.getType("A");
+        const nt=nm.toNominal(tp,x=>null);
+
+        assert.isDefined(nt.annotations());
+        assert.equal(nt.annotations().length, 1);
+        assert.equal(nt.annotations()[0].nameId(), "testAnnotation");
+        assert.equal(nt.annotations()[0].parameterNames()[0], "propA");
+        assert.equal(nt.annotations()[0].parameterNames()[1], "propB");
+        assert.equal(nt.annotations()[0].parameter("propA"), "string ann prop");
+        assert.equal(nt.annotations()[0].parameter("propB"), 123);
+    });
 });
