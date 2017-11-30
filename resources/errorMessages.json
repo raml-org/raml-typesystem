@@ -137,7 +137,7 @@
   },
   "SCALAR_EXPECTED" : {
     "code" : "SCALAR_EXPECTED",
-    "message": "scalar is expected"
+    "message": "Scalar is expected here"
   },
   "INCORRECT_DISCRIMINATOR" : {
     "code" : "INCORRECT_DISCRIMINATOR",
@@ -199,13 +199,9 @@
     "code" : "STRICT_BOOLEAN",
     "message": "'strict' should be boolean"
   },
-  "DISPLAY_NAME_STRING" : {
-    "code" : "DISPLAY_NAME_STRING",
-    "message": "'displayName' should be string"
-  },
-  "DESCRIPTION_STRING" : {
-    "code" : "DESCRIPTION_STRING",
-    "message": "'description' should be string"
+  "INVALID_PROPERTY_RANGE": {
+    "code" : "INVALID_PROPERTY_RANGE",
+    "message" : "Property '{{propName}}' must be a {{range}}"
   },
   "INVALID_EXMAPLE" : {
     "code" : "INVALID_EXMAPLE",

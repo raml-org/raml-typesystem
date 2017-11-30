@@ -46,11 +46,40 @@ export class MetaInfo extends ts.TypeInformation {
 export class Description extends MetaInfo{
 
     constructor(value:string){
-        super("description",value)
+        super("description",value);
+    }
+
+    private static CLASS_IDENTIFIER_Description = "metainfo.Description";
+
+    public getClassIdentifier() : string[] {
+        var superIdentifiers:string[] = super.getClassIdentifier();
+        return superIdentifiers.concat(Description.CLASS_IDENTIFIER_Description);
+    }
+
+    public static isInstance(instance: any): instance is Description {
+        return instance != null && instance.getClassIdentifier
+            && typeof(instance.getClassIdentifier) == "function"
+            && _.contains(instance.getClassIdentifier(), Description.CLASS_IDENTIFIER_Description);
     }
 
     kind() : tsInterfaces.MetaInformationKind {
         return tsInterfaces.MetaInformationKind.Description;
+    }
+
+    protected validateSelfIndividual(parentStatus:Status,registry:ts.TypeRegistry):Status{
+        let vl = this.value();
+        const allowedTypes:{[key:string]:boolean} = {
+            "string": true,
+            "number": true,
+            "boolean": true
+        };
+        let result = ts.ok();
+        if(vl !== null && !allowedTypes[typeof vl]){
+            result = ts.error(messageRegistry.INVALID_PROPERTY_RANGE, this, { propName: this.facetName(), range: "string"});
+            ts.setValidationPath(result,{name:this.facetName()});
+        }
+        parentStatus.addSubStatus(result);
+        return parentStatus;
     }
 }
 export  class NotScalar extends MetaInfo{
@@ -123,13 +152,41 @@ export class SkipValidation extends MetaInfo{
 
 export class DisplayName extends MetaInfo{
 
-
     constructor(value:string){
-        super("displayName",value)
+        super("displayName",value);
+    }
+
+    private static CLASS_IDENTIFIER_DisplayName = "metainfo.DisplayName";
+
+    public getClassIdentifier() : string[] {
+        var superIdentifiers:string[] = super.getClassIdentifier();
+        return superIdentifiers.concat(DisplayName.CLASS_IDENTIFIER_DisplayName);
+    }
+
+    public static isInstance(instance: any): instance is DisplayName {
+        return instance != null && instance.getClassIdentifier
+            && typeof(instance.getClassIdentifier) == "function"
+            && _.contains(instance.getClassIdentifier(), DisplayName.CLASS_IDENTIFIER_DisplayName);
     }
 
     kind() : tsInterfaces.MetaInformationKind {
         return tsInterfaces.MetaInformationKind.DisplayName;
+    }
+
+    protected validateSelfIndividual(parentStatus:Status,registry:ts.TypeRegistry):Status{
+        let vl = this.value();
+        const allowedTypes:{[key:string]:boolean} = {
+            "string": true,
+            "number": true,
+            "boolean": true
+        };
+        let result = ts.ok();
+        if(vl !== null && !allowedTypes[typeof vl]){
+            result = ts.error(messageRegistry.INVALID_PROPERTY_RANGE, this, { propName: this.facetName(), range: "string"});
+            ts.setValidationPath(result,{name:this.facetName()});
+        }
+        parentStatus.addSubStatus(result);
+        return parentStatus;
     }
 }
 export class Usage extends MetaInfo{
