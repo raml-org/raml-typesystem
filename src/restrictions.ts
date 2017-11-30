@@ -1449,7 +1449,12 @@ export class Enum extends FacetRestriction<string[]>{
                 opts=[<string><any>opts];
             }
             if (!opts.some(x=>x == i)) {
-                var valStr = Array.isArray(this._value) ? this._value.map(x=>`'${x}'`).join(", ") : `'${this._value}'`;
+                var valStr = Array.isArray(this._value) ? this._value.map(x=>{
+                    if(x && typeof x === "object"){
+                        return JSON.stringify(x,null,2);
+                    }
+                    return `'${x}'`
+                }).join(", ") : `'${this._value}'`;
                 return ts.error(messageRegistry.ENUM_RESTRICTION,this, {values: valStr});
             }
         }
