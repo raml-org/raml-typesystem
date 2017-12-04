@@ -230,7 +230,7 @@ export abstract class TypeInformation implements tsInterfaces.ITypeFacet {
     _owner:AbstractType;
 
     _node:parse.ParseNode;
-    
+
     _annotations:tsInterfaces.IAnnotation[] = [];
 
     private static CLASS_IDENTIFIER_TypeInformation = "typesystem.TypeInformation";
@@ -683,7 +683,10 @@ export class PropertyInfo implements tsInterfaces.IPropertyInfo {
 
     private isMap:boolean;
     private isProp:boolean;
+    private isAdditionalProp:boolean;
     private isFacet:boolean;
+
+    private _required:boolean;
 
     protected _matches:restr.MatchesProperty;
     protected _facetDecl:metaInfo.FacetDeclaration;
@@ -700,6 +703,9 @@ export class PropertyInfo implements tsInterfaces.IPropertyInfo {
             else if (fn == "mapPropertyIs") {
                 this.isMap = true;
             }
+            else if (fn == "additionalProperties") {
+                this.isAdditionalProp = true;
+            }
         }
         else{
             this.isFacet = true;
@@ -709,7 +715,7 @@ export class PropertyInfo implements tsInterfaces.IPropertyInfo {
     }
 
     name() {
-        return this.isFacet ? this._facetDecl.actualName() : this._matches.propId();
+        return this.isFacet ? this._facetDecl.actualName() : this._matches.path();
     }
 
     isPattern() {
@@ -717,7 +723,7 @@ export class PropertyInfo implements tsInterfaces.IPropertyInfo {
     }
 
     isAdditional() {
-        return !this.isFacet && !(this.isProp||this.isMap);
+        return this.isAdditionalProp;
     }
 
     declaredAt() {
@@ -729,10 +735,23 @@ export class PropertyInfo implements tsInterfaces.IPropertyInfo {
     }
 
     required(): boolean{
+        if(this._required!==undefined){
+            return this._required;
+        }
         if(this.isProp){
             return !this.property().isOptional();
         }
+        else if(this.isMap){
+            return !this.mapProperty().isOptional();
+        }
+        else if(this.isAdditionalProp){
+            return !this.additionalProperty().isOptional();
+        }
         return false;
+    }
+
+    setRequired(val:boolean){
+        this._required = val;
     }
 
     private property():restr.PropertyIs{
@@ -743,9 +762,17 @@ export class PropertyInfo implements tsInterfaces.IPropertyInfo {
         return this.isMap ? <restr.MapPropertyIs>this._matches : null;
     }
 
+    private additionalProperty():restr.AdditionalPropertyIs{
+        return this.isAdditionalProp ? <restr.AdditionalPropertyIs>this._matches : null;
+    }
+
+    annotations(){
+        return this._matches ? this._matches.annotations() : [];
+    }
+
 }
 
-export abstract class AbstractType implements tsInterfaces.IParsedType, tsInterfaces.IHasExtra{
+export abstract class AbstractType implements tsInterfaces.IParsedType, tsInterfaces.IHasExtra, tsInterfaces.HasSource{
 
     protected computeConfluent: boolean
 
@@ -869,17 +896,17 @@ export abstract class AbstractType implements tsInterfaces.IParsedType, tsInterf
         return exO.exampleFromInheritedType2(this);
     }
 
-    // collection() {
-    //     if (!this._collection) {
-    //         if ((<any>this)._contextMeta) {
-    //             var cm: TypeInformation = (<any>this)._contextMeta;
-    //             if (cm) {
-    //                 return cm.owner().collection();
-    //             }
-    //         }
-    //     }
-    //     return this._collection
-    // }
+    collection(): tsInterfaces.IParsedTypeCollection {
+        if (!this._collection) {
+            if ((<any>this)._contextMeta) {
+                var cm: TypeInformation = (<any>this)._contextMeta;
+                if (cm) {
+                    return cm.owner().collection();
+                }
+            }
+        }
+        return this._collection
+    }
     getExtra(name:string):any{
         return this.extras[name];
     }
@@ -917,7 +944,12 @@ export abstract class AbstractType implements tsInterfaces.IParsedType, tsInterf
     }
 
     allFacets():TypeInformation[]{
-        return this.meta();
+        return this.meta().filter(x=>{
+            if(!metaInfo.DiscriminatorValue.isInstance(x)){
+                return true;
+            }
+            return (<metaInfo.DiscriminatorValue>x).isStrict();
+        });
     }
 
     declaredFacets():TypeInformation[]{
@@ -1427,11 +1459,17 @@ export abstract class AbstractType implements tsInterfaces.IParsedType, tsInterf
             return false;
         }
         return this.metaInfo.filter(x=>{
-                if(x instanceof NotScalar){
+                if(NotScalar.isInstance(x)){
                     return false;
                 }
-                else if(x instanceof metaInfo.DiscriminatorValue){
+                else if(metaInfo.DiscriminatorValue.isInstance(x)){
                     return (<metaInfo.DiscriminatorValue>x).isStrict();
+                }
+                else if(metaInfo.SourceMap.isInstance(x)){
+                    return false;
+                }
+                else if(metaInfo.ImportedByChain.isInstance(x)){
+                    return false;
                 }
                 return true;
             }).length==0;
@@ -1806,6 +1844,41 @@ export abstract class AbstractType implements tsInterfaces.IParsedType, tsInterf
         return <any>this.declaredMeta().filter(x =>metaInfo.Annotation.isInstance(x));
     }
 
+    scalarsAnnotations(): {[key:string]:metaInfo.Annotation[][]}{
+        return this.sAnnotations(this.meta());
+    }
+
+    declaredScalarsAnnotations(): {[key:string]:metaInfo.Annotation[][]}{
+        return this.sAnnotations(this.declaredFacets());
+    }
+
+    private sAnnotations(facets:tsInterfaces.ITypeFacet[]): {[key:string]:metaInfo.Annotation[][]}{
+        facets = facets.filter(x=>
+            x.kind()!=tsInterfaces.MetaInformationKind.FacetDeclaration
+            && x.kind()!=tsInterfaces.MetaInformationKind.Example
+            && x.kind()!=tsInterfaces.MetaInformationKind.Examples
+            && x.facetName() != "propertyIs");
+
+        let result: {[key:string]:metaInfo.Annotation[][]} = {};
+        for(let f of facets){
+            const annotations = f.annotations();
+            if(!annotations||!annotations.length){
+                continue;
+            }
+            result[f.facetName()] = [annotations.map(x=>{
+                let a = new metaInfo.Annotation(x.name(),x.value(),(<metaInfo.Annotation>x).getPath());
+                a.setOwnerFacet(f);
+                return a;
+            })];
+        }
+        if(this.supertypeAnnotations&&this.supertypeAnnotations.length){
+            result['type'] = this.supertypeAnnotations.map(x=>{
+                return Object.keys(x).map(y=>new metaInfo.Annotation(x[y].name(),x[y].value(),(<metaInfo.Annotation>x[y]).getPath()));
+            });
+        }
+        return result;
+    }
+
     componentType(): tsInterfaces.IParsedType{
         let components = this.metaOfType(ComponentShouldBeOfType);
         if(components.length==0){
@@ -1815,7 +1888,22 @@ export abstract class AbstractType implements tsInterfaces.IParsedType, tsInterf
             return components[0].value();
         }
         else{
-            let ct = derive(null,components.map(x=>x.value()));
+            let componentTypes:AbstractType[] = components.map(x=>x.value());
+            let componentTypes1:AbstractType[] = [].concat(componentTypes);
+            for(let x of componentTypes1){
+                let toRemove:AbstractType[] = []
+                for(let y of componentTypes){
+                    if(x==y){
+                        continue;
+                    }
+                    if(y.isAssignableFrom(x)){
+                        toRemove.push(y);
+                    }
+                }
+                componentTypes = componentTypes.filter(y=>toRemove.indexOf(y)<0);
+            }
+
+            let ct = derive(null,componentTypes);
             return ct;
         }
     }
@@ -1886,10 +1974,12 @@ export abstract class AbstractType implements tsInterfaces.IParsedType, tsInterf
             this.definedFacetInfosMap = {};
             this.definedFacetInfos = [];
             var m = this.meta();
-            for (let i = m.length - 1; i >= 0; i--) {
-                if (metaInfo.FacetDeclaration.isInstance(m[i])) {
-                    let p = new PropertyInfo(<metaInfo.FacetDeclaration>m[i]);
-                    this.definedFacetInfosMap[p.name()] = p;
+            for (let f of m) {
+                if (metaInfo.FacetDeclaration.isInstance(f)&&!(<metaInfo.FacetDeclaration>f).isBuiltIn()) {
+                    let p = new PropertyInfo(<metaInfo.FacetDeclaration>f);
+                    if(!this.definedFacetInfosMap[f.facetName()]){
+                        this.definedFacetInfosMap[p.name()] = p;
+                    }
                     this.definedFacetInfos.push(p);
                 }
             }
@@ -2107,6 +2197,10 @@ export abstract class AbstractType implements tsInterfaces.IParsedType, tsInterf
 
     hasPropertiesFacet():boolean{
         return this.metaInfo.some(x=>x instanceof metaInfo.HasPropertiesFacet);
+    }
+
+    sourceMap():tsInterfaces.ElementSourceInfo{
+        return null;
     }
 }
 
@@ -2512,6 +2606,9 @@ export function derive(name: string,t:AbstractType[]):InheritedType{
     var r=new InheritedType(name);
     t.forEach(x=>r.addSuper(x));
     if (r.isSubTypeOf(NIL)){
+        r.nullable=true;
+    }
+    else if(t.length==1&&t[0]==ANY){
         r.nullable=true;
     }
     return r;

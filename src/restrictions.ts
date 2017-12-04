@@ -19,9 +19,7 @@ export abstract class MatchesProperty extends ts.Constraint{
          return false;
      }
 
-    constructor(private _type:ts.AbstractType){super()}
-
-    abstract path():string;
+    constructor(private _type:ts.AbstractType, protected optional=false){super()}
 
     private static CLASS_IDENTIFIER_MatchesProperty = "restrictions.MatchesProperty";
 
@@ -35,6 +33,8 @@ export abstract class MatchesProperty extends ts.Constraint{
             && typeof(instance.getClassIdentifier) == "function"
             && _.contains(instance.getClassIdentifier(), MatchesProperty.CLASS_IDENTIFIER_MatchesProperty);
     }
+
+    abstract path():string;
 
     check(i:any,p:ts.IValidationPath):ts.Status{
         throw new Error(messageRegistry.SHOULD_BE_NEVER_CALLED.message);
@@ -93,6 +93,10 @@ export abstract class MatchesProperty extends ts.Constraint{
 
     range():ts.AbstractType{
             return this._type;
+    }
+
+    isOptional():boolean{
+        return this.optional;
     }
 }
 
@@ -189,6 +193,19 @@ export class MatchToSchema extends  ts.Constraint{
  */
 export class KnownPropertyRestriction extends ts.Constraint{
 
+    private static CLASS_IDENTIFIER_KnownPropertyRestriction = "typesystem.KnownPropertyRestriction";
+
+    public getClassIdentifier() : string[] {
+        var superIdentifiers:string[] = super.getClassIdentifier();
+        return superIdentifiers.concat(KnownPropertyRestriction.CLASS_IDENTIFIER_KnownPropertyRestriction);
+    }
+
+    public static isInstance(instance: any): instance is KnownPropertyRestriction {
+        return instance != null && instance.getClassIdentifier
+            && typeof(instance.getClassIdentifier) == "function"
+            && _.contains(instance.getClassIdentifier(), KnownPropertyRestriction.CLASS_IDENTIFIER_KnownPropertyRestriction);
+    }
+
     facetName(){
         return "closed"
     }
@@ -265,6 +282,20 @@ export class HasProperty extends ts.Constraint{
     constructor(private name: string){
         super();
     }
+
+    private static CLASS_IDENTIFIER_HasProperty = "restrictions.HasProperty";
+
+    public getClassIdentifier() : string[] {
+        var superIdentifiers:string[] = super.getClassIdentifier();
+        return superIdentifiers.concat(HasProperty.CLASS_IDENTIFIER_HasProperty);
+    }
+
+    public static isInstance(instance: any): instance is HasProperty {
+        return instance != null && instance.getClassIdentifier
+            && typeof(instance.getClassIdentifier) == "function"
+            && _.contains(instance.getClassIdentifier(), HasProperty.CLASS_IDENTIFIER_HasProperty);
+    }
+
     check(i:any):ts.Status{
         if (i&&typeof i=='object'&&!Array.isArray(i)) {
             if (i.hasOwnProperty(this.name)) {
@@ -304,8 +335,8 @@ export class HasProperty extends ts.Constraint{
  */
 export class PropertyIs extends MatchesProperty{
 
-    constructor(private name: string,private type:ts.AbstractType, private optional:boolean=false){
-        super(type);
+    constructor(private name: string,private type:ts.AbstractType,optional=false){
+        super(type,optional);
     }
 
     private static CLASS_IDENTIFIER_PropertyIs = "restrictions.PropertyIs";
@@ -385,10 +416,6 @@ export class PropertyIs extends MatchesProperty{
         }
         return null;
     }
-
-    isOptional():boolean{
-        return this.optional;
-    }
 }
 
 var anotherSource:any[] = [];
@@ -425,8 +452,8 @@ export function anotherRestrictionComponentsCount():number{
  */
 export class MapPropertyIs extends MatchesProperty{
 
-    constructor(private regexp: string,private type:ts.AbstractType){
-        super(type);
+    constructor(private regexp: string,private type:ts.AbstractType,optional=false){
+        super(type,optional);
     }
 
     private static CLASS_IDENTIFIER_MapPropertyIs = "restrictions.MapPropertyIs";
@@ -455,9 +482,9 @@ export class MapPropertyIs extends MatchesProperty{
     requiredType(){
         return ts.OBJECT;
     }
-     propId():string{
-         return '['+this.regexp+']'
-     }
+    propId():string{
+        return '['+this.regexp+']'
+    }
 
     facetName(){
         return "mapPropertyIs"
@@ -543,8 +570,8 @@ export class MapPropertyIs extends MatchesProperty{
  */
 export class AdditionalPropertyIs extends MatchesProperty{
 
-    constructor(private type:ts.AbstractType){
-        super(type);
+    constructor(private type:ts.AbstractType,optional=false){
+        super(type,optional);
     }
 
     private static CLASS_IDENTIFIER_AdditionalPropertyIs = "restrictions.AdditionalPropertyIs";
@@ -561,7 +588,7 @@ export class AdditionalPropertyIs extends MatchesProperty{
     }
 
     path(){
-        return this.facetName();
+        return "/.*/";
     }
     matches(s:string):boolean{
         return true;
@@ -1123,7 +1150,8 @@ export class ComponentShouldBeOfType extends FacetRestriction<ts.AbstractType>{
     }
 
     public toString() {
-        return ts.error(messageRegistry.ITEMS_SHOULD_BE_OF_TYPE, this, {type:this.type}).getMessage();
+        let typeName = this.type && this.type.name();
+        return ts.error(messageRegistry.ITEMS_SHOULD_BE_OF_TYPE, this, {type: typeName}).getMessage();
     }
     check(i:any):ts.Status{
 
@@ -1169,7 +1197,9 @@ export class ComponentShouldBeOfType extends FacetRestriction<ts.AbstractType>{
             });
         }
         else if (this.type.isExternal()){
-            st.addSubStatus(ts.error(messageRegistry.EXTERNAL_AS_COMPONENT,this));
+            let itemsErr = ts.error(messageRegistry.EXTERNAL_AS_COMPONENT,this);
+            itemsErr.setValidationPath({name:"items"});
+            st.addSubStatus(itemsErr);
         }
         else if (ts.isUnknown(this.type) || this.type.isSubTypeOf(ts.RECURRENT)) {
             st.addSubStatus(ts.error(messageRegistry.UNKNOWN_ARRAY_COMPONENT_TYPE,this,{ componentTypeName: this.type.name()}));
@@ -1419,7 +1449,12 @@ export class Enum extends FacetRestriction<string[]>{
                 opts=[<string><any>opts];
             }
             if (!opts.some(x=>x == i)) {
-                var valStr = Array.isArray(this._value) ? this._value.map(x=>`'${x}'`).join(", ") : `'${this._value}'`;
+                var valStr = Array.isArray(this._value) ? this._value.map(x=>{
+                    if(x && typeof x === "object"){
+                        return JSON.stringify(x,null,2);
+                    }
+                    return `'${x}'`
+                }).join(", ") : `'${this._value}'`;
                 return ts.error(messageRegistry.ENUM_RESTRICTION,this, {values: valStr});
             }
         }

@@ -46,16 +46,58 @@ export class MetaInfo extends ts.TypeInformation {
 export class Description extends MetaInfo{
 
     constructor(value:string){
-        super("description",value)
+        super("description",value);
+    }
+
+    private static CLASS_IDENTIFIER_Description = "metainfo.Description";
+
+    public getClassIdentifier() : string[] {
+        var superIdentifiers:string[] = super.getClassIdentifier();
+        return superIdentifiers.concat(Description.CLASS_IDENTIFIER_Description);
+    }
+
+    public static isInstance(instance: any): instance is Description {
+        return instance != null && instance.getClassIdentifier
+            && typeof(instance.getClassIdentifier) == "function"
+            && _.contains(instance.getClassIdentifier(), Description.CLASS_IDENTIFIER_Description);
     }
 
     kind() : tsInterfaces.MetaInformationKind {
         return tsInterfaces.MetaInformationKind.Description;
     }
+
+    protected validateSelfIndividual(parentStatus:Status,registry:ts.TypeRegistry):Status{
+        let vl = this.value();
+        const allowedTypes:{[key:string]:boolean} = {
+            "string": true,
+            "number": true,
+            "boolean": true
+        };
+        let result = ts.ok();
+        if(vl !== null && !allowedTypes[typeof vl]){
+            result = ts.error(messageRegistry.INVALID_PROPERTY_RANGE, this, { propName: this.facetName(), range: "string"});
+            ts.setValidationPath(result,{name:this.facetName()});
+        }
+        parentStatus.addSubStatus(result);
+        return parentStatus;
+    }
 }
 export  class NotScalar extends MetaInfo{
     constructor(){
         super("notScalar",true)
+    }
+
+    private static CLASS_IDENTIFIER_NotScalar = "metainfo.NotScalar";
+
+    public getClassIdentifier() : string[] {
+        var superIdentifiers:string[] = super.getClassIdentifier();
+        return superIdentifiers.concat(NotScalar.CLASS_IDENTIFIER_NotScalar);
+    }
+
+    public static isInstance(instance: any): instance is NotScalar {
+        return instance != null && instance.getClassIdentifier
+            && typeof(instance.getClassIdentifier) == "function"
+            && _.contains(instance.getClassIdentifier(), NotScalar.CLASS_IDENTIFIER_NotScalar);
     }
 
     kind() : tsInterfaces.MetaInformationKind {
@@ -66,6 +108,19 @@ export  class NotScalar extends MetaInfo{
 export class ImportedByChain extends MetaInfo{
     constructor(private _typeName:string){
         super("importedByChain", _typeName, true);
+    }
+
+    private static CLASS_IDENTIFIER_ImportedByChain = "metainfo.ImportedByChain";
+
+    public getClassIdentifier() : string[] {
+        var superIdentifiers:string[] = super.getClassIdentifier();
+        return superIdentifiers.concat(ImportedByChain.CLASS_IDENTIFIER_ImportedByChain);
+    }
+
+    public static isInstance(instance: any): instance is ImportedByChain {
+        return instance != null && instance.getClassIdentifier
+            && typeof(instance.getClassIdentifier) == "function"
+            && _.contains(instance.getClassIdentifier(), ImportedByChain.CLASS_IDENTIFIER_ImportedByChain);
     }
 
     kind() : tsInterfaces.MetaInformationKind {
@@ -97,13 +152,41 @@ export class SkipValidation extends MetaInfo{
 
 export class DisplayName extends MetaInfo{
 
-
     constructor(value:string){
-        super("displayName",value)
+        super("displayName",value);
+    }
+
+    private static CLASS_IDENTIFIER_DisplayName = "metainfo.DisplayName";
+
+    public getClassIdentifier() : string[] {
+        var superIdentifiers:string[] = super.getClassIdentifier();
+        return superIdentifiers.concat(DisplayName.CLASS_IDENTIFIER_DisplayName);
+    }
+
+    public static isInstance(instance: any): instance is DisplayName {
+        return instance != null && instance.getClassIdentifier
+            && typeof(instance.getClassIdentifier) == "function"
+            && _.contains(instance.getClassIdentifier(), DisplayName.CLASS_IDENTIFIER_DisplayName);
     }
 
     kind() : tsInterfaces.MetaInformationKind {
         return tsInterfaces.MetaInformationKind.DisplayName;
+    }
+
+    protected validateSelfIndividual(parentStatus:Status,registry:ts.TypeRegistry):Status{
+        let vl = this.value();
+        const allowedTypes:{[key:string]:boolean} = {
+            "string": true,
+            "number": true,
+            "boolean": true
+        };
+        let result = ts.ok();
+        if(vl !== null && !allowedTypes[typeof vl]){
+            result = ts.error(messageRegistry.INVALID_PROPERTY_RANGE, this, { propName: this.facetName(), range: "string"});
+            ts.setValidationPath(result,{name:this.facetName()});
+        }
+        parentStatus.addSubStatus(result);
+        return parentStatus;
     }
 }
 export class Usage extends MetaInfo{
@@ -119,7 +202,7 @@ export class Usage extends MetaInfo{
 }
 export class Annotation extends MetaInfo implements tsInterfaces.IAnnotation{
 
-    constructor(name: string,value:any,protected path:string, protected ofExample=false){
+    constructor(name: string,value:any,protected path:string, protected ofExample=false, private _index:number=-1){
         super(name,value)
     }
 
@@ -129,6 +212,18 @@ export class Annotation extends MetaInfo implements tsInterfaces.IAnnotation{
 
     name(){
         return this.facetName();
+    }
+
+    definition(){
+        var owner=this.owner();
+        if (owner){
+            var reg=owner.collection();
+            if (reg){
+                var tp=reg.getAnnotationType(this.facetName());
+                return tp;
+            }
+        }
+        return null;
     }
 
     validateSelfIndividual(parentStatus:ts.Status,registry:ts.TypeRegistry):ts.Status {
@@ -203,6 +298,10 @@ export class Annotation extends MetaInfo implements tsInterfaces.IAnnotation{
 
     setOwnerFacet(ownerFacet:tsInterfaces.ITypeFacet){
         this._ownerFacet = ownerFacet;
+    }
+
+    getPath():string{
+        return this.path;
     }
 }
 export class FacetDeclaration extends MetaInfo{
@@ -312,12 +411,6 @@ function parseExampleIfNeeded(val:any,type:ts.AbstractType):any{
     return val;
 }
 
-var exampleScalarProperties = [
-    {propName: "strict", propType: "boolean", messageEntry:messageRegistry.STRICT_BOOLEAN},
-    {propName: "displayName", propType: "string", messageEntry:messageRegistry.DISPLAY_NAME_STRING},
-    {propName: "description", propType: "string", messageEntry:messageRegistry.DESCRIPTION_STRING}
-];
-
 export class Example extends MetaInfo{
     constructor(value:any){
         super("example",value)
@@ -341,38 +434,8 @@ export class Example extends MetaInfo{
         var result = ts.ok();
         if (typeof val==="object"&&val){
             if (val.hasOwnProperty("value")){
-                
-
-                for(var y of exampleScalarProperties) {
-                    var propName = y.propName;
-                    var propType = y.propType;
-                    var propObj = val[propName];
-                    if (propObj&&typeof propObj!=propType){
-                        if(typeof(propObj)=="object") {
-                            Object.keys(propObj).forEach(key=> {
-                                if (key.charAt(0) == '(' && key.charAt(key.length - 1) == ')') {
-                                    var a = new Annotation(key.substring(1, key.length - 1), propObj[key], key, true);
-                                    var aRes = a.validateSelf(registry);
-                                    ts.setValidationPath(aRes,{
-                                            name: "example",
-                                            child: {name: propName, child: {name: key}}
-                                        });
-                                    result.addSubStatus(aRes);
-                                }
-                            });
-                        }
-
-                        if(!propObj.value&&typeof propObj.value!=propType) {
-                            var s = ts.error(y.messageEntry, this);
-                            var vp = propObj.value ? {name: "value"} : null;
-                            ts.setValidationPath(s,{name: "example", child: {name: propName, child: vp}});
-                            result.addSubStatus(s);
-                        }
-                    }
-                    
-                }
-                
-                if (val.strict===false||(typeof(val.strict)=="object"&&val.strict.value===false)){
+                checkExampleScalarProperties(val,null,registry,result,this.facetName());
+                if (val.strict===false||(val.strict && typeof(val.strict)=="object"&&val.strict.value===false)){
                     return result;
                 }
                 val=val.value;
@@ -477,6 +540,19 @@ export class HasPropertiesFacet extends MetaInfo{
         super("hasPropertiesFacet",null);
     }
 
+    private static CLASS_IDENTIFIER_HasPropertiesFacet = "metainfo.HasPropertiesFacet";
+
+    public getClassIdentifier() : string[] {
+        var superIdentifiers:string[] = super.getClassIdentifier();
+        return superIdentifiers.concat(HasPropertiesFacet.CLASS_IDENTIFIER_HasPropertiesFacet);
+    }
+
+    public static isInstance(instance: any): instance is HasPropertiesFacet {
+        return instance != null && instance.getClassIdentifier
+            && typeof(instance.getClassIdentifier) == "function"
+            && _.contains(instance.getClassIdentifier(), HasPropertiesFacet.CLASS_IDENTIFIER_HasPropertiesFacet);
+    }
+
     kind() : tsInterfaces.MetaInformationKind {
         return tsInterfaces.MetaInformationKind.HasPropertiesFacet;
     }
@@ -559,10 +635,8 @@ export class Examples extends MetaInfo{
                         let val = exampleObj;
                         if (hasVal){
                             val = exampleObj.value;
-                            for(var y of exampleScalarProperties) {
-                                this.checkScalarProperty(exampleObj, x, y, registry,rs);
-                            }
-                            if (exampleObj.strict===false||(
+                            checkExampleScalarProperties(exampleObj,x,registry,rs,this.facetName());
+                            if (exampleObj.strict===false||(exampleObj.strict &&
                                 typeof(exampleObj.strict)=="object" && exampleObj.strict.value === false)){
                                 return ;
                             }
@@ -588,45 +662,6 @@ export class Examples extends MetaInfo{
         }
         else{
             return ts.error(messageRegistry.EXMAPLES_MAP,this);
-        }
-    }
-
-    private checkScalarProperty(
-        exampleObj:any,
-        exampleName:string,
-        y:any,
-        registry:ts.TypeRegistry,
-        status:Status) {
-        
-        var propName = y.propName;
-        var propType = y.propType;
-        var propObj = exampleObj[propName];
-
-        if (propObj && typeof propObj != propType) {
-            var vp:tsInterfaces.IValidationPath = null;
-            if (typeof(propObj) == "object") {
-                vp = {name: "value"};
-                Object.keys(propObj).forEach(key=> {
-                    if (key.charAt(0) == '(' && key.charAt(key.length - 1) == ')') {
-                        var a = new Annotation(key.substring(1, key.length - 1), exampleObj[propName][key],key,true);
-                        var aRes = a.validateSelf(registry);
-                        ts.setValidationPath(aRes,
-                            {
-                                name: "examples",
-                                child: {name: exampleName, child: {name: propName, child: {name: key}}}
-                            });
-                        status.addSubStatus(aRes);
-                    }
-                });
-            }
-            if (!propObj.value && typeof(propObj.value) != propType) {
-                var s = ts.error(y.messageEntry, this);
-                ts.setValidationPath(s,{
-                    name: "examples",
-                    child: {name: exampleName, child: {name: propName, child: vp}}
-                });
-                status.addSubStatus(s);
-            }
         }
     }
 
@@ -675,6 +710,74 @@ export class Default extends MetaInfo{
         return tsInterfaces.MetaInformationKind.Default;
     }
 }
+
+export class SchemaPath extends MetaInfo{
+    constructor(path:string){
+        super("schemaPath",path,true);
+    }
+
+    kind() : tsInterfaces.MetaInformationKind {
+        return tsInterfaces.MetaInformationKind.SchemaPath;
+    }
+}
+
+export class SourceMap extends MetaInfo{
+    constructor(value:Object){
+        super("sourceMap",value);
+    }
+
+    private static CLASS_IDENTIFIER_SourceMap = "metainfo.SourceMap";
+
+    public getClassIdentifier() : string[] {
+        var superIdentifiers:string[] = super.getClassIdentifier();
+        return superIdentifiers.concat(SourceMap.CLASS_IDENTIFIER_SourceMap);
+    }
+
+    public static isInstance(instance: any): instance is SourceMap {
+        return instance != null && instance.getClassIdentifier
+            && typeof(instance.getClassIdentifier) == "function"
+            && _.contains(instance.getClassIdentifier(), SourceMap.CLASS_IDENTIFIER_SourceMap);
+    }
+
+    kind() : tsInterfaces.MetaInformationKind {
+        return tsInterfaces.MetaInformationKind.SourceMap;
+    }
+}
+
+export class TypeAttributeValue extends MetaInfo{
+    constructor(value:any){
+        super("typeAttributeValue",value);
+    }
+
+    private static CLASS_IDENTIFIER_TypeAttributeValue = "metainfo.TypeAttributeValue";
+
+    public getClassIdentifier() : string[] {
+        var superIdentifiers:string[] = super.getClassIdentifier();
+        return superIdentifiers.concat(TypeAttributeValue.CLASS_IDENTIFIER_TypeAttributeValue);
+    }
+
+    public static isInstance(instance: any): instance is TypeAttributeValue {
+        return instance != null && instance.getClassIdentifier
+            && typeof(instance.getClassIdentifier) == "function"
+            && _.contains(instance.getClassIdentifier(), TypeAttributeValue.CLASS_IDENTIFIER_TypeAttributeValue);
+    }
+
+    kind() : tsInterfaces.MetaInformationKind {
+        return tsInterfaces.MetaInformationKind.TypeAttributeValue;
+    }
+}
+
+
+export class ParserMetadata extends MetaInfo{
+    constructor(value:Object){
+        super("__METADATA__",value);
+    }
+
+    kind() : tsInterfaces.MetaInformationKind {
+        return tsInterfaces.MetaInformationKind.ParserMetadata;
+    }
+}
+
 export class Discriminator extends ts.TypeInformation{
 
     constructor(public property: string){
@@ -724,6 +827,12 @@ export class Discriminator extends ts.TypeInformation{
 export class DiscriminatorValue extends ts.Constraint{
     constructor(public _value: any, protected strict:boolean=true){
         super(false);
+        if(this._value && typeof this._value === "object"){
+            if(typeof this._value.strict === "boolean"){
+                this.strict = this._value.strict;
+            }
+            this._value = this._value.value;
+        }
     }
 
     private static CLASS_IDENTIFIER_DiscriminatorValue = "metainfo.DiscriminatorValue";
@@ -842,3 +951,88 @@ export interface ChainingData{
     value: string
 
 }
+
+function checkExampleScalarProperties(
+    exampleObj:any,
+    exampleName:string,
+    registry:ts.TypeRegistry,
+    status:Status,
+    facetName:string){
+    for(var y of exampleScalarProperties) {
+        checkScalarProperty(exampleObj, exampleName, y, registry,status,facetName);
+    }
+}
+
+
+function checkScalarProperty(
+    exampleObj:any,
+    exampleName:string,
+    y:any,
+    registry:ts.TypeRegistry,
+    status:Status,
+    facetName:string,) {
+
+    let propName = y.propName;
+    let propType = y.propType;
+
+    if(!exampleObj
+        ||(typeof exampleObj != "object")
+        ||!exampleObj.hasOwnProperty(propName)){
+        return;
+    }
+    let propObj = exampleObj[propName];
+
+    if(propObj==null){
+        let s = ts.error(y.messageEntry, this);
+        let vp:ts.IValidationPath = toExampleScalarPropertyPath(exampleName,facetName,{name: propName});
+        ts.setValidationPath(s,vp);
+        status.addSubStatus(s);
+    }
+    else if (typeof propObj != propType) {
+        let vp:tsInterfaces.IValidationPath = null;
+        if (typeof(propObj) == "object") {
+            vp = toExampleScalarPropertyPath(exampleName,facetName,{name: "value"});
+            Object.keys(propObj).forEach(key=> {
+                if (key.charAt(0) == '(' && key.charAt(key.length - 1) == ')') {
+                    let a = new Annotation(key.substring(1, key.length - 1), exampleObj[propName][key],key,true);
+                    let aRes = a.validateSelf(registry);
+                    let vp:ts.IValidationPath = toExampleScalarPropertyPath(exampleName,facetName,{name: propName, child: {name: key}});
+                    ts.setValidationPath(aRes,vp);
+                    status.addSubStatus(aRes);
+                }
+            });
+        }
+        if (!propObj.value && typeof(propObj.value) != propType) {
+            let s = ts.error(y.messageEntry, this);
+            ts.setValidationPath(s,{
+                name: "examples",
+                child: {name: exampleName, child: {name: propName, child: vp}}
+            });
+            status.addSubStatus(s);
+        }
+    }
+}
+
+function toExampleScalarPropertyPath(
+    exampleName:string,
+    facetName:string,
+    vp:ts.IValidationPath):ts.IValidationPath{
+
+    let p = vp;
+    if (exampleName) {
+        p = {
+            name: exampleName,
+            child: vp
+        };
+    }
+    return {
+        name: facetName,
+        child: p
+    };
+}
+
+const exampleScalarProperties = [
+    {propName: "strict", propType: "boolean", messageEntry:messageRegistry.STRICT_BOOLEAN},
+    {propName: "displayName", propType: "string", messageEntry:messageRegistry.DISPLAY_NAME_STRING},
+    {propName: "description", propType: "string", messageEntry:messageRegistry.DESCRIPTION_STRING}
+];

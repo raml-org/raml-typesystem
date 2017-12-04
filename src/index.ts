@@ -14,7 +14,10 @@ export import typeExpressions=require("./typeExpressionUtil");
 import schemaUtil = require('./schemaUtil');
 
 export type IValidationPath = tsInterfaces.IValidationPath;
+export type IExample = tsInterfaces.IExample;
+export type IAnnotation = tsInterfaces.IAnnotation;
 export type IHasExtra = tsInterfaces.IHasExtra;
+export type ElementSourceInfo = tsInterfaces.IHasExtra;
 export var TOP_LEVEL_EXTRA = tsInterfaces.TOP_LEVEL_EXTRA;
 export var DEFINED_IN_TYPES_EXTRA = tsInterfaces.DEFINED_IN_TYPES_EXTRA;
 export var USER_DEFINED_EXTRA = tsInterfaces.USER_DEFINED_EXTRA;

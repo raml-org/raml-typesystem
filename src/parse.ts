@@ -118,6 +118,11 @@ export class PropertyBean{
     additonal: boolean
     regExp: boolean;
     type: ts.AbstractType;
+    annotations: {
+        name: string,
+        key: string
+        value: any
+    }[];
 
     add(t:ts.AbstractType){
         if (!this.optional&&!this.additonal&&!this.regExp&&!this.type.isSubTypeOf(ts.NIL)){
@@ -128,7 +133,7 @@ export class PropertyBean{
             matchesPropertyFacet = new rs.AdditionalPropertyIs(this.type);
         }
         else if (this.regExp){
-            matchesPropertyFacet = new rs.MapPropertyIs(this.id,this.type);
+            matchesPropertyFacet = new rs.MapPropertyIs(this.id,this.type,this.optional);
         }
         else{
             matchesPropertyFacet = new rs.PropertyIs(this.id,this.type,this.optional);
@@ -138,6 +143,13 @@ export class PropertyBean{
             if(this.type instanceof ts.InheritedType && this.type.name()==null){
                 //Linking anonymous types with properties declaring them
                 (<ts.InheritedType>this.type).setContextMeta(matchesPropertyFacet);
+            }
+            if(this.annotations && this.annotations.length){
+                for(let a of this.annotations){
+                    const a1 = new meta.Annotation(a.name,a.value,a.key);
+                    a1.setOwnerFacet(matchesPropertyFacet);
+                    matchesPropertyFacet.addAnnotation(a1);
+                }
             }
         }
     }
@@ -161,6 +173,7 @@ export class TypeCollection {
 
 
     add(t:AbstractType){
+        this._types = this._types.filter(x=>x.name()!=t.name());
         this._types.push(t);
         this._typeMap[t.name()]=t;
     }
@@ -406,8 +419,25 @@ export function parsePropertyBean(n:ParseNode,tr:ts.TypeRegistry):PropertyBean{
     var requiredNode=n.childWithKey("required");
     if (requiredNode){
         var rsValue = requiredNode.value();
-        if (typeof rsValue=="boolean"){
+        if (typeof rsValue==="boolean"){
             hasRequiredFacet = true;
+        }
+        else if(rsValue && typeof(rsValue)==="object" && typeof rsValue.value ==="boolean"){
+            hasRequiredFacet = true;
+            let annotations = Object.keys(rsValue).filter(x=>{
+                x = x.trim();
+                return x.length>1 && x.charAt(0)=="(" && x.charAt(x.length-1)==")";
+            });
+            if(annotations.length) {
+                result.annotations = annotations.map(x=>{
+                    x = x.trim();
+                    return {
+                        name: x.substring(1,x.length-1).trim(),
+                        key: x,
+                        value: rsValue[x]
+                    };
+                });
+            }
         }
         if (rsValue===false){
             result.optional=true;
@@ -419,7 +449,7 @@ export function parsePropertyBean(n:ParseNode,tr:ts.TypeRegistry):PropertyBean{
         name=name.substr(0,name.length-1);
         result.optional=true;
     }
-    if (name.length==0||name==='/.*/'){
+    if (name != null && name.length==0||name==='/.*/'){
         result.additonal=true;
 
     }
@@ -539,7 +569,7 @@ export class TypeProto{
                     nm="/.*/"
                 }
                 if (x.regExp){
-                    nm="/"+nm+"/";
+                    nm="/"+x.id+"/";
                 }
                 var vl:any=null;
                 if (x.type.isAnonymous()){
@@ -614,20 +644,23 @@ export function toProto(type:AbstractType):TypeProto{
 
                 var pbean=new PropertyBean();
                 pbean.optional=false;
-                pbean.id= "/.*/";
+                pbean.id= ".*";
                 pbean.additonal=true;
                 pbean.type= x.value();
+                pbean.optional = x.isOptional();
+                pbean.regExp=true;
                 pmap['/.*/']=pbean;
             }
-            else if (x instanceof rs.MapPropertyIs){
+            else if (rs.MapPropertyIs.isInstance(x)){
                 var pbean=new PropertyBean();
                 pbean.optional=false;
                 pbean.id= x.regexpValue();
                 pbean.regExp=true;
                 pbean.type= x.value();
+                pbean.optional = x.isOptional();
                 pmap[x.regexpValue()]=pbean;
             }
-            else if (x instanceof rs.PropertyIs){
+            else if (rs.PropertyIs.isInstance(x)){
                 if (pmap.hasOwnProperty(x.propertyName())){
                     pmap[x.propertyName()].type= x.value();
                 }
@@ -639,15 +672,15 @@ export function toProto(type:AbstractType):TypeProto{
                     pmap[x.propertyName()]=pbean;
                 }
             }
-            else if (x instanceof rs.KnownPropertyRestriction) {
+            else if (rs.KnownPropertyRestriction.isInstance(x)) {
                 result.additionalProperties = x.value();
             }
-            else if(x instanceof meta.DiscriminatorValue){
+            else if(meta.DiscriminatorValue.isInstance(x)){
                 if((<meta.DiscriminatorValue>x).isStrict()){
                     result.basicFacets.push(x);
                 }
             }
-            else if(!(x instanceof meta.HasPropertiesFacet)) {
+            else if(!meta.HasPropertiesFacet.isInstance(x)) {
                 result.basicFacets.push(x);
             }
         }
@@ -749,15 +782,18 @@ function testFacetAgainstType(facet : ts.TypeInformation, type : ts.AbstractType
 }
 
 function appendAnnotations(appendedInfo:ts.TypeInformation, childNode:ParseNode) {
-    var children = childNode.children();
-    for (var ch of children) {
-        var key = ch.key();
-        if (key && key.charAt(0) == "(" && key.charAt(key.length - 1) == ")") {
-            var aName = key.substring(1, key.length - 1);
-            var aInstance = new meta.Annotation(aName, ch.value(), key);
-            aInstance.setNode(ch);
-            aInstance.setOwnerFacet(appendedInfo);
-            appendedInfo.addAnnotation(aInstance);
+    let arr = childNode.kind() == NodeKind.ARRAY ? childNode.children() : [childNode];
+    for (let i = 0 ; i < arr.length ; i++) {
+        let children = arr[i].children();
+        for (let ch of children) {
+            let key = ch.key();
+            if (key && key.charAt(0) == "(" && key.charAt(key.length - 1) == ")") {
+                let aName = key.substring(1, key.length - 1);
+                let aInstance = new meta.Annotation(aName, ch.value(), key, false, i);
+                aInstance.setOwnerFacet(appendedInfo);
+                aInstance._owner = appendedInfo._owner;
+                appendedInfo.addAnnotation(aInstance);
+            }
         }
     }
 }
@@ -850,7 +886,7 @@ export function parse(
         var supers:ts.AbstractType[]=[];
         n.children().forEach(x=>{
             supers.push(typeExpressions.parseToType(""+x.value(),r, n))
-        })
+        });
         var res=ts.derive(name,supers);
         if (AccumulatingRegistry.isInstance(r)){
             res = contributeToAccumulatingRegistry(res, r);
@@ -871,7 +907,7 @@ export function parse(
         }
     }
     var typePropAnnotations:tsInterfaces.IAnnotation[][] = [];
-    if (!tp||ignoreTypeAttr){
+    if (!tp||(!tp.children().length&&!tp.value())||ignoreTypeAttr){
         if (defaultsToAny){
             if (n.childWithKey("properties")) {
                 superTypes = [ts.OBJECT];
@@ -910,7 +946,8 @@ export function parse(
             else{
                 var typeAttributeContentProvider : su.IContentProvider =
                     (<any>tp).contentProvider ? (<any>tp).contentProvider() : null;
-                superTypes=[typeExpressions.parseToType(""+valString,r, n, typeAttributeContentProvider)];
+                const st = typeExpressions.parseToType(""+valString,r, n, typeAttributeContentProvider);
+                superTypes=[st];
             }
         }
         else if (tp.kind()==NodeKind.ARRAY){
@@ -950,6 +987,9 @@ export function parse(
         }
     }
     var result=ts.derive(name,superTypes);
+    if(ignoreTypeAttr && tp){
+        result.addMeta(new meta.TypeAttributeValue(tp.value()));
+    }
     for(var i = 0 ; i < typePropAnnotations.length ; i++){
         var aArr1:tsInterfaces.IAnnotation[] = typePropAnnotations[i];
         result.addSupertypeAnnotation(aArr1,i);
@@ -965,7 +1005,7 @@ export function parse(
         var key = childNode.key();
         actual = childNode.childWithKey("value");
         var x = childNode;
-        if(key!="example"&&actual){
+        if(key!="example"&&key!="discriminatorValue"&&actual){
             x = actual;
         }
         if (!key){
@@ -992,54 +1032,39 @@ export function parse(
         if (key=="items"){
             if (result.isSubTypeOf(ts.ARRAY)){
                 var componentTypes:ts.AbstractType[] = [];
-                if (x.kind()==NodeKind.SCALAR){
-                    var valString = x.value();
-                    if(valString==null||valString=="Null"||valString=="NULL"){
-                        componentTypes = [ ts.STRING ];
-                    }
-                    else{
-                        componentTypes=[typeExpressions.parseToType(""+valString,r, n)];
-                        checkIfSkipValidation(componentTypes[0],x);
-                    }
-                }
-                else if (x.kind()==NodeKind.ARRAY){
-                    componentTypes=x.children().map(y=>{
-                        var actual = y.childWithKey("value");
-                        if(actual&&(actual.kind()==NodeKind.SCALAR||actual.kind()==NodeKind.ARRAY)){
-                            sAnnotations.push(y.children().filter(x=>{
-                                var key = x.key();
-                                if(!key){
-                                    return false;
-                                }
-                                return key.charAt(0) == "(" && key.charAt(key.length - 1) == ")";
-                            }));
-                            y = actual;
-                        }
-                        else{
-                            sAnnotations.push([]);
-                        }
-                        return y;
-                    }).map(y=>{
-                        let result = typeExpressions.parseToType(""+y.value(),r, n);
-                        checkIfSkipValidation(result,y);
-                        return result;
-                    });
-
-                    var err=ts.error(messageRegistry.ITEMS_SHOULD_BE_REFERENCE_OR_INLINE_TYPE,actualResult);
+                let arr:ParseNode[] = [x];
+                if(x.kind()==NodeKind.ARRAY){
+                    arr = x.children()
+                    let err=ts.error(messageRegistry.ITEMS_SHOULD_BE_REFERENCE_OR_INLINE_TYPE,actualResult);
                     err.setValidationPath({ name:"items"})
                     result.putExtra(tsInterfaces.PARSE_ERROR,err);
                 }
-                else if (x.kind()==NodeKind.MAP){
-                    componentTypes=[parse("",x,r,false,false,false)];
-                }
-                var tp = componentTypes.length == 1 ? componentTypes[0] : 
+                var componentTypes:ts.AbstractType[] = arr.map(y=>{
+                    let actual = y.childWithKey("value");
+                    if(actual&&(actual.kind()==NodeKind.SCALAR||actual.kind()==NodeKind.MAP)){
+                        y = actual;
+                    }
+                    if (y.kind()==NodeKind.SCALAR){
+                        var valString = y.value();
+                        if(valString==null||valString=="Null"||valString=="NULL"){
+                            return ts.STRING;
+                        }
+                        else{
+                            let res = typeExpressions.parseToType(""+valString,r, n);
+                            checkIfSkipValidation(res,x);
+                            return res;
+                        }
+                    }
+                    else if (y.kind()==NodeKind.MAP){
+                        return parse("",y,r,false,false,false);
+                    }
+                });
+                var tp = componentTypes.length == 1 ? componentTypes[0] :
                     ts.derive("",componentTypes);
                 appendedInfo = new ComponentShouldBeOfType(tp);
                 actualResult.addMeta(appendedInfo);
                 actualResult.putExtra(tsInterfaces.HAS_ITEMS,true)
-                if(actual){
-                    appendAnnotations(appendedInfo, childNode);
-                }
+                appendAnnotations(appendedInfo, childNode);
                 return appendedInfo;
             }            
         }
@@ -1065,10 +1090,10 @@ export function parse(
                 result.addMeta(appendedInfo);
             }
             else {
-                if (annotation && key === "allowedTargets") {
-                    result.addMeta(new meta.AllowedTargets(x.value()));
-                }
-                else {
+                // if (annotation && key === "allowedTargets") {
+                //     result.addMeta(new meta.AllowedTargets(x.value()));
+                // }
+                {//else {
                     var customFacet = new meta.CustomFacet(key, x.value());
                     customFacet.setNode(x);
                     result.addMeta(customFacet);

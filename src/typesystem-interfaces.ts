@@ -88,9 +88,6 @@ export interface IStatus extends IHasExtra {
 export enum MetaInformationKind {
     Description,
     NotScalar,
-    ImportedByChain,
-    AcceptAllScalarsAsStrings,
-    SkipValidation,
     DisplayName,
     Usage,
     Annotation,
@@ -106,7 +103,14 @@ export enum MetaInformationKind {
     Constraint,
     Modifier,
     Discriminator,
-    DiscriminatorValue
+    DiscriminatorValue,
+    SchemaPath,
+    SourceMap,
+    ParserMetadata,
+    ImportedByChain,
+    AcceptAllScalarsAsStrings,
+    SkipValidation,
+    TypeAttributeValue
 }
 
 /**
@@ -178,6 +182,21 @@ export interface IAnnotation extends ITypeFacet {
      * Returns owner type for annotations applied to types
      */
     owner():IParsedType
+
+    /**
+     * Annotation name
+     */
+    name():string;
+
+    /**
+     * Annotation value
+     */
+    value(): any;
+
+    /**
+     * Annotation definition type
+     */
+    definition(): IParsedType;
 }
 
 export interface IParsedTypeCollection {
@@ -252,13 +271,22 @@ export interface IPropertyInfo {
     isPattern(): boolean
 
     isAdditional(): boolean
+
+    annotations(): IAnnotation[]
+}
+
+export interface IAnnotated {
+
+    annotations(): IAnnotation[]
+
+    annotation(name: string): any
 }
 
 /**
  * parsed representation of the type
  * you should not create instances of this interfaces manually
  */
-export interface IParsedType extends IHasExtra {
+export interface IParsedType extends IAnnotated, IHasExtra {
 
     /**
      * returns  list of directly declared sub types of this type
@@ -297,6 +325,10 @@ export interface IParsedType extends IHasExtra {
     annotation(name: string): any
 
     declaredAnnotations(): IAnnotation[]
+
+    scalarsAnnotations(): {[key:string]:IAnnotation[][]};
+
+    declaredScalarsAnnotations(): {[key:string]:IAnnotation[][]};
 
     registry(): IParsedTypeCollection
 
@@ -590,6 +622,10 @@ export interface IExample {
 
     name(): string
 
+    displayName(): string
+
+    description():string
+
     strict(): boolean
 
     value(): any
@@ -633,4 +669,33 @@ export interface MarkerObject{
 export interface RangeObject{
     start: MarkerObject,
     end: MarkerObject
+}
+
+export interface SourceInfo{
+
+    /**
+     * Path to file which contains definition
+     */
+    path?: string
+
+    /**
+     * Namespace of defining library if any
+     */
+    namespace?: string
+
+}
+
+export interface ElementSourceInfo extends SourceInfo{
+
+    /**
+     * Source information for fields which are defined in another file rather then their owning component.
+     * If all scalar fields of the component are defined in the same file, the 'scalarsSources' field is undefined.
+     */
+    scalarsSources: { [key:string]:SourceInfo[] }
+
+}
+
+export interface HasSource {
+
+    sourceMap(): ElementSourceInfo
 }
