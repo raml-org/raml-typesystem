@@ -1265,10 +1265,14 @@ export abstract class AbstractType implements tsInterfaces.IParsedType, tsInterf
         }
         if (this.isExternal()){
             if (this.getExtra(tsInterfaces.HAS_FACETS)){
-                var fs=error(messageRegistry.EXTERNAL_FACET, this,
-                    {name:this.getExtra(tsInterfaces.HAS_FACETS)});
-                setValidationPath(fs,{ name:this.getExtra(tsInterfaces.HAS_FACETS)});
-                rs.addSubStatus(fs);
+                let fArr = this.getExtra(tsInterfaces.HAS_FACETS);
+                if(fArr.length) {
+                    let f = fArr[fArr.length-1];
+                    var fs = error(messageRegistry.EXTERNAL_FACET, this,
+                        {name: f});
+                    setValidationPath(fs, {name: f});
+                    rs.addSubStatus(fs);
+                }
             }
         }
 
