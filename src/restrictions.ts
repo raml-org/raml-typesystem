@@ -1597,7 +1597,7 @@ export function validatePropertyType(
         ts.setValidationPath(p,{name: propName})
         return p;
     }
-    if (ts.isUnknown(_type)||_type.isSubTypeOf(ts.RECURRENT)){
+    if (ts.isUnknown(_type)){
         var actualUnknown = actualUnknownType(_type);
         let p:ts.Status;
         let messageEntries:any[] = [];
@@ -1660,6 +1660,12 @@ export function validatePropertyType(
             issues.forEach(x=>result.addSubStatus(x));
             return result;
         }
+    }
+    else if(_type.isSubTypeOf(ts.RECURRENT)){
+        st = ts.error(messageRegistry.CYCLIC_DEPENDENCY, source, {
+            typeName: _type.name()
+        });
+        return st;
     }
     if (_type.isAnonymous()){
         var st=_type.validateType(registry);

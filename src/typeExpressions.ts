@@ -1,5 +1,6 @@
 import typeExpression=require("./typeExpressionParser")
 import ts=require("./typesystem")
+import _parse=require("./parse");
 import schemaUtil = require('./schemaUtil')
 import {ComponentShouldBeOfType} from "./restrictions";
 import {ParseNode} from "./parse";
@@ -13,7 +14,7 @@ export type Parens = typeExpressionDefs.Parens;
 
 
 export function parseToType(val:string,t:ts.TypeRegistry, contentProvidingNode?:ParseNode,
-    typeAttributeContentProvider: schemaUtil.IContentProvider = null):ts.AbstractType{
+    typeAttributeContentProvider: schemaUtil.IContentProvider = null, isPropertyType=false):ts.AbstractType{
     if(val==null){
         return null;
     }
@@ -40,7 +41,7 @@ export function parseToType(val:string,t:ts.TypeRegistry, contentProvidingNode?:
             }
 
             var node:BaseNode = parse(val);
-            var result= parseNode(node, t);
+            var result= parseNode(node, t, isPropertyType);
             return result;
         } else {
             return ts.derive(val,[ts.STRING])
@@ -61,21 +62,21 @@ function wrapArray(a:number, result:ts.AbstractType):ts.AbstractType {
     }
     return result;
 }
-function parseNode(node:BaseNode,t:ts.TypeRegistry):ts.AbstractType
+function parseNode(node:BaseNode,t:ts.TypeRegistry, isPropertyType:boolean):ts.AbstractType
 {
     if (node.type=="union"){
         var ut=<Union>node;
-        return ts.union("",[parseNode(ut.first,t),parseNode(ut.rest,t)]);
+        return ts.union("",[parseNode(ut.first,t,isPropertyType),parseNode(ut.rest,t,isPropertyType)]);
     }
     else if (node.type=="parens"){
         var ps=<Parens>node;
-        var rs=parseNode(ps.expr,t);
+        var rs=parseNode(ps.expr,t,isPropertyType);
         return wrapArray(ps.arr,rs);
     }
     else{
         var lit=(<Literal>node);
         if (lit.value.charAt(lit.value.length-1)=='?'){
-            var result=t.get(lit.value.substr(0,lit.value.length-1));
+            var result=getFromRegistry(t,lit.value.substr(0,lit.value.length-1),isPropertyType);
             if (!result){
                 result=ts.derive(lit.value,[ts.UNKNOWN]);
             }
@@ -83,7 +84,7 @@ function parseNode(node:BaseNode,t:ts.TypeRegistry):ts.AbstractType
             var a=lit.arr;
             return wrapArray(a, result);
         }
-        var result=t.get(lit.value);
+        var result=getFromRegistry(t,lit.value,isPropertyType);
         if (!result){
             result=ts.derive(lit.value,[ts.UNKNOWN]);
             let chained = t.getByChain(lit.value);
@@ -96,6 +97,12 @@ function parseNode(node:BaseNode,t:ts.TypeRegistry):ts.AbstractType
     }
 }
 
+function getFromRegistry(t:ts.TypeRegistry,name:string,isPropertyType:boolean):ts.AbstractType{
+    if(_parse.AccumulatingRegistry.isInstance(t)){
+        return t.get(name,isPropertyType);
+    }
+    return t.get(name);
+}
 
 export function storeToString(t:ts.AbstractType):string{
     if (t.isSubTypeOf(ts.ARRAY)){
