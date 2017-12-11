@@ -244,8 +244,11 @@ export class AccumulatingRegistry extends ts.TypeRegistry{
 
     parsing:{ [name:string]:boolean}={};
 
-    get(name: string ):ts.AbstractType{
+    get(name: string, isPropertyType=false ):ts.AbstractType{
         var result=super.get(name);
+        if(isPropertyType&&result&&result.isSubTypeOf(ts.REFERENCE)){
+            return result;
+        }
 
         if (!result||result.isSubTypeOf(ts.REFERENCE)){
 
@@ -457,7 +460,7 @@ export function parsePropertyBean(n:ParseNode,tr:ts.TypeRegistry):PropertyBean{
         name=name.substring(1,name.length-1);
         result.regExp=true;
     }
-    result.type=parse(null, n,tr,false,false,false);
+    result.type=parse(null, n,tr,false,false,false, false, true);
     let chainingData = <meta.ChainingData[]>n.getMeta("chaining");
     if(chainingData && chainingData.length>0){
         if(result.type.metaOfType(meta.ImportedByChain).length==0){
@@ -818,7 +821,8 @@ export function parse(
     defaultsToAny:boolean=false,
     annotation:boolean=false,
     global:boolean=true,
-    ignoreTypeAttr:boolean=false):ts.AbstractType{
+    ignoreTypeAttr:boolean=false,
+    isPropertyType=false):ts.AbstractType{
 
     //mentioning fragment' uses
     var uses=n.childWithKey("uses");
@@ -842,7 +846,7 @@ export function parse(
             sp = ts.STRING;
         }
         else{
-            sp = typeExpressions.parseToType(""+valString,r, n)
+            sp = typeExpressions.parseToType(""+valString,r, n,null,isPropertyType)
         }
         if (name==null){
             checkIfSkipValidation(sp, n);
@@ -885,7 +889,7 @@ export function parse(
     if (n.kind()==NodeKind.ARRAY){
         var supers:ts.AbstractType[]=[];
         n.children().forEach(x=>{
-            supers.push(typeExpressions.parseToType(""+x.value(),r, n))
+            supers.push(typeExpressions.parseToType(""+x.value(),r, n, null, isPropertyType))
         });
         var res=ts.derive(name,supers);
         if (AccumulatingRegistry.isInstance(r)){
@@ -946,7 +950,7 @@ export function parse(
             else{
                 var typeAttributeContentProvider : su.IContentProvider =
                     (<any>tp).contentProvider ? (<any>tp).contentProvider() : null;
-                const st = typeExpressions.parseToType(""+valString,r, n, typeAttributeContentProvider);
+                const st = typeExpressions.parseToType(""+valString,r, n, typeAttributeContentProvider, isPropertyType);
                 superTypes=[st];
             }
         }
@@ -967,7 +971,7 @@ export function parse(
                     sAnnotations.push([]);
                 }
                 return x.value();
-            }).map(y=>typeExpressions.parseToType(""+y,r, n));
+            }).map(y=>typeExpressions.parseToType(""+y,r, n,null, isPropertyType));
         }
         else if (tp.kind()==NodeKind.MAP){
             superTypes=[parse("",tp,r,false,false,false)];
@@ -998,7 +1002,7 @@ export function parse(
         result = contributeToAccumulatingRegistry(result, r);
     }
     var actualResult=result;
-    var hasfacetsOrOtherStuffDoesNotAllowedInExternals:string=null;
+    var hasfacetsOrOtherStuffDoesNotAllowedInExternals:string[]=null;
 
     n.children().forEach(childNode=>{
 
@@ -1070,11 +1074,13 @@ export function parse(
         }
         else {
             if (key === "facets") {
-                hasfacetsOrOtherStuffDoesNotAllowedInExternals = key;
+                hasfacetsOrOtherStuffDoesNotAllowedInExternals = [key];
                 return;
             }
             else if (key == "default" || key == "xml" || key == "required") {
-                hasfacetsOrOtherStuffDoesNotAllowedInExternals = key;
+                hasfacetsOrOtherStuffDoesNotAllowedInExternals =
+                    hasfacetsOrOtherStuffDoesNotAllowedInExternals ?
+                        hasfacetsOrOtherStuffDoesNotAllowedInExternals.concat(key):[key];
             }
             else if (key.charAt(0) == '(' && key.charAt(key.length - 1) == ')') {
                 let a = new meta.Annotation(key.substr(1, key.length - 2), x.value(), key);
@@ -1171,7 +1177,9 @@ export function parse(
     }
     actualResult.putExtra(ts.GLOBAL,global);
     actualResult.putExtra(ts.SOURCE_EXTRA, n);
-    actualResult.putExtra(tsInterfaces.HAS_FACETS, hasfacetsOrOtherStuffDoesNotAllowedInExternals);
+    if(hasfacetsOrOtherStuffDoesNotAllowedInExternals) {
+        actualResult.putExtra(tsInterfaces.HAS_FACETS, hasfacetsOrOtherStuffDoesNotAllowedInExternals);
+    }
 
     checkIfSkipValidation(actualResult, n);
     if(n.getMeta("acceptAllScalarsAsStrings")){
