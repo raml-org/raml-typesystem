@@ -364,9 +364,6 @@ export class PropertyIs extends MatchesProperty{
         if (i && typeof i==="object") {
             if (i.hasOwnProperty(this.name)) {
                 var st = this.validateProp(i, this.name, this.type,p);
-                if(!st.isOk()&&this.optional&&i[this.name]==null){
-                    return ts.ok();
-                }
                 return st;
             }
         }
