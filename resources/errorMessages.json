@@ -111,13 +111,13 @@
     "code" : "SAME_DISCRIMINATOR_VALUE",
     "message": "Types '{{name1}}' and '{{name2}}' have same discriminator value"
   },
-  "24" : {
-    "code" : "24",
-    "message": ""
+  "DISPLAY_NAME_STRING": {
+    "code" : "DISPLAY_NAME_STRING",
+    "message" : "Property 'displayName' must be a string"
   },
-  "25" : {
-    "code" : "25",
-    "message": ""
+  "DESCRIPTION_STRING": {
+    "code" : "DESCRIPTION_STRING",
+    "message" : "Property 'description' must be a string"
   },
   "NOTHING" : {
     "code" : "NOTHING",
