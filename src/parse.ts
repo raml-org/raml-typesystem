@@ -7,7 +7,6 @@ import typeExpressions=require("./typeExpressions")
 import facetR=require("./facetRegistry")
 import meta=require("./metainfo")
 import {Annotation, Example, Examples} from "./metainfo";
-import {Type} from "typescript";
 import {FacetDeclaration} from "./metainfo";
 import {HasProperty} from "./restrictions";
 import {AdditionalPropertyIs} from "./restrictions";
