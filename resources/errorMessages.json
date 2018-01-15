@@ -319,6 +319,10 @@
     "code" : "CIRCULAR_REFS_IN_JSON_SCHEMA",
     "message": "JSON schema contains circular references"
   },
+  "CIRCULAR_REFS_IN_JSON_SCHEMA_DETAILS" : {
+    "code" : "CIRCULAR_REFS_IN_JSON_SCHEMA_DETAILS",
+    "message": "JSON schema contains circular references: {{cycle}}"
+  },
   "EXAMPLE_SCHEMA_FAILURE" : {
     "code" : "EXAMPLE_SCHEMA_FAILURE",
     "message": "Example does not conform to schema: {{msg}}"
