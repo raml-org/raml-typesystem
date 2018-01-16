@@ -1109,7 +1109,7 @@ export function parse(
             appendAnnotations(appendedInfo, childNode);
         }
     });
-    if(result.metaOfType(meta.DiscriminatorValue).length==0){
+    if(result.metaOfType(meta.DiscriminatorValue).length==0 && global){
         result.addMeta(new meta.DiscriminatorValue(result.name(),false));
     }
     if (result.isSubTypeOf(ts.OBJECT)) {

@@ -1787,7 +1787,12 @@ export abstract class AbstractType implements tsInterfaces.IParsedType, tsInterf
             // return this.validateDirect(i, autoClose||g);
 
             var statuses:Status[] = [];
-            var queue = this.subTypes().concat(this);
+            var global:AbstractType = _.find([<AbstractType>this].concat(this.allSuperTypes()),x=>x.getExtra(GLOBAL));
+            var queue = this.allSubTypes().concat(this);
+            if(global && global!=this){
+                queue = queue.concat(global.allSubTypes());
+                queue.push(global);
+            }
             var lastStatus:Status;
             for( var subType of queue){
                 var dStatus = checkDescriminator(i,subType);
