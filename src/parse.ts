@@ -1077,6 +1077,9 @@ export function parse(
             }            
         }
         else {
+            if(key == "required" && !isPropertyType){
+                return;
+            }
             if (key === "facets") {
                 hasfacetsOrOtherStuffDoesNotAllowedInExternals = [key];
                 return;
