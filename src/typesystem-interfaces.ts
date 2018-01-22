@@ -236,6 +236,10 @@ export interface IParsedTypeCollection {
     getAnnotationTypeRegistry():ITypeRegistry;
 
     library(name:string):IParsedTypeCollection;
+
+    libraries():{[key:string]:IParsedTypeCollection}
+
+    addLibrary(namespace:string,lib:IParsedTypeCollection):void
 }
 export  interface ITypeRegistry {
 

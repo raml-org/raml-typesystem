@@ -220,6 +220,10 @@ export class TypeCollection {
         })
         return r;
     }
+
+    libraries(){
+        return this.uses;
+    }
 }
 
 export class AccumulatingRegistry extends ts.TypeRegistry{
