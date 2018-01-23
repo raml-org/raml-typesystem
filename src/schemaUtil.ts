@@ -178,7 +178,7 @@ class DummyProvider implements  IContentProvider {
 }
 
 var exampleKey = function (content:any, schema:string, contextPath:string) {
-    return "__EXAMPLE_" + content + schema + contextPath;
+    return "__EXAMPLE_" + content.trim() + schema.trim() + contextPath;
 };
 export class JSONSchemaObject {
     jsonSchema: any;
@@ -1203,7 +1203,7 @@ var schemaKey = function (provider:IContentProvider, content:string) {
     if (provider) {
         contextPath = provider.contextPath();
     }
-    var key = "__SCHEMA_" + content + contextPath;
+    var key = "__SCHEMA_" + content.trim() + contextPath.trim();
     return key;
 };
 export function getXMLSchema(content: string, provider: IContentProvider) {
@@ -1512,10 +1512,12 @@ class SchemaGraph {
         return cycle;
     }
 }
-
-function extractRefs(obj:any,refs:string[] = []):string[]{
+function extractRefs(obj:any):string[]{
+    return _.unique(doExtractRefs(obj,[]))
+}
+function doExtractRefs(obj:any,refs:string[]):string[]{
     if(Array.isArray(obj)){
-        obj.forEach(x=>extractRefs(x,refs));
+        obj.forEach(x=>doExtractRefs(x,refs));
     }
     else if(obj != null && typeof obj === "object"){
         Object.keys(obj).forEach(x=>{
@@ -1523,7 +1525,7 @@ function extractRefs(obj:any,refs:string[] = []):string[]{
                 refs.push(decodeURL(obj[x]));
             }
             else if(typeof obj[x] === "object"){
-                extractRefs(obj[x],refs);
+                doExtractRefs(obj[x],refs);
             }
         });
     }
