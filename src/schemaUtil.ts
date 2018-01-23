@@ -178,7 +178,7 @@ class DummyProvider implements  IContentProvider {
 }
 
 var exampleKey = function (content:any, schema:string, contextPath:string) {
-    return "__EXAMPLE_" + content.trim() + schema.trim() + contextPath;
+    return "__EXAMPLE_" + (""+content).trim() + schema.trim() + contextPath;
 };
 export class JSONSchemaObject {
     jsonSchema: any;
@@ -1203,7 +1203,7 @@ var schemaKey = function (provider:IContentProvider, content:string) {
     if (provider) {
         contextPath = provider.contextPath();
     }
-    var key = "__SCHEMA_" + content.trim() + contextPath.trim();
+    var key = "__SCHEMA_" + (""+content).trim() + contextPath.trim();
     return key;
 };
 export function getXMLSchema(content: string, provider: IContentProvider) {
