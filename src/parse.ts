@@ -7,7 +7,6 @@ import typeExpressions=require("./typeExpressions")
 import facetR=require("./facetRegistry")
 import meta=require("./metainfo")
 import {Annotation, Example, Examples} from "./metainfo";
-import {Type} from "typescript";
 import {FacetDeclaration} from "./metainfo";
 import {HasProperty} from "./restrictions";
 import {AdditionalPropertyIs} from "./restrictions";
@@ -220,6 +219,10 @@ export class TypeCollection {
             this.uses[x].types().forEach(y=>r.put(x+"."+ y.name(),y));
         })
         return r;
+    }
+
+    libraries(){
+        return this.uses;
     }
 }
 
@@ -931,7 +934,7 @@ export function parse(
     }
     else{
         var sAnnotations:ParseNode[][] = [];
-        var actual = tp.childWithKey("value");
+        let actual = tp.childWithKey("value");
         if(actual&&(actual.kind()==NodeKind.SCALAR||actual.kind()==NodeKind.ARRAY)){
             sAnnotations = [ tp.children().filter(x=>{
                 var key = x.key();
@@ -990,6 +993,11 @@ export function parse(
             }
         }
     }
+    for(let st of superTypes){
+        if(st.superTypes().indexOf(ts.REFERENCE)>=0){
+            r.get(st.name());
+        }
+    }
     var result=ts.derive(name,superTypes);
     if(ignoreTypeAttr && tp){
         result.addMeta(new meta.TypeAttributeValue(tp.value()));
@@ -1007,7 +1015,7 @@ export function parse(
     n.children().forEach(childNode=>{
 
         var key = childNode.key();
-        actual = childNode.childWithKey("value");
+        let actual = childNode.childWithKey("value");
         var x = childNode;
         if(key!="example"&&key!="discriminatorValue"&&actual){
             x = actual;
@@ -1073,6 +1081,9 @@ export function parse(
             }            
         }
         else {
+            if(key == "required" && !isPropertyType){
+                return;
+            }
             if (key === "facets") {
                 hasfacetsOrOtherStuffDoesNotAllowedInExternals = [key];
                 return;
@@ -1110,7 +1121,7 @@ export function parse(
             appendAnnotations(appendedInfo, childNode);
         }
     });
-    if(result.metaOfType(meta.DiscriminatorValue).length==0){
+    if(result.metaOfType(meta.DiscriminatorValue).length==0 && global){
         result.addMeta(new meta.DiscriminatorValue(result.name(),false));
     }
     if (result.isSubTypeOf(ts.OBJECT)) {
@@ -1132,7 +1143,7 @@ export function parse(
         }
         var ap= n.childWithKey("additionalProperties");
         if (ap){
-            actual = ap.childWithKey("value");
+            let actual = ap.childWithKey("value");
             if(actual){
                 ap = actual;
             }

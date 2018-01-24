@@ -119,6 +119,22 @@ export interface IContentProvider {
     promiseResolve(arg: any): Promise;
 }
 
+export interface IExtendedContentProvider extends IContentProvider {
+
+    rootPath():string
+
+    isWebPath(p:string):boolean
+
+    relativePath(from: string, to: string): string;
+}
+
+function isExtendedContentProvider(x:IContentProvider){
+    const hasRootPath = (<any>x).rootPath != null && (typeof (<any>x).rootPath === "function");
+    const hasIsWebPath = (<any>x).isWebPath != null && (typeof (<any>x).isWebPath === "function");
+    const hasRelativePath = (<any>x).relativePath != null && (typeof (<any>x).relativePath === "function");
+    return hasRootPath && hasIsWebPath && hasRelativePath;
+}
+
 class DummyProvider implements  IContentProvider {
     contextPath(): string {
         return "";
@@ -162,10 +178,12 @@ class DummyProvider implements  IContentProvider {
 }
 
 var exampleKey = function (content:any, schema:string, contextPath:string) {
-    return "__EXAMPLE_" + content + schema + contextPath;
+    return "__EXAMPLE_" + (""+content).trim() + schema.trim() + contextPath;
 };
 export class JSONSchemaObject {
     jsonSchema: any;
+
+    private graph:SchemaGraph;
 
     constructor(private schema:string, private provider: IContentProvider){
         if(!provider) {
@@ -187,7 +205,9 @@ export class JSONSchemaObject {
         try{
             var api: any = require('json-schema-compatibility');
 
-            this.setupId(jsonSchemaObject, this.provider.contextPath());
+            const contextPath = this.provider.contextPath();
+            this.setupId(jsonSchemaObject, contextPath);
+            this.updateGraph(jsonSchemaObject, contextPath);
             var schemaVer=""+jsonSchemaObject["$schema"];
             if (schemaVer.indexOf("http://json-schema.org/draft-04/")==-1){
                 jsonSchemaObject =api.v4(jsonSchemaObject);
@@ -196,6 +216,9 @@ export class JSONSchemaObject {
                 this.fixRequired(jsonSchemaObject);
             }
         } catch (e){
+            if(ts.ValidationError.isInstance(e)){
+                throw e;
+            }
             throw new ts.ValidationError(messageRegistry.INVALID_JSON_SCHEMA_DETAILS,{msg:e.message});
         }
 
@@ -337,7 +360,7 @@ export class JSONSchemaObject {
             }
             let resolvedRef:string;
             if(this.provider.isAbsolutePath(reference)){
-                resolvedRef = this.toProperWebURL(reference);
+                resolvedRef = toProperWebURL(reference);
             }
             else {
                 resolvedRef = this.provider.resolvePath(currentPath, reference);
@@ -406,6 +429,24 @@ export class JSONSchemaObject {
 
             return;
         }
+        else{
+            let schKey = exampleKey("__SCHEMA_VALIDATION__",this.schema,this.provider.contextPath());
+            let schError = globalCache.getValue(schKey);
+            if(schError) {
+                if(schError instanceof Error) {
+                    if(ts.ValidationError.isInstance(schError)){
+                        let ve = <ts.ValidationError>schError;
+                        let newVe = new ts.ValidationError(ve.messageEntry,ve.parameters);
+                        newVe.filePath = ve.filePath;
+                        newVe.additionalErrors = ve.additionalErrors;
+                        newVe.internalPath = ve.internalPath;
+                        newVe.isWarning = ve.isWarning;
+                        schError = newVe;
+                    }
+                    throw schError;
+                }
+            }
+        }
 
         if(alreadyAccepted.length==0){
             tryParseJSON(content,true);
@@ -441,7 +482,7 @@ export class JSONSchemaObject {
         missingReferences.forEach((_reference: any) => {
             var remoteSchemeContent: any;
 
-            let reference = this.decodeURL(_reference);
+            let reference = decodeURL(_reference);
             var result: any = {reference: _reference};
 
             try {
@@ -451,7 +492,9 @@ export class JSONSchemaObject {
                 tryParseJSON(content,true);
                 var jsonObject = JSON.parse(content);
 
-                this.setupId(jsonObject, this.provider.normalizePath(reference));
+                const nRef = this.provider.normalizePath(reference);
+                this.setupId(jsonObject, nRef);
+                this.updateGraph(jsonObject, nRef);
 
                 remoteSchemeContent = api.v4(jsonObject);
 
@@ -461,6 +504,7 @@ export class JSONSchemaObject {
             } catch(exception){
                 if(ts.ValidationError.isInstance(exception)){
                     (<ts.ValidationError>exception).filePath = reference;
+                    globalCache.setValue(key, exception);
                     throw exception;
                 }
                 result.error = exception;
@@ -530,6 +574,9 @@ export class JSONSchemaObject {
 
             return;
         }
+        else {
+
+        }
 
         var validator = jsonUtil.getValidator();
         // if(alreadyAccepted.length==0&&this.jsonSchema.id){
@@ -581,10 +628,13 @@ export class JSONSchemaObject {
 
         var acceptedReferences: any = [];
 
-        missingReferences.forEach((_reference: any) => {
+        missingReferences.forEach((_reference: any,i) => {
+            if(i>0){
+                return;
+            }
             var remoteSchemeContent: any;
 
-            let reference = this.decodeURL(_reference);
+            let reference = decodeURL(_reference);
             var result: any = {reference: _reference};
 
             try {
@@ -594,7 +644,9 @@ export class JSONSchemaObject {
                 tryParseJSON(content,true);
                 var jsonObject = JSON.parse(content);
 
-                this.setupId(jsonObject, this.provider.normalizePath(reference));
+                const nRef = this.provider.normalizePath(reference);
+                this.setupId(jsonObject, nRef);
+                this.updateGraph(jsonObject, nRef);
 
                 remoteSchemeContent = api.v4(jsonObject);
 
@@ -604,6 +656,7 @@ export class JSONSchemaObject {
             } catch(exception){
                 if(ts.ValidationError.isInstance(exception)){
                     (<ts.ValidationError>exception).filePath = reference;
+                    globalCache.setValue(key, exception);
                     throw exception;
                 }
                 result.error = exception;
@@ -644,44 +697,8 @@ export class JSONSchemaObject {
         if(json.id.charAt(json.id.length-1)!='#') {
             json.id = json.id + '#';
         }
-        json.id = this.toProperWebURL(json.id);
+        json.id = toProperWebURL(json.id);
         this.patchSchema(json);
-    }
-
-    private toProperWebURL(p:string):string{
-        if(p==null||p.trim().length==0){
-            return p;
-        }
-        let l = "https://".length;
-        if(p.length>=l && p.substring(0,l)=="https://"){
-            return p;
-        }
-
-        p = p.replace("//","__\/DOUBLESLASH\/__");
-        p = p.replace(/^([a-zA-Z]):/,'$1__\/COLON\/__');
-
-        let protoclStr = "https://__/APPENDED_PROTOCOL/__";
-        if(p.charAt(0)!="/"){
-            protoclStr += "/";
-        }
-        return protoclStr + p;
-    }
-
-    private decodeURL(p:string):string{
-        if(p==null||p.trim().length==0){
-            return p;
-        }
-        let protocolStr = "https://__/APPENDED_PROTOCOL/__";
-        let l = protocolStr.length;
-        if(p.length<l||p.substring(0,l)!=protocolStr){
-            return p;
-        }
-        p = p.substring(l,p.length);
-        if(p.indexOf("__/COLON/__")>0&&p.charAt(0)=="/"){
-            p = p.substring(1);
-        }
-        p = p.replace("__/DOUBLESLASH/__","//").replace("__/COLON/__",":");
-        return p;
     }
 
     private acceptErrors(
@@ -728,7 +745,7 @@ export class JSONSchemaObject {
     }
 
     contentAsync(_reference: any): Promise {
-        let reference = this.decodeURL(_reference);
+        let reference = decodeURL(_reference);
         var remoteSchemeContent: any;
 
         var api: any = require('json-schema-compatibility');
@@ -750,7 +767,9 @@ export class JSONSchemaObject {
                 tryParseJSON(cnt,true);
                 var jsonObject = JSON.parse(cnt);
 
-                this.setupId(jsonObject, this.provider.normalizePath(reference));
+                const nRef = this.provider.normalizePath(reference);
+                this.setupId(jsonObject, nRef);
+                this.updateGraph(jsonObject, nRef);
 
                 remoteSchemeContent = api.v4(jsonObject);
 
@@ -813,6 +832,80 @@ export class JSONSchemaObject {
         "UNKNOWN_FORMAT": true,
         "INVALID_TYPE": true,
     }
+
+    private updateGraph(json: any, schemaPath: string){
+        if(schemaPath.indexOf("#")<0){
+            schemaPath += "#";
+        }
+        if(!this.graph){
+            this.graph = new SchemaGraph(schemaPath);
+        }
+        let cycle = this.graph.addNode(json,schemaPath);
+        if(cycle){
+            if(isExtendedContentProvider(this.provider)){
+                let ep = <IExtendedContentProvider>this.provider;
+                let rootPath = ep.rootPath();
+                let rpl = rootPath.length;
+                cycle = cycle.map(x=>{
+                    let p = x.trim();
+                    if(ep.isWebPath(p)){
+                        if(ep.isWebPath(rootPath)&&p.length>=rpl&&p.substring(0,rpl)==rootPath){
+                            p = p.substring(rpl);
+                        }
+                    }
+                    else{
+                        p = ep.relativePath(rootPath,p).replace(/\\/g,"/");
+                    }
+                    if(p.length && p.charAt(p.length-1)=='#'){
+                        p = p.substring(0,p.length-1);
+                    }
+                    return p;
+                });
+            }
+            let ve = new ts.ValidationError(messageRegistry.CIRCULAR_REFS_IN_JSON_SCHEMA_DETAILS,{
+                cycle : cycle.join(" -> ")
+            });
+
+            throw ve;
+        }
+    }
+}
+
+
+function toProperWebURL(p:string):string{
+    if(p==null||p.trim().length==0){
+        return p;
+    }
+    let l = "https://".length;
+    if(p.length>=l && p.substring(0,l)=="https://"){
+        return p;
+    }
+
+    p = p.replace("//","__\/DOUBLESLASH\/__");
+    p = p.replace(/^([a-zA-Z]):/,'$1__\/COLON\/__');
+
+    let protoclStr = "https://__/APPENDED_PROTOCOL/__";
+    if(p.charAt(0)!="/"){
+        protoclStr += "/";
+    }
+    return protoclStr + p;
+}
+
+function decodeURL(p:string):string{
+    if(p==null||p.trim().length==0){
+        return p;
+    }
+    let protocolStr = "https://__/APPENDED_PROTOCOL/__";
+    let l = protocolStr.length;
+    if(p.length<l||p.substring(0,l)!=protocolStr){
+        return p;
+    }
+    p = p.substring(l,p.length);
+    if(p.indexOf("__/COLON/__")>0&&p.charAt(0)=="/"){
+        p = p.substring(1);
+    }
+    p = p.replace("__/DOUBLESLASH/__","//").replace("__/COLON/__",":");
+    return p;
 }
 
 export interface ValidationError{
@@ -1110,7 +1203,7 @@ var schemaKey = function (provider:IContentProvider, content:string) {
     if (provider) {
         contextPath = provider.contextPath();
     }
-    var key = "__SCHEMA_" + content + contextPath;
+    var key = "__SCHEMA_" + (""+content).trim() + contextPath.trim();
     return key;
 };
 export function getXMLSchema(content: string, provider: IContentProvider) {
@@ -1348,4 +1441,93 @@ export function tryParseJSON(content: any, isExample:boolean) {
         let ve = messageToValidationError(err.message, isExample);
         throw ve;
     }
+}
+
+class RefPath {
+    constructor(public segments:string[]){}
+
+    length(){
+        return this.segments.length
+    }
+}
+
+class SchemaNode {
+
+    constructor(public url:string){}
+
+    processed = false;
+
+    refFromRoot:RefPath = new RefPath([])
+
+    refsOut: {[key:string]:RefPath} = {}
+
+    referees: {[key:string]:SchemaNode} = {}
+}
+
+class SchemaGraph {
+
+    constructor(public rootPath:string){}
+
+    private nodes:{[key:string]:SchemaNode} = {}
+
+    node(url:string){
+        return this.nodes[url];
+    }
+
+    addNode(json:any,schemaPath:string):string[]{
+
+        let node = this.nodes[schemaPath];
+        if(node){
+            if(node.processed){
+                return;
+            }
+        }
+        else{
+            node = new SchemaNode(schemaPath);
+            this.nodes[schemaPath] = node;
+        }
+        let refs = extractRefs(json);
+        let referees = Object.keys(node.referees).map(x=>node.referees[x]);
+        let cycle:string[] = null;
+        for(let ref of refs){
+            const referee = node.referees[ref];
+            if(referee){
+                cycle = [this.rootPath].concat(referee.refFromRoot.segments).concat(referee.refsOut[schemaPath].segments).concat([ref]);
+            }
+            let refNode = this.nodes[ref];
+            if(!refNode){
+                refNode = new SchemaNode(ref);
+                refNode.refFromRoot = new RefPath(node.refFromRoot.segments.concat([ref]));
+                this.nodes[ref] = refNode;
+            }
+            const newReferees:SchemaNode[] = referees.filter(x=>!refNode.referees[x.url]);
+            for(let r of newReferees){
+                refNode.referees[r.url] = r;
+                r.refsOut[ref] = new RefPath(r.refsOut[schemaPath].segments.concat([ref]));
+            }
+            node.refsOut[ref] = new RefPath([ref]);
+            refNode.referees[node.url] = node;
+        }
+        node.processed = true;
+        return cycle;
+    }
+}
+function extractRefs(obj:any):string[]{
+    return _.unique(doExtractRefs(obj,[]))
+}
+function doExtractRefs(obj:any,refs:string[]):string[]{
+    if(Array.isArray(obj)){
+        obj.forEach(x=>doExtractRefs(x,refs));
+    }
+    else if(obj != null && typeof obj === "object"){
+        Object.keys(obj).forEach(x=>{
+            if(x === "$ref" && typeof obj[x] === "string"){
+                refs.push(decodeURL(obj[x]));
+            }
+            else if(typeof obj[x] === "object"){
+                doExtractRefs(obj[x],refs);
+            }
+        });
+    }
+    return refs;
 }
