@@ -550,5 +550,17 @@
   "SHOULD_BE_SCALAR" : {
     "code" : "SHOULD_BE_SCALAR",
     "message" : "should be scalar"
+  },
+  "UNEXPECTED_XML_ELEMENT" : {
+    "code" : "UNEXPECTED_XML_ELEMENT",
+    "message" : "Unexpected element '{{name}}'"
+  },
+  "UNEXPECTED_XML_ATTRIBUTE" : {
+    "code" : "UNEXPECTED_XML_ATTRIBUTE",
+    "message" : "Unexpected attribute '{{name}}'"
+  },
+  "TEXT_CONTENT_NOT_ALLOWED_FOR_THE_XML_ELEMENT" : {
+    "code" : "TEXT_CONTENT_NOT_ALLOWED_FOR_THE_XML_ELEMENT",
+    "message" : "The node is not allowed to have text content"
   }
 }

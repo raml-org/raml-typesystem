@@ -5,6 +5,7 @@ import _=require("underscore");
 import {PropertyIs, ComponentShouldBeOfType} from "./restrictions";
 import {XMLInfo} from "./metainfo";
 import {Status} from "./typesystem";
+export let messageRegistry = require("../../resources/errorMessages");
 
 var XML_ERRORS = '@unexpected_root_attributes_and_elements';
 
@@ -411,12 +412,18 @@ function fillExtras(node: any, errors: string[], expectedAttributeNames: string[
     var extraElements = Object.keys(node);
 
     extraAttributes.forEach(name => {
-        errors.push('Unexpected attribute "' + name + '".');
+        errors.push(ts.error(messageRegistry.UNEXPECTED_XML_ATTRIBUTE,null,{name:name}).getMessage());
     });
 
     extraElements.forEach(name => {
-        errors.push('Unexpected element "' + name + '".');
-
+        let message:string;
+        if(name=="_" && typeof node[name] === "string"){
+            message = ts.error(messageRegistry.TEXT_CONTENT_NOT_ALLOWED_FOR_THE_XML_ELEMENT,null).getMessage()
+        }
+        else{
+            message = ts.error(messageRegistry.UNEXPECTED_XML_ELEMENT,null,{name:name}).getMessage()
+        }
+        errors.push(message)
         if(remove) {
             delete node[name];
         }
