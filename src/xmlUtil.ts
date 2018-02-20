@@ -1,4 +1,5 @@
 import {XMLValidator, XMLSchemaReference} from "raml-xml-validation";
+import escape = require("escape-html")
 
 declare function require(s:string):any;
 
@@ -55,12 +56,16 @@ function objectToXml(object: any) {
     result = result + '>';
 
     if (typeof root === 'string') {
-        result = result + root;
+        result = result + escape(root);
     } else {
 
         Object.keys(root).forEach((key:any) => {
             if (key === '$') {
                 return;
+            }
+            if(key === "_" && (typeof root[key] === "string")){
+                result += escape(root[key])
+                return
             }
 
             if (typeof root[key] === 'object' && !root[key].length) {
