@@ -240,6 +240,8 @@ export interface IParsedTypeCollection {
     libraries():{[key:string]:IParsedTypeCollection}
 
     addLibrary(namespace:string,lib:IParsedTypeCollection):void
+
+    id():string
 }
 export  interface ITypeRegistry {
 

@@ -39,6 +39,8 @@ export interface ParseNode {
     getMeta(key:string): any
 
     anchor?():any
+
+    path():string
 }
 
 class JSObjectNode implements ParseNode{
@@ -100,6 +102,10 @@ class JSObjectNode implements ParseNode{
     getMeta(key:string):any{
         return null;
     }
+
+    path():string{
+        return JSON.stringify(this.obj)
+    }
 }
 export function parseJSON(name: string,n:any,r:ts.TypeRegistry=ts.builtInRegistry(), provider?: su.IContentProvider):ts.AbstractType {
     return parse(name,new JSObjectNode(null,n, false, provider),r);
@@ -154,6 +160,13 @@ export class PropertyBean{
     }
 }
 export class TypeCollection {
+
+    constructor(private _id:string){}
+
+    id():string{
+        return this._id
+    }
+
     private _types:AbstractType[]=[];
     private _typeMap:{[name:string]:AbstractType}={};
     private uses:{ [name: string]: TypeCollection }={}
@@ -344,6 +357,10 @@ class WrapArrayNode implements ParseNode{
     getMeta(key:string):any{
         return null;
     }
+
+    path():string{
+        return this.n.path()
+    }
 }
 
 function  transformToArray(n:ParseNode):ParseNode{
@@ -351,7 +368,7 @@ function  transformToArray(n:ParseNode):ParseNode{
 }
 
 export function parseTypeCollection(n:ParseNode,tr:ts.TypeRegistry):TypeCollection{
-    var result=new TypeCollection();
+    var result=new TypeCollection(n.path());
     if (n.anchor){
         if (n.anchor().__$$){
             return n.anchor().__$$;
@@ -834,7 +851,7 @@ export function parse(
             uses = transformToArray(uses);
         }
         if (uses.kind()===NodeKind.MAP){
-            var col = new TypeCollection();
+            var col = new TypeCollection(n.path());
             uses.children().forEach(c=>{
                 col.addLibrary(c.key(),parseTypeCollection(c,ts.builtInRegistry()));
             });
