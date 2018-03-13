@@ -463,6 +463,10 @@
     "code" : "ITEMS_SHOULD_BE_REFERENCE_OR_INLINE_TYPE",
     "message": "The 'items' property value should be either a reference to an existing type or an inline type declaration"
   },
+  "ITEMS_DEFINED_FOR_NON_ARRAY" : {
+    "code" : "ITEMS_DEFINED_FOR_NON_ARRAY",
+    "message": "The 'items' property can only be defined for array types"
+  },
   "VALUE_SHOULD_BE_POSITIVE" : {
     "code" : "VALUE_SHOULD_BE_POSITIVE",
     "message": "Value of the '{{facetName}}' facet should be positive"
