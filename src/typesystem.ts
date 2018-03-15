@@ -1459,6 +1459,9 @@ export abstract class AbstractType implements tsInterfaces.IParsedType, tsInterf
      * @return true if type has no associated meta information of restrictions
      */
     isEmpty():boolean{
+        if(this.extras != null && this.extras.hasOwnProperty(tsInterfaces.PARSE_ERROR)){
+            return false;
+        }
         if (this.metaInfo.length>2){
             return false;
         }
