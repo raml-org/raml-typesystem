@@ -1095,7 +1095,12 @@ export function parse(
                 actualResult.putExtra(tsInterfaces.HAS_ITEMS,true)
                 appendAnnotations(appendedInfo, childNode);
                 return appendedInfo;
-            }            
+            }
+            else if(!ignoreTypeAttr){
+                let err=ts.error(messageRegistry.ITEMS_DEFINED_FOR_NON_ARRAY,actualResult);
+                err.setValidationPath({ name:"items"})
+                result.putExtra(tsInterfaces.PARSE_ERROR,err);
+            }
         }
         else {
             if(key == "required" && !isPropertyType){
