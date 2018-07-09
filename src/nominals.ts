@@ -1,4 +1,5 @@
 import ts=require("./typesystem")
+import tsInterfaces=require("./typesystem-interfaces")
 import nt=require("./nominal-types")
 import parse=require("./parse")
 import restrictions = require("./restrictions");
@@ -198,6 +199,9 @@ export function toNominal(t:ts.AbstractType,callback:StringToBuiltIn,customizer:
         vs.fixFacet(n, x.value(),true);
     }
     vs.addAdapter(t);
+    if(!t.isBuiltin()) {
+        vs.putExtra(tsInterfaces.USER_DEFINED_EXTRA, true)
+    }
     if (t.isEmpty()){
         vs.addAdapter(new nt.Empty());
     }

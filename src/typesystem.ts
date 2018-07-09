@@ -2398,6 +2398,7 @@ export class InheritedType extends AbstractType{
                 (<any>this)[prop] = (<any>another)[prop];
             }
         }
+        this.metaInfo.filter(m=>m._owner === another).forEach(m=>m._owner = this)
         for(let i = 0 ; i < this._superTypes.length; i++){
             var st = this._superTypes[i];
             if(st == this || st.allSuperTypes().indexOf(this)>=0){
