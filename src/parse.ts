@@ -130,6 +130,8 @@ export class PropertyBean{
     }[];
 
     add(t:ts.AbstractType,typePath:string[]){
+        // const p = typePath.join(", ");
+        // console.log(p);
         if (!this.optional&&!this.additonal&&!this.regExp&&!this.type.isSubTypeOf(ts.NIL)){
             t.addMeta(new rs.HasProperty(this.id));
         }
