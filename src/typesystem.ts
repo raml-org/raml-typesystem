@@ -2813,10 +2813,10 @@ export class IntegerRestriction extends GenericTypeOf{
 
     
 }
-export class NullRestriction extends GenericTypeOf{
+export class NullRestriction extends TypeOfRestriction{
 
     constructor(){
-        super();
+        super("nil");
     }
     check(i:any):Status {
         if (i===null||i==undefined||i==="null"){
@@ -2828,11 +2828,8 @@ export class NullRestriction extends GenericTypeOf{
     requiredType(){
         return ANY;
     }
-    value(){
-        return true;
-    }
     facetName(){
-        return "should be null"
+        return "should be nil"
     }
 
 

@@ -12,7 +12,10 @@ function checkDate(dateStr : string) : boolean {
     return checkDateOnlyString(dateStr,"YYYY-MM-DD")
 }
 
-export class DateOnlyR extends ts.GenericTypeOf{
+export class DateOnlyR extends ts.TypeOfRestriction{
+    constructor(){
+        super("date-only")
+    }
     check(value:any):ts.Status {
         if (typeof value=="string"){
             if (!checkDate(value)){
@@ -24,9 +27,6 @@ export class DateOnlyR extends ts.GenericTypeOf{
     }
     requiredType(){
         return ts.STRING;
-    }
-    value(){
-        return true;
     }
     facetName(){
         return "should be date-only"
@@ -47,7 +47,10 @@ function checkTime(time : string): boolean {
     return serializedDate.trim() == dateStr.trim();
 }
 
-export class TimeOnlyR extends ts.GenericTypeOf{
+export class TimeOnlyR extends ts.TypeOfRestriction{
+    constructor(){
+        super("time-only")
+    }
     check(value:any):ts.Status {
         if (typeof value=="string"){
 
@@ -68,14 +71,16 @@ export class TimeOnlyR extends ts.GenericTypeOf{
     requiredType(){
         return ts.STRING;
     }
-    value(){
-        return true;
-    }
     facetName(){
         return "should be time-only"
     }
 }
-export class DateTimeOnlyR extends ts.GenericTypeOf{
+export class DateTimeOnlyR extends ts.TypeOfRestriction{
+
+    constructor(){
+        super("datetime-only")
+    }
+
     check(value:any):ts.Status {
         if (typeof value=="string"){
 
@@ -97,9 +102,6 @@ export class DateTimeOnlyR extends ts.GenericTypeOf{
     requiredType(){
         return ts.STRING;
     }
-    value(){
-        return true;
-    }
     facetName(){
         return "should be datetime-only"
     }
@@ -111,7 +113,10 @@ var r2=/(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)\,[ ]+\d{2}-(J
 var r3=/(Mon|Tue|Wed|Thu|Fri|Sat|Sun)\,[ ]+(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[ ]+\d{1,2}[ ]+\d{2}:\d{2}:\d{2}[ ]+GMT/
 
 var r0=/^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2}:\d{2})(?:\.\d+)?((?:[\+\-]\d{2}:\d{2})|Z)$/;
-export class DateTimeR extends ts.GenericTypeOf{
+export class DateTimeR extends ts.TypeOfRestriction{
+    constructor(){
+        super("datetime")
+    }
     check(value:any):ts.Status {
         var c=ts.VALIDATED_TYPE;
         var rfc2616=false;
@@ -150,11 +155,8 @@ export class DateTimeR extends ts.GenericTypeOf{
     requiredType(){
         return ts.STRING;
     }
-    value(){
-        return true;
-    }
     facetName(){
-        return "should be datetime-only"
+        return "should be datetime"
     }
 }
 
