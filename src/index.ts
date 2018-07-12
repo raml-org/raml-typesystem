@@ -22,6 +22,7 @@ export var TOP_LEVEL_EXTRA = tsInterfaces.TOP_LEVEL_EXTRA;
 export var DEFINED_IN_TYPES_EXTRA = tsInterfaces.DEFINED_IN_TYPES_EXTRA;
 export var USER_DEFINED_EXTRA = tsInterfaces.USER_DEFINED_EXTRA;
 export var SOURCE_EXTRA = tsInterfaces.SOURCE_EXTRA;
+export let messageRegistry = require("../../resources/errorMessages");
 
 // export function instanceOfHasExtra(instance : nominalTypes.ITypeDefinition) : instance is IHasExtra {
 //     returninstance instanceof ts.AbstractType || instance instanceof nominalTypes.AbstractType;
@@ -293,8 +294,8 @@ export interface IParseNode {
  * @param data
  * @returns {any}
  */
-export function parseFromAST(data:IParseNode):IParsedTypeCollection {
-     return tc.parseTypeCollection(<any>data, ts.builtInRegistry());
+export function parseFromAST(data:IParseNode,ignoreUses=false):IParsedTypeCollection {
+     return tc.parseTypeCollection(<any>data, ts.builtInRegistry(),ignoreUses);
 }
 /**
  * parses type collection definition from a JSON structure
@@ -321,7 +322,7 @@ export function parseTypeFromAST(
             return t;
         }
     }
-    return tc.parse(name,<any>data,collection? <ts.TypeRegistry>collection.getTypeRegistry():ts.builtInRegistry(),defaultsToAny,annotation,global,ignoreTypeAttr);
+    return tc.parse(name,<any>data,collection? <ts.TypeRegistry>collection.getTypeRegistry():ts.builtInRegistry(),defaultsToAny,annotation,global,ignoreTypeAttr, false, []);
 }
 /**
  * dumps type or type collection to JSON

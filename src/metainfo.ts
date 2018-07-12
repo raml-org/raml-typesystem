@@ -611,9 +611,9 @@ export class Examples extends MetaInfo{
     }
 
     validateSelfIndividual(parentStatus:ts.Status,registry:ts.TypeRegistry):ts.Status {
-        if (typeof this.value()==='object'){
+        var v=this.value();
+        if (typeof v==='object' && (v==null||!Array.isArray(v))){
             var rs=new Status(Status.OK,"","",this);
-            var v=this.value();
             if (v) {
                 Object.keys(v).forEach(x=> {
                     let exampleObj = v[x];
@@ -661,7 +661,7 @@ export class Examples extends MetaInfo{
             return rs;
         }
         else{
-            return ts.error(messageRegistry.EXMAPLES_MAP,this);
+            return ts.error(messageRegistry.EXMAPLES_MAP,this,{},Status.ERROR,true);
         }
     }
 

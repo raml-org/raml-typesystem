@@ -2398,6 +2398,7 @@ export class InheritedType extends AbstractType{
                 (<any>this)[prop] = (<any>another)[prop];
             }
         }
+        this.metaInfo.filter(m=>m._owner === another).forEach(m=>m._owner = this)
         for(let i = 0 ; i < this._superTypes.length; i++){
             var st = this._superTypes[i];
             if(st == this || st.allSuperTypes().indexOf(this)>=0){
@@ -2812,10 +2813,10 @@ export class IntegerRestriction extends GenericTypeOf{
 
     
 }
-export class NullRestriction extends GenericTypeOf{
+export class NullRestriction extends TypeOfRestriction{
 
     constructor(){
-        super();
+        super("nil");
     }
     check(i:any):Status {
         if (i===null||i==undefined||i==="null"){
@@ -2827,11 +2828,8 @@ export class NullRestriction extends GenericTypeOf{
     requiredType(){
         return ANY;
     }
-    value(){
-        return true;
-    }
     facetName(){
-        return "should be null"
+        return "should be nil"
     }
 
 
