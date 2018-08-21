@@ -978,8 +978,8 @@ export class XMLSchemaObject {
 
         var schema = elementChildrenByName(doc, 'schema', this.namspacePrefix)[0];
 
-        var imports: any[] = elementChildrenByName(schema, 'import', this.namspacePrefix);
-        var includes: any[] = elementChildrenByName(schema, 'include', this.namspacePrefix);
+        var imports: any[] = elementChildrenByNameIgnoringNamespace(schema, 'import');
+        var includes: any[] = elementChildrenByNameIgnoringNamespace(schema, 'include');
 
         var refElements: any = imports.concat(includes);
 
@@ -1050,8 +1050,8 @@ export class XMLSchemaObject {
 
         var schema = elementChildrenByName(doc, 'schema', this.namspacePrefix)[0];
 
-        var imports: any[] = elementChildrenByName(schema, 'import', this.namspacePrefix);
-        var includes: any[] = elementChildrenByName(schema, 'include', this.namspacePrefix);
+        var imports: any[] = elementChildrenByNameIgnoringNamespace(schema, 'import');
+        var includes: any[] = elementChildrenByNameIgnoringNamespace(schema, 'include');
 
         var refElements: any = imports.concat(includes);
 
@@ -1255,6 +1255,24 @@ export function createSchema(content: string, provider: IContentProvider): Schem
             }
         }
     }
+}
+
+
+function elementChildrenByNameIgnoringNamespace(parent: any, tagName: string): any[] {
+
+    var elements = parent.getElementsByTagNameNS("*", tagName);
+
+    var result: any[] = [];
+
+    for(var i: number = 0; i < elements.length; i++) {
+        var child = elements[i];
+
+        if(child.parentNode === parent) {
+            result.push(child);
+        }
+    }
+
+    return result;
 }
 
 function elementChildrenByName(parent: any, tagName: string, ns:string): any[] {
