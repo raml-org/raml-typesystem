@@ -59,7 +59,7 @@
     "istanbul": "0.4.5",
     "mocha": "3.4.2",
     "typedoc": "0.3.12",
-    "typescript": "2.5.2",
+    "typescript": "2.8.4",
     "dev-env-installer": "0.0.14",
     "json-loader": "0.5.7",
     "rimraf": "*"
