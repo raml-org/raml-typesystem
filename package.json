@@ -1,6 +1,6 @@
 {
   "name": "raml-typesystem",
-  "version": "0.0.88",
+  "version": "0.0.89",
   "main": "dist/src/index.js",
   "scripts": {
     "test-cov": " ./node_modules/.bin/istanbul cover _mocha dist/tests/*Tests.js",
@@ -19,13 +19,13 @@
     "json-schema-compatibility": "1.1.0",
     "json-to-ast": "2.0.0-alpha1.3",
     "lrucache": "1.0.3",
-    "underscore": "1.8.3",
+    "underscore": "1.9.1",
     "xml2js": "0.4.19",
     "xmldom": "0.1.27"
   },
   "optionalDependencies": {
-    "raml-xml-validation": "0.0.14",
-    "raml-json-validation": "0.0.17"
+    "raml-xml-validation": "0.0.15",
+    "raml-json-validation": "0.0.18"
   },
   "browser": {
     "raml-json-validation": false,
@@ -59,7 +59,7 @@
     "istanbul": "0.4.5",
     "mocha": "3.4.2",
     "typedoc": "0.3.12",
-    "typescript": "2.5.2",
+    "typescript": "3.0.1",
     "dev-env-installer": "0.0.14",
     "json-loader": "0.5.7",
     "rimraf": "*"
