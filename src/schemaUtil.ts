@@ -15,6 +15,7 @@ var DOMParser = require('xmldom').DOMParser;
 import ts = require("./typesystem");
 import {messageRegistry} from "./typesystem";
 var jsonToAST = require("json-to-ast");
+import customValidation = require("./jsonSchemaValidation")
 
 export class ValidationResult{
     result:any;
@@ -185,6 +186,8 @@ export class JSONSchemaObject {
 
     private graph:SchemaGraph;
 
+    private customErrors: customValidation.IJSONSchemaError[] = []
+
     constructor(private schema:string, private provider: IContentProvider){
         if(!provider) {
             this.provider = new DummyProvider();
@@ -210,6 +213,7 @@ export class JSONSchemaObject {
             this.updateGraph(jsonSchemaObject, contextPath);
             var schemaVer=""+jsonSchemaObject["$schema"];
             if (schemaVer.indexOf("http://json-schema.org/draft-04/")==-1){
+                this.customErrors = new customValidation.Draft3Validator().validate(schema)
                 jsonSchemaObject =api.v4(jsonSchemaObject);
             }
             else{
@@ -711,8 +715,9 @@ export class JSONSchemaObject {
         let isExamplesMode = exampleContent != null;
         let jsonContent = exampleContent != null ? exampleContent : this.schema;
 
-        if(errors && errors.length>0){
+        if((errors && errors.length>0) || (exampleContent==null && this.customErrors.length > 0)){
 
+            errors = errors || []
             let jsonObj:any = jsonToAST(jsonContent, {verbose:true});
             let vErrors = errors.map(x=>{
                 let regEntry:any;
@@ -732,6 +737,16 @@ export class JSONSchemaObject {
                 ve.internalPath = x.path;
                 return ve;
             });
+            if(exampleContent==null){
+                this.customErrors.forEach(ce=>{
+                    let ve = new ts.ValidationError(ce.entry, ce.params);
+                    ve.internalRange = ce.range
+                    ve.isWarning = ce.isWarning;
+                    (<any>ve).error = ce;
+                    ve.internalPath = ce.path;
+                    vErrors.push(ve)
+                })
+            }
             let res = vErrors[0];
             res.additionalErrors = vErrors.slice(1);
             globalCache.setValue(key, res);
