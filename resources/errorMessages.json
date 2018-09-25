@@ -566,5 +566,13 @@
   "TEXT_CONTENT_NOT_ALLOWED_FOR_THE_XML_ELEMENT" : {
     "code" : "TEXT_CONTENT_NOT_ALLOWED_FOR_THE_XML_ELEMENT",
     "message" : "The node is not allowed to have text content"
+  },
+  "REQUIRED_MUST_BE_ARRAY_IN_DRAFT_4" : {
+    "code" : "REQUIRED_MUST_BE_ARRAY_IN_DRAFT_4",
+    "message" : "Draft 4 schema must have array as 'required' property value"
+  },
+  "REQUIRED_MUST_BE_BOOLEAN_IN_DRAFT_3" : {
+    "code" : "REQUIRED_MUST_BE_BOOLEAN_IN_DRAFT_3",
+    "message" : "Draft 3 schema must have boolean as 'required' property value"
   }
 }
