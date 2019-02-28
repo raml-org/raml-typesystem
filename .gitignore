@@ -22,3 +22,5 @@
 
 .project
 .settings
+
+npm-debug.log
