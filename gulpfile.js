@@ -54,7 +54,7 @@ var testFiles = [
     'dist/tests/*.js'
 ];
 
-gulp.task('test', [], function () {
+gulp.task('test', function () {
     global.isExpanded = null;
 
     return gulp.src(testFiles, { read: false })
@@ -64,4 +64,6 @@ gulp.task('test', [], function () {
         }));
 });
 
-gulp.task('build',['typescript:compile']);
+gulp.task('build', gulp.series('typescript:compile', function() {
+
+}));
