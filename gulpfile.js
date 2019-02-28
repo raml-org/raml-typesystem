@@ -64,6 +64,4 @@ gulp.task('test', function () {
         }));
 });
 
-gulp.task('build', gulp.series('typescript:compile', function() {
-
-}));
+gulp.task('build', gulp.series('typescript:compile'));
