@@ -2,11 +2,13 @@
   "raml-1-parser" : {
     "build" : "npm run build",
     "test" : "gulp test",
-    "gitUrl" : "https://github.com/raml-org/raml-js-parser-2.git"
+    "gitUrl" : "https://github.com/raml-org/raml-js-parser-2.git",
+    "gitBranch": "upgrade_nodejs"
   },
   "raml-definition-system" : {
     "build" : "npm run build",
-    "gitUrl" : "https://github.com/raml-org/raml-definition-system.git"
+    "gitUrl" : "https://github.com/raml-org/raml-definition-system.git",
+    "gitBranch": "upgrade_nodejs"
   },
   "raml-typesystem" : {
     "build" : "npm run build",
