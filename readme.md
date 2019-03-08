@@ -1,6 +1,6 @@
 # RAML Data Type System
 
-[![Build Status](https://travis-ci.org/raml-org/raml-typesystem.svg?branch=master)](https://travis-ci.org/raml-org/raml-typesystem)
+[![Build Status](https://travis-ci.org/raml-org/raml-typesystem.svg?branch=master)](https://travis-ci.org/raml-org/raml-typesystem) [![Greenkeeper badge](https://badges.greenkeeper.io/raml-org/raml-typesystem.svg)](https://greenkeeper.io/)
 
 This module contains a lightweight implementation of the type system that was introduced with [RAML 1.0](http://raml.org).
 
