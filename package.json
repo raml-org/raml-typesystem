@@ -51,7 +51,7 @@
     "@types/mocha": "5.2.6",
     "@types/node": "11.10.6",
     "@types/underscore": "1.8.9",
-    "@types/xml2js": "0.4.3",
+    "@types/xml2js": "0.4.4",
     "@types/bignumber.js": "5.0.0",
     "chai": "4.2.0",
     "gulp": "4.0.0",
