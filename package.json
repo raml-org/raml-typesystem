@@ -13,7 +13,7 @@
     "devInstall": "dev-env-installer install"
   },
   "dependencies": {
-    "bignumber.js": "8.1.1",
+    "bignumber.js": "9.0.0",
     "date-and-time": "0.6.3",
     "escape-html": "1.0.3",
     "json-schema-compatibility": "1.1.0",
