@@ -54,7 +54,7 @@
     "@types/mocha": "5.2.7",
     "@types/bignumber.js": "5.0.0",
     "chai": "4.2.0",
-    "gulp": "4.0.0",
+    "gulp": "4.0.2",
     "gulp-typedoc": "2.2.2",
     "istanbul": "0.4.5",
     "mocha": "6.1.4",
