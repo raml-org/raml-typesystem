@@ -48,10 +48,10 @@
   "devDependencies": {
     "@types/chai": "4.1.7",
     "@types/escape-html": "0.0.20",
-    "@types/mocha": "5.2.6",
     "@types/node": "12.0.10",
     "@types/xml2js": "0.4.4",
     "@types/underscore": "1.9.1",
+    "@types/mocha": "5.2.7",
     "@types/bignumber.js": "5.0.0",
     "chai": "4.2.0",
     "gulp": "4.0.0",
