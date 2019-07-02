@@ -718,7 +718,7 @@ export class JSONSchemaObject {
         if((errors && errors.length>0) || (exampleContent==null && this.customErrors.length > 0)){
 
             errors = errors || []
-            let jsonObj:any = jsonToAST(jsonContent, {verbose:true});
+            let jsonObj:any = jsonToAST(jsonContent, {loc:true});
             let vErrors = errors.map(x=>{
                 let regEntry:any;
                 let isInFactExampleMode = isExamplesMode && JSONSchemaObject.EXAMPLE_ERROR_CODES[x.code];
@@ -1410,7 +1410,7 @@ export function getJSONRange(jsonStrig:string, jsonObj:any, jsonPath:string):tsI
     if(!jsonPath||typeof jsonPath != "string"){
         return null;
     }
-    jsonObj = jsonObj || jsonToAST(jsonStrig,{verbose:true});
+    jsonObj = jsonObj || jsonToAST(jsonStrig,{loc:true});
 
     if(jsonPath.charAt(0)=="#"){
         jsonPath = jsonPath.substring(1);
@@ -1469,7 +1469,7 @@ export function tryParseJSON(content: any, isExample:boolean) {
         if(typeof content != "string"){
             return;
         }
-        jsonToAST(content, {verbose: true});
+        jsonToAST(content, {loc: true});
     } catch (err) {
         let ve = messageToValidationError(err.message, isExample);
         throw ve;
