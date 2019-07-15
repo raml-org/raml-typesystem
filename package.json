@@ -48,7 +48,7 @@
   "devDependencies": {
     "@types/chai": "4.1.7",
     "@types/escape-html": "0.0.20",
-    "@types/node": "12.0.10",
+    "@types/node": "12.6.3",
     "@types/xml2js": "0.4.4",
     "@types/underscore": "1.9.1",
     "@types/mocha": "5.2.7",
