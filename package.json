@@ -19,7 +19,7 @@
     "json-schema-compatibility": "1.1.0",
     "json-to-ast": "2.0.0-alpha1.3",
     "lrucache": "1.0.3",
-    "underscore": "1.9.1",
+    "underscore": "1.9.2",
     "xml2js": "^0.4.22",
     "xmldom": "0.1.27"
   },
