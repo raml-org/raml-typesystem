@@ -11,7 +11,7 @@ import _ = require("./utils");
 import xmlUtil = require('./xmlUtil');
 import jsonUtil = require('./jsonUtil');
 
-var DOMParser = require('xmldom').DOMParser;
+var DOMParser = require('xmldom-alpha').DOMParser;
 import ts = require("./typesystem");
 import {messageRegistry} from "./typesystem";
 var jsonToAST = require("json-to-ast");

@@ -1,0 +1,6 @@
+{
+  "ignore": [
+    "data-and-time",
+    "mocha"
+  ]
+}
