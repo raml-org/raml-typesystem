@@ -19,7 +19,6 @@
     "json-schema-compatibility": "1.1.0",
     "json-to-ast": "2.0.0-alpha1.3",
     "lrucache": "1.0.3",
-    "nyc": "^15.0.1",
     "underscore": "^1.10.2",
     "xml2js": "^0.4.23",
     "xmldom-alpha": "^0.1.28"
@@ -61,6 +60,7 @@
     "gulp-typedoc": "^2.2.5",
     "json-loader": "0.5.7",
     "mocha": "^6.2.2",
+    "nyc": "^14.1.1",
     "rimraf": "*",
     "typedoc": "^0.17.4",
     "typescript": "^3.8.3"

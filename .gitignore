@@ -24,3 +24,4 @@
 .settings
 
 npm-debug.log
+.nyc_output

@@ -3,6 +3,7 @@
     "date-and-time",
     "mocha",
     "rimraf",
-    "json-to-ast"
+    "json-to-ast",
+    "nyc"
   ]
 }
