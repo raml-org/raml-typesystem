@@ -1,6 +1,8 @@
 {
   "ignore": [
-    "data-and-time",
-    "mocha"
+    "date-and-time",
+    "mocha",
+    "rimraf",
+    "json-to-ast"
   ]
 }

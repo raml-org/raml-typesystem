@@ -3,7 +3,7 @@
   "version": "0.0.95",
   "main": "dist/src/index.js",
   "scripts": {
-    "test-cov": " ./node_modules/.bin/istanbul cover _mocha dist/tests/*Tests.js",
+    "test-cov": "nyc mocha -R spec --bail dist/tests/*Tests.js",
     "test": "npm run test-cov",
     "noValidationBuild": "rimraf dist && tsc",
     "build": "npm run noValidationBuild",
@@ -19,8 +19,9 @@
     "json-schema-compatibility": "1.1.0",
     "json-to-ast": "2.0.0-alpha1.3",
     "lrucache": "1.0.3",
-    "underscore": "^1.9.2",
-    "xml2js": "^0.4.22",
+    "nyc": "^15.0.1",
+    "underscore": "^1.10.2",
+    "xml2js": "^0.4.23",
     "xmldom-alpha": "^0.1.28"
   },
   "optionalDependencies": {
@@ -47,22 +48,21 @@
   "typings": "./dist/src/index.d.ts",
   "devDependencies": {
     "@types/bignumber.js": "5.0.0",
-    "@types/chai": "^4.2.4",
+    "@types/chai": "^4.2.11",
     "@types/escape-html": "0.0.20",
     "@types/mocha": "^7.0.2",
-    "@types/node": "^13.9.0",
-    "@types/underscore": "^1.9.3",
+    "@types/node": "^13.11.0",
+    "@types/underscore": "^1.9.4",
     "@types/xml2js": "^0.4.5",
     "chai": "4.2.0",
     "dev-env-installer": "0.0.14",
     "gulp": "4.0.2",
     "gulp-mocha": "^7.0.2",
-    "gulp-typedoc": "^2.2.4",
-    "istanbul": "0.4.5",
+    "gulp-typedoc": "^2.2.5",
     "json-loader": "0.5.7",
     "mocha": "^6.2.2",
     "rimraf": "*",
-    "typedoc": "^0.16.11",
-    "typescript": "3.3.3333"
+    "typedoc": "^0.17.4",
+    "typescript": "^3.8.3"
   }
 }
