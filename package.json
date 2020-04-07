@@ -1,6 +1,6 @@
 {
   "name": "raml-typesystem",
-  "version": "0.0.95",
+  "version": "0.0.96",
   "main": "dist/src/index.js",
   "scripts": {
     "test-cov": "nyc mocha -R spec --bail dist/tests/*Tests.js",
