@@ -62,7 +62,7 @@
     "mocha": "^6.2.2",
     "nyc": "^14.1.1",
     "rimraf": "*",
-    "typedoc": "^0.17.4",
+    "typedoc": "0.17.6",
     "typescript": "^3.8.3"
   }
 }
