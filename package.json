@@ -50,7 +50,7 @@
     "@types/chai": "^4.2.11",
     "@types/escape-html": "0.0.20",
     "@types/mocha": "^7.0.2",
-    "@types/node": "^13.11.0",
+    "@types/node": "^14.0.4",
     "@types/underscore": "^1.9.4",
     "@types/xml2js": "^0.4.5",
     "chai": "4.2.0",
