@@ -14,7 +14,7 @@
   },
   "dependencies": {
     "bignumber.js": "9.0.0",
-    "date-and-time": "^0.11.1",
+    "date-and-time": "^0.14.2",
     "escape-html": "1.0.3",
     "json-schema-compatibility": "1.1.0",
     "json-to-ast": "2.0.0-alpha1.3",
