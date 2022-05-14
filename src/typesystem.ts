@@ -2,7 +2,7 @@ import _=require("underscore")
 import su=require("./schemaUtil")
 import tsInterfaces = require("./typesystem-interfaces")
 
-export let messageRegistry = require("../../resources/errorMessages");
+export let messageRegistry = require("../../resources/errorMessages.json");
 
 export type IValidationPath = tsInterfaces.IValidationPath;
 
